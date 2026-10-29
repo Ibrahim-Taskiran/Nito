@@ -1,0 +1,164 @@
+{
+	"systeminfo": "WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": true,
+		"vocab": 51865,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "C:\\Users\\ibrah\\AppData\\Roaming\\com.ibrahimtaskiran.nito\\whisper\\models\\ggml-base.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:07,200"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 7200
+			},
+			"text": " database is store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:08,080",
+				"to": "00:00:15,360"
+			},
+			"offsets": {
+				"from": 8080,
+				"to": 15360
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:16,160",
+				"to": "00:00:23,440"
+			},
+			"offsets": {
+				"from": 16160,
+				"to": 23440
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:24,240",
+				"to": "00:00:31,520"
+			},
+			"offsets": {
+				"from": 24240,
+				"to": 31520
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:32,400",
+				"to": "00:00:39,600"
+			},
+			"offsets": {
+				"from": 32400,
+				"to": 39600
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:40,480",
+				"to": "00:00:47,680"
+			},
+			"offsets": {
+				"from": 40480,
+				"to": 47680
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:48,560",
+				"to": "00:00:55,760"
+			},
+			"offsets": {
+				"from": 48560,
+				"to": 55760
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:00:56,640",
+				"to": "00:01:03,920"
+			},
+			"offsets": {
+				"from": 56640,
+				"to": 63920
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:01:04,800",
+				"to": "00:01:12,000"
+			},
+			"offsets": {
+				"from": 64800,
+				"to": 72000
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:01:12,880",
+				"to": "00:01:20,080"
+			},
+			"offsets": {
+				"from": 72880,
+				"to": 80080
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:01:20,960",
+				"to": "00:01:28,240"
+			},
+			"offsets": {
+				"from": 80960,
+				"to": 88240
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		},
+		{
+			"timestamps": {
+				"from": "00:01:29,040",
+				"to": "00:01:36,320"
+			},
+			"offsets": {
+				"from": 89040,
+				"to": 96320
+			},
+			"text": " Databases store tables. Every table has rows and columns. Normalization removes repeated data."
+		}
+	]
+}

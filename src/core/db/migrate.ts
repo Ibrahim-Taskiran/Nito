@@ -1,8 +1,9 @@
 import type { SqlDb } from "./sql";
 import m001 from "./migrations/001_init";
+import m004 from "./migrations/004_transcripts";
 
 /** Ordered list; index + 1 is the schema version stored in PRAGMA user_version. */
-export const MIGRATIONS: readonly string[] = [m001];
+export const MIGRATIONS: readonly string[] = [m001, m004];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
