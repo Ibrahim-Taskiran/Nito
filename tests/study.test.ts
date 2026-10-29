@@ -3,7 +3,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { addDays, cardFace, dueCards, isDue, newCardState, review, type Card } from "../src/core/study/cards";
 import { buildQuiz, score, seededRng, shuffle } from "../src/core/study/quiz";
 import { cornellNote, courseDigest, documentNotes, SUMMARY_PLACEHOLDER } from "../src/core/study/markdown";
-import { buildCoursePack, safeName } from "../src/core/study/pack";
+import { asciiName, buildCoursePack, safeName } from "../src/core/study/pack";
 import { StudyRepo } from "../src/core/study/studyRepo";
 import type { Annotation, LabelKey } from "../src/core/types";
 import { freshRepo } from "./helpers";
@@ -106,6 +106,7 @@ describe("markdown", () => {
 describe("course pack", () => {
   it("zips PDFs, notes and digest with safe unique names", () => {
     expect(safeName('a/b:c*?"<>|. ')).toBe("a b c");
+    expect(asciiName("Ağ Güvenliği: Şifreleme é")).toBe("Ag Guvenligi Sifreleme e");
     const pdf = new Uint8Array([37, 80, 68, 70]);
     const { zip, missing } = buildCoursePack("Ağlar", [
       { doc: { title: "Hafta 1: Giriş" }, anns: [ann("exam", "x")], pdf },

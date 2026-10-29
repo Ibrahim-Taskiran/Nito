@@ -80,7 +80,7 @@ export class StudyRepo {
        FROM course c LEFT JOIN document d ON d.course_id = c.id
        GROUP BY c.id ORDER BY c.sort_order, c.name`,
     );
-    const out = rows.map((r) => ({ courseId: Number(r.id), name: String(r.name), read: Number(r.read), total: Number(r.total) }));
+    const out: CourseProgress[] = rows.map((r) => ({ courseId: Number(r.id), name: String(r.name), read: Number(r.read), total: Number(r.total) }));
     const [loose] = await this.db.all(
       "SELECT COUNT(*) AS total, COALESCE(SUM(read_status = 'read'), 0) AS read FROM document WHERE course_id IS NULL",
     );
@@ -101,9 +101,9 @@ export class StudyRepo {
     });
   }
 
-  /** Everything a course pack needs; PDFs that cannot be read come back as null. */
+  /** Everything a course pack needs (courseId null = documents without a course); unreadable PDFs come back as null. */
   async packDocuments(courseId: Id | null, read: (rel: string) => Promise<Uint8Array>): Promise<PackDocument[]> {
-    const docs = await this.documents(courseId);
+    const docs = (await this.documents(courseId)).filter((d) => d.courseId === courseId);
     return Promise.all(docs.map(async (doc) => ({
       doc,
       anns: await this.repo.listAnnotations(doc.id),

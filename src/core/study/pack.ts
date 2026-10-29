@@ -16,6 +16,17 @@ export function safeName(s: string): string {
   return out.slice(0, 120) || "adsiz";
 }
 
+const TR: Record<string, string> = { ğ: "g", Ğ: "G", ü: "u", Ü: "U", ş: "s", Ş: "S", ı: "i", İ: "I", ö: "o", Ö: "O", ç: "c", Ç: "C" };
+
+/** ASCII-only file name (Tauri passes the storage path in an HTTP header). */
+export function asciiName(s: string): string {
+  const out = safeName(s)
+    .replace(/[ğĞüÜşŞıİöÖçÇ]/g, (c) => TR[c])
+    .normalize("NFD").replace(/[^\x20-\x7e]/g, "")
+    .replace(/\s+/g, " ").trim();
+  return out || "paket";
+}
+
 function uniqueNamer() {
   const used = new Set<string>();
   return (base: string) => {
