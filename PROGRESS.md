@@ -2,6 +2,19 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Phase 1 step 6: PDF reader with highlights
+- **Done:**
+  - Owner tested `npm run tauri dev`: picker, folder and drag-drop add all work (step 3 ✅).
+  - `src/core/reader.ts`: pages to render (visible ± 1), zoom steps (50–400 %), selection rects → normalised page rects (joined per line, 4 decimals). Tests in `tests/reader.test.ts`.
+  - `src/ui/pdf.ts`: lazy pdf.js loader with worker. `src/ui/reader.svelte.ts`: reader state (load, close, add/update/delete highlight).
+  - Views: `ReaderView.svelte` (toolbar, page count, zoom buttons and Ctrl+wheel, IntersectionObserver, label picker after text selection, Esc closes), `PdfPage.svelte` (canvas + text layer, rendered off-screen then swapped in, freed when far away; zoom stretches the old bitmap until a 120 ms re-render), `AnnotationPanel.svelte` (list, comment, change label, delete, jump to page).
+  - `src/ui/textLayer.css`: text layer rules adapted from pdf.js (Apache-2.0).
+  - Library: "Aç" button and double-click open a document; opening marks Okunmadı → Okunuyor.
+- **Checks:** svelte-check 0 errors, vitest 11 passed, `npm run screenshots` opens a PDF, highlights as Sınav, saves a comment, and reopens with the comment kept, in light and dark (`docs/screenshots/reader-*.png`).
+- **Half done:** not tried in the Tauri window yet. Pinch zoom on touch is Phase 3.
+- **Next step:** Phase 1 step 7, audio recording while a PDF is open (MediaRecorder, timer, level meter, pause, `recording_mark` per highlight, ▶ mm:ss in the annotation list). `src/core/recording.ts` already has the clock and MIME logic; repo has `startRecording`, `finishRecording`, `addMark`, `marksForDocument`. Rust needs a command to write recording bytes into storage.
+- **Known problems:** a selection that spans two pages keeps only the part on the first page.
+
 ## 2026-10-29 — graphify set up
 - Owner ran `graphify claude install`: graphify section in CLAUDE.md, hooks in `.claude/settings.json`.
 - Graph built with `graphify update . --no-cluster` and `graphify cluster-only . --no-label` (357 nodes, 17 communities).

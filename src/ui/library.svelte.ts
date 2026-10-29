@@ -14,6 +14,8 @@ export class Library {
   counts = $state<Counts>({ all: 0, unread: 0, favorites: 0, byCourse: {} });
   filter = $state<LibraryFilter>({ kind: "all" });
   selectedId = $state<Id | null>(null);
+  /** Document open in the reader. */
+  opened = $state<Document | null>(null);
   /** Running add batch; null when idle. */
   adding = $state<{ done: number; total: number; abort: AbortController } | null>(null);
   /** Summary of the last finished batch. */
@@ -57,6 +59,18 @@ export class Library {
       this.adding = null;
       await this.refresh();
     }
+  }
+
+  async open(d: Document): Promise<void> {
+    if (d.readStatus === "unread") await this.repo.setReadStatus(d.id, "reading");
+    this.selectedId = d.id;
+    this.addSummary = null;
+    this.opened = d;
+  }
+
+  async close(): Promise<void> {
+    this.opened = null;
+    await this.refresh();
   }
 
   async cycleReadStatus(d: Document): Promise<void> {

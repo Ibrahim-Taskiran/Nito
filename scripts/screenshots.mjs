@@ -24,6 +24,27 @@ for (const scheme of ["light", "dark"]) {
   console.log(scheme, "summary:", await page.getByRole("status").locator("span").textContent());
   await page.getByRole("button", { name: /Hafta 2/ }).click();
   await page.screenshot({ path: `docs/screenshots/library-${scheme}.png` });
+
+  // Reader: open, highlight the first line as Sınav, add a comment, reopen.
+  await page.getByRole("button", { name: "Aç" }).click();
+  await page.locator(".textLayer span").first().waitFor();
+  await page.evaluate(() => {
+    const span = document.querySelector(".textLayer span");
+    const range = document.createRange();
+    range.selectNodeContents(span);
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    span.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  });
+  await page.getByRole("toolbar", { name: "Vurgu etiketi" }).getByRole("button", { name: "Sınav" }).click();
+  await page.getByPlaceholder("Yorum ekle…").fill("Vizede çıkabilir");
+  await page.getByPlaceholder("Yorum ekle…").blur();
+  await page.locator(".hl").first().waitFor();
+  await page.screenshot({ path: `docs/screenshots/reader-${scheme}.png` });
+  await page.getByRole("button", { name: "← Kütüphane" }).click();
+  await page.getByRole("button", { name: "Aç" }).click();
+  await page.locator(".hl").first().waitFor();
+  console.log(scheme, "comment after reopen:", await page.getByPlaceholder("Yorum ekle…").inputValue());
   await page.close();
 }
 await browser.close();

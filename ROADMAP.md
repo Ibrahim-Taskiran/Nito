@@ -72,7 +72,7 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - note: kind = live / template / digest / ai / transcript / free
    - recording, recording_mark (annotation ↔ offset in seconds)
    - tag, document_tag
-3. 🟨 Adding PDFs (`src/core/library/addDocuments.ts` plus the UI):
+3. ✅ Adding PDFs (`src/core/library/addDocuments.ts` plus the UI):
    - **Single add:** a "PDF ekle" button with a file picker.
    - **Bulk add:**
      - Pick many files at once.
@@ -92,7 +92,7 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - Sidebar: courses, Tümü, Okunmamış, Favoriler.
    - Document list grouped by week, with a read-status dot and a favourite star.
    - Detail panel.
-6. ⬜ PDF reader:
+6. ✅ PDF reader:
    - pdf.js with lazy page rendering and smooth zoom.
    - Select text to highlight it with one of 5 colour labels: Önemli, Sınav, Tanım, Örnek, Soru.
    - Comments on highlights, and an annotation list panel.

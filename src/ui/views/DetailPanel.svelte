@@ -1,5 +1,6 @@
 <script lang="ts">
   import { READ_STATUS_NAMES } from "../../core/labels";
+  import Button from "../components/Button.svelte";
   import type { Library } from "../library.svelte";
   let { lib }: { lib: Library } = $props();
   const d = $derived(lib.selected);
@@ -15,6 +16,7 @@
       <dt>Durum</dt><dd>{READ_STATUS_NAMES[d.readStatus]}</dd>
       <dt>Eklendi</dt><dd>{new Date(d.addedAt).toLocaleDateString("tr-TR")}</dd>
     </dl>
+    <div class="open"><Button variant="primary" onclick={() => lib.open(d)}>Aç</Button></div>
   {:else}
     <p class="hint">Ayrıntı için bir belge seçin.</p>
   {/if}
@@ -26,6 +28,7 @@
   dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; margin: 0; }
   dt { color: var(--text-2); }
   dd { margin: 0; }
+  .open { margin-top: 20px; }
   .hint { color: var(--text-2); }
   @media (max-width: 1023px) { .detail { display: none; } }
 </style>

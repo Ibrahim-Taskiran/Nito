@@ -40,7 +40,7 @@ export async function createWebPlatform(): Promise<Platform> {
       read: async (rel) => {
         const b = files.get(rel);
         if (!b) throw new Error(`Dosya yok: ${rel}`);
-        return b;
+        return b.slice(); // pdf.js takes ownership of the buffer it gets
       },
       remove: async (rel) => void files.delete(rel),
     },

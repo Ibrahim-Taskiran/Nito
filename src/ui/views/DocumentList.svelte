@@ -14,7 +14,7 @@
         <div class="row" class:selected={lib.selectedId === d.id}>
           <button class="dot {d.readStatus}" aria-label="Durum: {READ_STATUS_NAMES[d.readStatus]}" title={READ_STATUS_NAMES[d.readStatus]}
             onclick={() => lib.cycleReadStatus(d)}></button>
-          <button class="title" onclick={() => (lib.selectedId = d.id)}>{d.title}</button>
+          <button class="title" onclick={() => (lib.selectedId = d.id)} ondblclick={() => lib.open(d)}>{d.title}</button>
           <button class="star" class:on={d.favorite} aria-label="Favori" aria-pressed={d.favorite}
             onclick={() => lib.toggleFavorite(d)}>{d.favorite ? "★" : "☆"}</button>
         </div>

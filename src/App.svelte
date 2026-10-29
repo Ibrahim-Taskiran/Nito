@@ -4,6 +4,7 @@
   import AddProgress from "./ui/views/AddProgress.svelte";
   import DetailPanel from "./ui/views/DetailPanel.svelte";
   import DocumentList from "./ui/views/DocumentList.svelte";
+  import ReaderView from "./ui/views/ReaderView.svelte";
   import Sidebar from "./ui/views/Sidebar.svelte";
   import type { Library } from "./ui/library.svelte";
 
@@ -24,7 +25,9 @@
   <Button onclick={addFolder}>Klasör ekle</Button>
 {/snippet}
 
-{#if lib.counts.all === 0}
+{#if lib.opened}
+  {#key lib.opened.id}<ReaderView {lib} doc={lib.opened} />{/key}
+{:else if lib.counts.all === 0}
   <main class="empty">
     <h1>Kütüphanen boş</h1>
     <p>Ders PDF'lerini ekleyerek başla. Dosyaları ya da klasörleri pencereye de sürükleyebilirsin.</p>
