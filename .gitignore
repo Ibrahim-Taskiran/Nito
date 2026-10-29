@@ -21,3 +21,4 @@ recordings/
 src-tauri/target
 dist
 graphify-out/
+.claude/worktrees/
