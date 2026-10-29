@@ -1,22 +1,20 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { parseCitations } from "../../core/ai/prompts";
   import type { Hit } from "../../core/ai/bm25";
+  import { cleanAnswer, emphasis, parseCitations } from "../../core/ai/prompts";
   import Button from "../components/Button.svelte";
   import { Ai } from "../ai.svelte";
   import type { Library } from "../library.svelte";
 
   let { lib }: { lib: Library } = $props();
+  // One Ai per library, so the chat survives opening a cited page and coming back.
   // svelte-ignore state_referenced_locally
-  const ai = new Ai(lib);
+  const ai = Ai.for(lib);
   let question = $state("");
   let missing = $state<number | null>(null);
   let log: HTMLDivElement | undefined = $state();
 
-  onMount(() => {
-    void ai.init();
-    return () => ai.stop();
-  });
+  onMount(() => void ai.init());
 
   // Keep the newest tokens in view while streaming.
   $effect(() => {
@@ -33,16 +31,16 @@
     await tick();
   }
 
-  async function cite(page: number, hits?: Hit[]) {
-    missing = (await ai.openCitation(page, hits)) ? null : page;
+  async function cite(page: number, hits?: Hit[], title?: string) {
+    missing = (await ai.openCitation(page, hits, title)) ? null : page;
   }
 </script>
 
-{#snippet answer(text: string, oncite: (page: number) => void)}
-  {#each parseCitations(text) as seg, i (i)}
+{#snippet answer(text: string, oncite: (page: number, title?: string) => void)}
+  {#each parseCitations(cleanAnswer(text)) as seg, i (i)}
     {#if "page" in seg}
-      <button class="cite" title="Sayfayı aç" onclick={() => oncite(seg.page)}>[{seg.label}]</button>
-    {:else}{seg.text}{/if}
+      <button class="cite" title="Sayfayı aç" onclick={() => oncite(seg.page, seg.title)}>[{seg.label}]</button>
+    {:else}{#each emphasis(seg.text) as r, j (j)}{#if r.strong}<strong>{r.text}</strong>{:else}{r.text}{/if}{/each}{/if}
   {/each}
 {/snippet}
 
@@ -117,7 +115,7 @@
           {#each ai.turns as t, i (i)}
             <div class="turn {t.role}">
               {#if t.role === "assistant"}
-                {#if t.content}{@render answer(t.content, (p) => cite(p, t.hits))}{:else}<span class="phase">{ai.phase || "…"}</span>{/if}
+                {#if t.content}{@render answer(t.content, (p, title) => cite(p, t.hits, title))}{:else}<span class="phase">{ai.phase || "…"}</span>{/if}
                 {#if t.hits?.length && t.content}
                   <details class="sources"><summary>Kaynaklar ({t.hits.length})</summary>
                     <ul>{#each t.hits as h, j (j)}<li>{h.chunk.title}{h.chunk.page != null ? `, s. ${h.chunk.page}` : ""}</li>{/each}</ul>
@@ -158,6 +156,7 @@
   .cols { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; min-height: 0; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; min-height: 0; }
   .state { max-width: 520px; gap: 4px; align-items: flex-start; }
+  .state a { color: var(--accent); }
   .state ol { margin: 4px 0 12px; padding-left: 20px; color: var(--text-2); }
   code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
   .row { display: flex; gap: 8px; }

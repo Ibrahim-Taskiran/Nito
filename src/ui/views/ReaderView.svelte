@@ -32,11 +32,13 @@
   const active = $derived(pagesToRender(visible, sizes.length));
 
   onMount(() => {
+    let alive = true;
     reader.load().then(async () => {
       const pdf = reader.pdf;
       if (!pdf) return;
       // Page 1 size stands in for all pages until each real size is known.
       const first = (await pdf.getPage(1)).getViewport({ scale: 1 });
+      if (!alive) return;
       sizes = Array.from({ length: pdf.numPages }, () => ({ w: first.width, h: first.height }));
       scale = clampZoom((scroller.clientWidth - 48) / first.width);
       if (lib.openPage && !compact) {
@@ -45,12 +47,15 @@
         await tick();
         goTo(page);
       }
-      for (let n = 2; n <= pdf.numPages; n++) {
+      for (let n = 2; n <= pdf.numPages && alive; n++) {
         const vp = (await pdf.getPage(n)).getViewport({ scale: 1 });
         if (vp.width !== first.width || vp.height !== first.height) sizes[n - 1] = { w: vp.width, h: vp.height };
       }
-    });
-    return () => void reader.close();
+    }).catch((e) => alive && console.error(e));
+    return () => {
+      alive = false;
+      void reader.close();
+    };
   });
 
   // Track which pages intersect the viewport.

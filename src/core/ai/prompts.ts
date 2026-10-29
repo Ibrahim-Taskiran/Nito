@@ -29,7 +29,7 @@ const sourceLabel = (c: Chunk): string =>
 /** "Chat with notes": retrieved chunks first, then the question. */
 export function chatPrompt(question: string, hits: Hit[], history: ChatMessage[] = []): ChatMessage[] {
   const context = hits.length
-    ? hits.map((h, i) => `(${i + 1}) [${sourceLabel(h.chunk)}]\n${h.chunk.text}`).join("\n\n")
+    ? hits.map((h, i) => `(${i + 1}) ${sourceLabel(h.chunk)}\n${h.chunk.text}`).join("\n\n")
     : "(İlgili kaynak bulunamadı.)";
   return [
     {
@@ -44,23 +44,44 @@ export function chatPrompt(question: string, hits: Hit[], history: ChatMessage[]
   ];
 }
 
-export type Segment = { text: string } | { page: number; label: string };
+export type Segment = { text: string } | { page: number; label: string; title?: string };
 
-/** Splits an answer into plain text and [s. N] citations (also "[s.N]", "[S. 3, 4]"). */
+/**
+ * Splits an answer into plain text and [s. N] citations. Also takes "[s.N]", "[S. 3, 4]"
+ * and "[Hafta 3, s. 4]" (small models copy the source label; the title then picks the document).
+ */
 export function parseCitations(answer: string): Segment[] {
   const out: Segment[] = [];
-  const re = /\[\s*s\.?\s*(\d+(?:\s*[,–-]\s*\d+)*)\s*\]/giu;
+  const re = /\[(?:([^[\]\n]{1,80}?),\s*)?s\.?\s*(\d+(?:\s*[,–-]\s*\d+)*)\s*\]/giu;
   let last = 0;
   for (const m of answer.matchAll(re)) {
     if (m.index > last) out.push({ text: answer.slice(last, m.index) });
-    for (const n of m[1].split(/\s*[,–-]\s*/)) out.push({ page: Number(n), label: `s. ${n}` });
+    const title = m[1]?.trim();
+    for (const n of m[2].split(/\s*[,–-]\s*/)) out.push({ page: Number(n), label: `s. ${n}`, ...(title ? { title } : {}) });
     last = m.index + m[0].length;
   }
   if (last < answer.length) out.push({ text: answer.slice(last) });
   return out;
 }
 
-/** The retrieved chunk a page citation points to (best-ranked first); null if the model invented it. */
-export function resolveCitation(page: number, hits: Hit[]): Chunk | null {
-  return hits.find((h) => h.chunk.page === page)?.chunk ?? null;
+/**
+ * The retrieved chunk a page citation points to (best-ranked first). A page that was not retrieved
+ * still resolves when the hits come from one document only; otherwise null (the model invented it).
+ */
+export function resolveCitation(page: number, hits: Hit[], title?: string): Chunk | null {
+  const onPage = hits.filter((h) => h.chunk.page === page);
+  const found = (onPage.find((h) => title && h.chunk.title === title) ?? onPage[0])?.chunk;
+  if (found) return found;
+  const docs = new Set(hits.filter((h) => h.chunk.documentId != null).map((h) => h.chunk.documentId));
+  const only = hits.find((h) => h.chunk.documentId != null)?.chunk;
+  return docs.size === 1 && only ? { ...only, page } : null;
 }
+
+/** Light Markdown for display: headings and **bold** become strong runs; everything else stays text. */
+export function emphasis(s: string): { text: string; strong: boolean }[] {
+  const md = s.replace(/^#{1,6}[ \t]*(.+)$/gm, "**$1**");
+  return md.split(/\*\*(.+?)\*\*/s).map((text, i) => ({ text, strong: i % 2 === 1 })).filter((r) => r.text);
+}
+
+/** Small models often wrap Markdown in a ```markdown fence; drop it (also while streaming). */
+export const cleanAnswer = (s: string): string => s.replace(/^[ \t]*```[\w-]*[ \t]*(\n|$)/gm, "").trim();

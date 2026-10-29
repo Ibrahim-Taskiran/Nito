@@ -2,7 +2,7 @@
 import { Bm25, type Hit } from "../core/ai/bm25";
 import { buildCorpus } from "../core/ai/corpus";
 import { isResearchOnly, OllamaDown, pickModel } from "../core/ai/ollama";
-import { chatPrompt, resolveCitation, summaryPrompt, type ChatMessage } from "../core/ai/prompts";
+import { chatPrompt, cleanAnswer, resolveCitation, summaryPrompt, type ChatMessage } from "../core/ai/prompts";
 import type { Document, Id } from "../core/types";
 import { aiClient } from "./aiClient";
 import type { Library } from "./library.svelte";
@@ -39,10 +39,24 @@ export class Ai {
   researchOnly = $derived(this.model != null && isResearchOnly(this.model));
   private abort: AbortController | null = null;
 
-  constructor(readonly lib: Library) {}
+  private static instances = new WeakMap<Library, Ai>();
+  static for(lib: Library): Ai {
+    let ai = Ai.instances.get(lib);
+    if (!ai) Ai.instances.set(lib, (ai = new Ai(lib)));
+    return ai;
+  }
 
+  private constructor(readonly lib: Library) {}
+
+  /** First visit: find Ollama and load documents. Later visits: refresh documents, keep the chat. */
   async init(): Promise<void> {
-    await Promise.all([this.checkOllama(), this.setCourse(this.courseId)]);
+    await Promise.all([this.status === "ready" ? null : this.checkOllama(), this.loadDocs()]);
+  }
+
+  private async loadDocs(): Promise<void> {
+    const id = this.courseId;
+    this.docs = await this.lib.repo.listDocuments(id == null ? { kind: "all" } : { kind: "course", courseId: id });
+    if (!this.docs.some((d) => d.id === this.summaryDocId)) this.summaryDocId = this.docs[0]?.id ?? null;
   }
 
   async checkOllama(): Promise<void> {
@@ -65,9 +79,8 @@ export class Ai {
 
   async setCourse(id: Id | null): Promise<void> {
     this.courseId = id;
-    this.docs = await this.lib.repo.listDocuments(id == null ? { kind: "all" } : { kind: "course", courseId: id });
-    if (!this.docs.some((d) => d.id === this.summaryDocId)) this.summaryDocId = this.docs[0]?.id ?? null;
     this.turns = [];
+    await this.loadDocs();
   }
 
   stop(): void {
@@ -107,7 +120,7 @@ export class Ai {
         signal,
         onToken: (t) => (this.summary += t),
       });
-      await this.lib.repo.addNote({ documentId: doc.id, courseId: doc.courseId, kind: "ai", title: `Özet: ${doc.title}`, body });
+      await this.lib.repo.addNote({ documentId: doc.id, courseId: doc.courseId, kind: "ai", title: `Özet: ${doc.title}`, body: cleanAnswer(body) });
       this.summarySaved = true;
     });
   }
@@ -154,8 +167,8 @@ export class Ai {
   }
 
   /** Opens the cited page; false when the model cited a page it was not given. */
-  async openCitation(page: number, hits: Hit[] = []): Promise<boolean> {
-    const chunk = resolveCitation(page, hits);
+  async openCitation(page: number, hits: Hit[] = [], title?: string): Promise<boolean> {
+    const chunk = resolveCitation(page, hits, title);
     const doc = chunk?.documentId != null ? await this.lib.repo.getDocument(chunk.documentId) : undefined;
     if (!doc) return false;
     await this.lib.open(doc, page);

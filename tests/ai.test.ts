@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Bm25 } from "../src/core/ai/bm25";
 import { buildCorpus } from "../src/core/ai/corpus";
 import { chat, isResearchOnly, listModels, OllamaDown, pickModel, type Fetch } from "../src/core/ai/ollama";
-import { chatPrompt, parseCitations, resolveCitation, summaryPrompt } from "../src/core/ai/prompts";
+import { chatPrompt, cleanAnswer, emphasis, parseCitations, resolveCitation, summaryPrompt } from "../src/core/ai/prompts";
 import { chunkPages, fitPages, splitText, stem, tokenize, type Chunk } from "../src/core/ai/text";
 import type { Document } from "../src/core/types";
 
@@ -91,7 +91,7 @@ describe("prompts", () => {
   it("chat prompt lists sources with pages and ends with the question", () => {
     const hits = [{ chunk: ch("TCP metni", 4, "Hafta 3"), score: 2 }];
     const m = chatPrompt("TCP nedir?", hits, [{ role: "user", content: "eski" }]);
-    expect(m[0].content).toContain("[Hafta 3, s. 4]");
+    expect(m[0].content).toContain("(1) Hafta 3, s. 4\nTCP metni");
     expect(m[0].content).toContain("[s. N]");
     expect(m.at(-1)).toEqual({ role: "user", content: "TCP nedir?" });
     expect(m).toHaveLength(3);
@@ -101,12 +101,20 @@ describe("prompts", () => {
       { text: "TCP güvenilir " }, { page: 4, label: "s. 4" }, { text: ". UDP değil " },
       { page: 2, label: "s. 2" }, { page: 3, label: "s. 3" },
     ]);
-    expect(parseCitations("kaynak yok")).toEqual([{ text: "kaynak yok" }]);
+    expect(parseCitations("kaynak yok [1]")).toEqual([{ text: "kaynak yok [1]" }]);
+    expect(parseCitations("el sıkışma [Hafta 5: Tasima, s. 1].")).toEqual([
+      { text: "el sıkışma " }, { page: 1, label: "s. 1", title: "Hafta 5: Tasima" }, { text: "." },
+    ]);
   });
   it("resolves a citation to the retrieved chunk", () => {
     const hits = [{ chunk: ch("x", 4, "A"), score: 1 }, { chunk: ch("y", 4, "B"), score: 0.5 }];
     expect(resolveCitation(4, hits)?.title).toBe("A");
-    expect(resolveCitation(9, hits)).toBeNull();
+    expect(resolveCitation(4, hits, "B")?.title).toBe("B");
+    // two documents among the hits: an unretrieved page is ambiguous
+    expect(resolveCitation(9, [{ chunk: { ...ch("x", 4, "A"), documentId: 1 }, score: 1 }, { chunk: { ...ch("y", 4, "B"), documentId: 2 }, score: 1 }])).toBeNull();
+    // one document: open that document at the cited page
+    expect(resolveCitation(9, hits)).toMatchObject({ title: "A", page: 9 });
+    expect(resolveCitation(1, [])).toBeNull();
   });
 });
 
@@ -158,5 +166,23 @@ describe("ollama client", () => {
   it("surfaces model errors", async () => {
     const f: Fetch = async () => new Response(stream([JSON.stringify({ error: "model not found" })]));
     await expect(chat(f, { model: "x", messages: [] })).rejects.toThrow("model not found");
+  });
+});
+
+describe("cleanAnswer", () => {
+  it("drops a wrapping code fence, also mid-stream", () => {
+    expect(cleanAnswer("```markdown\n## Özet\nmetin\n```")).toBe("## Özet\nmetin");
+    expect(cleanAnswer("```markdown\n## Öz")).toBe("## Öz");
+    expect(cleanAnswer("düz metin")).toBe("düz metin");
+    expect(cleanAnswer("Başlık\n\n```markdown\n## x\n``` \n")).toBe("Başlık\n\n## x");
+  });
+});
+
+describe("emphasis", () => {
+  it("turns headings and **bold** into strong runs", () => {
+    expect(emphasis("## Ana fikirler\n- **TCP**: güvenilir")).toEqual([
+      { text: "Ana fikirler", strong: true }, { text: "\n- ", strong: false },
+      { text: "TCP", strong: true }, { text: ": güvenilir", strong: false },
+    ]);
   });
 });
