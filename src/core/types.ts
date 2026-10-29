@@ -26,6 +26,17 @@ export interface Document {
   favorite: boolean;
   addedAt: string;
   updatedAt: string;
+  /** Last page seen in the reader (1-based); null until first opened. */
+  lastPage: number | null;
+  pageCount: number | null;
+  lastOpenedAt: string | null;
+}
+
+/** Per-document counts for library badges. */
+export interface DocumentStats {
+  highlights: number;
+  recordings: number;
+  notes: number;
 }
 
 /** A rectangle in page space, normalised to 0..1 of the page width/height. */
