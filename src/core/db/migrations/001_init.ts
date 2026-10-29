@@ -4,7 +4,6 @@ CREATE TABLE course (
   id          INTEGER PRIMARY KEY,
   name        TEXT NOT NULL,
   sort_order  INTEGER NOT NULL DEFAULT 0,
-  source_key  TEXT UNIQUE,              -- key in an imported library, for re-import
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
@@ -17,7 +16,6 @@ CREATE TABLE document (
   file_hash    TEXT NOT NULL,
   read_status  TEXT NOT NULL DEFAULT 'unread' CHECK (read_status IN ('unread','reading','read')),
   favorite     INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1)),
-  source_key   TEXT UNIQUE,
   added_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -32,7 +30,6 @@ CREATE TABLE annotation (
   label        TEXT NOT NULL CHECK (label IN ('important','exam','definition','example','question')),
   text         TEXT NOT NULL DEFAULT '',
   comment      TEXT NOT NULL DEFAULT '',
-  source_key   TEXT UNIQUE,
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX annotation_document ON annotation(document_id, page);
@@ -44,7 +41,6 @@ CREATE TABLE note (
   kind         TEXT NOT NULL DEFAULT 'free' CHECK (kind IN ('live','template','digest','ai','transcript','free')),
   title        TEXT NOT NULL DEFAULT '',
   body         TEXT NOT NULL DEFAULT '',
-  source_key   TEXT UNIQUE,
   created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );

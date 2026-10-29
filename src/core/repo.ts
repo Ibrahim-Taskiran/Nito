@@ -95,7 +95,6 @@ export interface NewDocument {
   fileHash: string;
   readStatus?: ReadStatus;
   favorite?: boolean;
-  sourceKey?: string | null;
   addedAt?: string;
 }
 
@@ -106,7 +105,6 @@ export interface NewAnnotation {
   label: LabelKey;
   text?: string;
   comment?: string;
-  sourceKey?: string | null;
 }
 
 export interface NewNote {
@@ -115,7 +113,6 @@ export interface NewNote {
   kind: NoteKind;
   title: string;
   body: string;
-  sourceKey?: string | null;
 }
 
 /** An annotation's playable moment, for the ▶ mm:ss button. */
@@ -134,13 +131,14 @@ export class Repo {
     return (await this.db.all("SELECT * FROM course ORDER BY sort_order, name")).map(toCourse);
   }
 
-  async addCourse(name: string, sortOrder = 0, sourceKey: string | null = null): Promise<Id> {
-    return (await this.db.run("INSERT INTO course (name, sort_order, source_key) VALUES (?, ?, ?)", [name, sortOrder, sourceKey])).lastId;
+  async addCourse(name: string, sortOrder = 0): Promise<Id> {
+    return (await this.db.run("INSERT INTO course (name, sort_order) VALUES (?, ?)", [name, sortOrder])).lastId;
   }
 
-  async courseBySourceKey(key: string): Promise<Course | undefined> {
-    const r = await get(this.db, "SELECT * FROM course WHERE source_key = ?", [key]);
-    return r && toCourse(r);
+  /** Finds a course by name (case-insensitive) or creates it. */
+  async ensureCourse(name: string): Promise<Id> {
+    const r = await get(this.db, "SELECT id FROM course WHERE name = ? COLLATE NOCASE", [name]);
+    return r ? n(r.id) : this.addCourse(name);
   }
 
   // ---- documents
@@ -161,17 +159,17 @@ export class Repo {
     return r && toDocument(r);
   }
 
-  async documentBySourceKey(key: string): Promise<Document | undefined> {
-    const r = await get(this.db, "SELECT * FROM document WHERE source_key = ?", [key]);
+  async documentByHash(hash: string): Promise<Document | undefined> {
+    const r = await get(this.db, "SELECT * FROM document WHERE file_hash = ?", [hash]);
     return r && toDocument(r);
   }
 
   async addDocument(d: NewDocument): Promise<Id> {
     const t = d.addedAt ?? now();
     return (await this.db.run(
-      `INSERT INTO document (course_id, title, week, file_path, file_hash, read_status, favorite, source_key, added_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [d.courseId, d.title, d.week ?? weekNumber(d.title), d.filePath, d.fileHash, d.readStatus ?? "unread", d.favorite ? 1 : 0, d.sourceKey ?? null, t, t],
+      `INSERT INTO document (course_id, title, week, file_path, file_hash, read_status, favorite, added_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [d.courseId, d.title, d.week ?? weekNumber(d.title), d.filePath, d.fileHash, d.readStatus ?? "unread", d.favorite ? 1 : 0, t, t],
     )).lastId;
   }
 
@@ -200,8 +198,8 @@ export class Repo {
 
   async addAnnotation(a: NewAnnotation): Promise<Id> {
     return (await this.db.run(
-      "INSERT INTO annotation (document_id, page, rects, label, text, comment, source_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [a.documentId, a.page, JSON.stringify(a.rects), a.label, a.text ?? "", a.comment ?? "", a.sourceKey ?? null, now()],
+      "INSERT INTO annotation (document_id, page, rects, label, text, comment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [a.documentId, a.page, JSON.stringify(a.rects), a.label, a.text ?? "", a.comment ?? "", now()],
     )).lastId;
   }
 
@@ -224,8 +222,8 @@ export class Repo {
   async addNote(nt: NewNote): Promise<Id> {
     const t = now();
     return (await this.db.run(
-      "INSERT INTO note (document_id, course_id, kind, title, body, source_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [nt.documentId ?? null, nt.courseId ?? null, nt.kind, nt.title, nt.body, nt.sourceKey ?? null, t, t],
+      "INSERT INTO note (document_id, course_id, kind, title, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [nt.documentId ?? null, nt.courseId ?? null, nt.kind, nt.title, nt.body, t, t],
     )).lastId;
   }
 

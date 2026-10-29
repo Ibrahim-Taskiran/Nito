@@ -26,19 +26,6 @@ export function isLabelKey(v: string): v is LabelKey {
   return BY_KEY.has(v as LabelKey);
 }
 
-// Colours of the old library's default palette mapped to our labels.
-const LEGACY_COLORS: Record<string, LabelKey> = {
-  "#ffd400": "important",
-  "#ff6666": "exam",
-  "#5fb236": "definition",
-  "#2ea8e5": "example",
-  "#a28ae5": "question",
-};
-
-export function labelFromLegacyColor(color: string | null | undefined): LabelKey {
-  return LEGACY_COLORS[(color ?? "").toLowerCase()] ?? "important";
-}
-
 export const READ_STATUS_NAMES: Record<ReadStatus, string> = {
   unread: "Okunmadı",
   reading: "Okunuyor",
