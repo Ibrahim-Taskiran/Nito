@@ -1,5 +1,6 @@
 mod db;
 mod files;
+mod transcribe;
 
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -147,7 +148,10 @@ pub fn run() {
             storage_read,
             storage_write,
             storage_remove,
-            list_pdfs
+            list_pdfs,
+            transcribe::whisper_status,
+            transcribe::whisper_setup,
+            transcribe::whisper_transcribe
         ])
         .run(tauri::generate_context!())
         .expect("error while running Nito");

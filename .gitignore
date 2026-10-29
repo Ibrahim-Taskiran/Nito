@@ -21,3 +21,6 @@ recordings/
 src-tauri/target
 dist
 graphify-out/
+*.wav
+whisper/
+ggml-*.bin
