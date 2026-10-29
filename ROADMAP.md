@@ -96,7 +96,7 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - pdf.js with lazy page rendering and smooth zoom.
    - Select text to highlight it with one of 5 colour labels: Önemli, Sınav, Tanım, Örnek, Soru.
    - Comments on highlights, and an annotation list panel.
-7. ⬜ **Audio recording while a PDF is open (must have):**
+7. ✅ **Audio recording while a PDF is open (must have):**
    - MediaRecorder: webm/opus on Windows, mp4/aac on iPad.
    - Timer and level meter, with pause and resume.
    - Each highlight made during a recording gets a `recording_mark`.

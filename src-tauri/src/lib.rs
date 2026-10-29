@@ -8,7 +8,10 @@ use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{ipc::Response, Manager, State};
+use tauri::{
+    ipc::{InvokeBody, Request, Response},
+    Manager, State,
+};
 
 struct AppState {
     db: Mutex<rusqlite::Connection>,
@@ -85,6 +88,25 @@ fn storage_read(state: State<AppState>, rel: String) -> Result<Response, String>
     Ok(Response::new(bytes))
 }
 
+/// Writes raw bytes (the request body) to `<storage>/<rel>`; `rel` comes in the `x-rel` header.
+/// Raw bodies avoid turning large recordings into JSON number arrays.
+#[tauri::command]
+fn storage_write(state: State<AppState>, request: Request) -> Result<(), String> {
+    let rel = request
+        .headers()
+        .get("x-rel")
+        .and_then(|v| v.to_str().ok())
+        .ok_or("Missing x-rel header")?;
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected a raw body".into());
+    };
+    let dest = state.storage_path(rel)?;
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(&dest, bytes).map_err(|e| format!("Write failed: {e}"))
+}
+
 #[tauri::command]
 fn storage_remove(state: State<AppState>, rel: String) -> Result<(), String> {
     let p = state.storage_path(&rel)?;
@@ -123,6 +145,7 @@ pub fn run() {
             file_hash,
             storage_copy,
             storage_read,
+            storage_write,
             storage_remove,
             list_pdfs
         ])

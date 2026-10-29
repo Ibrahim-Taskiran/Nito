@@ -1,5 +1,6 @@
 <script lang="ts">
   import { LABELS, labelInfo } from "../../core/labels";
+  import { formatTimestamp } from "../../core/recording";
   import type { LabelKey } from "../../core/types";
   import type { Reader } from "../reader.svelte";
   let { reader, onjump }: { reader: Reader; onjump: (page: number) => void } = $props();
@@ -19,6 +20,12 @@
         <select aria-label="Etiket" value={a.label} onchange={(e) => reader.update(a.id, { label: e.currentTarget.value as LabelKey })}>
           {#each LABELS as l (l.key)}<option value={l.key}>{l.name}</option>{/each}
         </select>
+        {#if reader.marks.get(a.id)}
+          {@const m = reader.marks.get(a.id)!}
+          <button class="play" aria-pressed={reader.playingId === a.id} onclick={() => reader.play(a.id)}>
+            {reader.playingId === a.id ? "❚❚" : "▶"} {formatTimestamp(m.offsetSeconds)}
+          </button>
+        {/if}
         <button class="del" onclick={() => reader.remove(a.id)}>Sil</button>
       </div>
     </article>
@@ -39,6 +46,8 @@
   textarea { width: 100%; margin-top: 8px; resize: vertical; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
   .row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
   select { min-height: 32px; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
+  .play { min-height: 32px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px; padding: 0 8px; cursor: pointer; font-variant-numeric: tabular-nums; margin-left: auto; margin-right: 4px; }
+  .play[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
   .del { min-height: 32px; border: 0; background: transparent; color: var(--danger); cursor: pointer; padding: 0 8px; border-radius: 6px; }
   .del:hover { background: var(--surface-2); }
   .hint { color: var(--text-2); margin: 4px; }

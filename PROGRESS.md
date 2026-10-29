@@ -2,6 +2,19 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Phase 1 step 7: recording while reading
+- Owner confirmed the reader works in the Tauri window, and asked agents to finish the remaining steps alone, testing themselves.
+- **Done:**
+  - Rust `storage_write`: raw request body, path in the `x-rel` header (no JSON byte arrays for big recordings). `Storage.write` in both adapters.
+  - `src/ui/recorder.svelte.ts`: MediaRecorder (mime from `pickRecordingMime`, 64 kbps, 1 s chunks), level meter via AnalyserNode, `RecordingClock` for pause-free offsets. Saves to `recordings/<id>.<ext>` on stop; deletes the row if the save fails. Closing the reader stops and saves.
+  - Reader: highlight made while recording gets a `recording_mark`. Panel shows "▶ mm:ss"; playback starts 2 s before the mark, second click pauses.
+  - `RecordBar.svelte`: Kaydet, timer, level meter, Duraklat/Sürdür, Durdur, error text (mic denied).
+  - `scripts/e2e-record.mjs`: Edge with a fake microphone. Records 3 s, highlights, pauses 1.5 s, stops, checks the mark is 00:03 and playback starts.
+- **Checks:** svelte-check 0 errors, vitest 11 passed, `cargo check` clean, e2e-record passed.
+- **Not verified:** microphone permission inside the Tauri window (needs a person at the machine). iPad/Android permission strings are Phase 3.
+- **Next step:** Phase 1 step 8 (theme switch), 9 (licence checks), 10 (`tauri build` installer).
+- **Known problems:** a crash during recording loses the unsaved audio (chunks are kept in memory until stop).
+
 ## 2026-10-29 — Phase 1 step 6: PDF reader with highlights
 - **Done:**
   - Owner tested `npm run tauri dev`: picker, folder and drag-drop add all work (step 3 ✅).

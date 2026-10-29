@@ -36,6 +36,7 @@ export function createTauriPlatform(): Platform {
     db,
     storage: {
       read: async (rel) => new Uint8Array(await invoke<ArrayBuffer>("storage_read", { rel })),
+      write: (rel, data) => invoke("storage_write", data, { headers: { "x-rel": rel } }),
       remove: (rel) => invoke("storage_remove", { rel }),
     },
     pickers: {

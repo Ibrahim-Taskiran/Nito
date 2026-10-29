@@ -42,6 +42,7 @@ export async function createWebPlatform(): Promise<Platform> {
         if (!b) throw new Error(`Dosya yok: ${rel}`);
         return b.slice(); // pdf.js takes ownership of the buffer it gets
       },
+      write: async (rel, data) => void files.set(rel, data.slice()),
       remove: async (rel) => void files.delete(rel),
     },
     pickers: { pickPdfs: () => pick(false), pickFolder: (recursive) => pick(true, recursive) },

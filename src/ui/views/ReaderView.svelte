@@ -9,6 +9,7 @@
   import { Reader } from "../reader.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
   import PdfPage from "./PdfPage.svelte";
+  import RecordBar from "./RecordBar.svelte";
 
   let { lib, doc }: { lib: Library; doc: Document } = $props();
 
@@ -106,6 +107,7 @@
   <header class="toolbar">
     <Button variant="ghost" onclick={() => lib.close()}>← Kütüphane</Button>
     <h1 title={doc.title}>{doc.title}</h1>
+    <RecordBar recorder={reader.recorder} />
     <span class="pages">{current} / {sizes.length || "–"}</span>
     <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}>−</IconButton>
     <span class="zoom">{Math.round(scale * 100)}%</span>

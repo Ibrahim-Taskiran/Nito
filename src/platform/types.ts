@@ -5,6 +5,7 @@ import type { SourceFile } from "../core/library/addDocuments";
 export interface Storage {
   /** Bytes of a file inside app storage (path relative to the storage dir). */
   read(rel: string): Promise<Uint8Array>;
+  write(rel: string, data: Uint8Array): Promise<void>;
   remove(rel: string): Promise<void>;
 }
 
