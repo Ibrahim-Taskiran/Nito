@@ -1,5 +1,6 @@
 mod db;
 mod files;
+#[cfg(desktop)]
 mod transcribe;
 
 use serde::Serialize;
@@ -125,7 +126,7 @@ fn list_pdfs(paths: Vec<String>, recursive: bool) -> Result<Vec<files::PdfEntry>
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
         .setup(|app| {
@@ -140,20 +141,36 @@ pub fn run() {
             });
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            db_run,
-            db_exec,
-            db_all,
-            file_hash,
-            storage_copy,
-            storage_read,
-            storage_write,
-            storage_remove,
-            list_pdfs,
-            transcribe::whisper_status,
-            transcribe::whisper_setup,
-            transcribe::whisper_transcribe
-        ])
+        ;
+    #[cfg(desktop)]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        db_run,
+        db_exec,
+        db_all,
+        file_hash,
+        storage_copy,
+        storage_read,
+        storage_write,
+        storage_remove,
+        list_pdfs,
+        transcribe::whisper_status,
+        transcribe::whisper_setup,
+        transcribe::whisper_transcribe
+    ]);
+    // Mobile: no local Whisper (desktop-only), so those commands are absent.
+    #[cfg(mobile)]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        db_run,
+        db_exec,
+        db_all,
+        file_hash,
+        storage_copy,
+        storage_read,
+        storage_write,
+        storage_remove,
+        list_pdfs
+    ]);
+    builder
         .run(tauri::generate_context!())
         .expect("error while running Nito");
 }

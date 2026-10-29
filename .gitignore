@@ -25,3 +25,13 @@ graphify-out/
 *.wav
 whisper/
 ggml-*.bin
+
+# Android build outputs (project sources in src-tauri/gen/android are kept)
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/build/
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/local.properties
+src-tauri/gen/android/**/*.keystore
+src-tauri/gen/android/**/*.jks
+*.apk
+*.aab
