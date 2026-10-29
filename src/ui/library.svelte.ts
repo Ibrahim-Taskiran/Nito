@@ -22,6 +22,8 @@ export class Library {
   split = $state<[Document, Document] | null>(null);
   /** Document open in the reader. */
   opened = $state<Document | null>(null);
+  /** Annotation the reader should scroll to and focus once it loads (note back-links). */
+  pendingFocus = $state<{ documentId: Id; annotationId: Id; page: number } | null>(null);
   /** Running add batch; null when idle. */
   adding = $state<{ done: number; total: number; abort: AbortController } | null>(null);
   /** Summary of the last finished batch. */

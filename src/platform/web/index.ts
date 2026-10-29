@@ -46,6 +46,15 @@ export async function createWebPlatform(): Promise<Platform> {
       remove: async (rel) => void files.delete(rel),
     },
     pickers: { pickPdfs: () => pick(false), pickFolder: (recursive) => pick(true, recursive) },
+    // The browser has no real folder paths, so watched folders never find files here.
+    listFolder: async () => [],
+    async saveExport(name, text) {
+      const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+      const a = Object.assign(document.createElement("a"), { href: url, download: name });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return null;
+    },
     async onDrop(cb) {
       const over = (e: DragEvent) => e.preventDefault();
       const drop = async (e: DragEvent) => {
