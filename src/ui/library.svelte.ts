@@ -7,6 +7,9 @@ import type { Platform } from "../platform/types";
 
 type Counts = Awaited<ReturnType<Repo["counts"]>>;
 
+/** Main area shown next to the sidebar. Each Phase 2 group owns one. */
+export type Section = "library" | "study" | "notes" | "ai";
+
 export class Library {
   readonly repo: Repo;
   courses = $state<Course[]>([]);
@@ -14,6 +17,9 @@ export class Library {
   counts = $state<Counts>({ all: 0, unread: 0, favorites: 0, byCourse: {} });
   filter = $state<LibraryFilter>({ kind: "all" });
   selectedId = $state<Id | null>(null);
+  section = $state<Section>("library");
+  /** Two documents side by side (Phase 2D); wins over `opened`. */
+  split = $state<[Document, Document] | null>(null);
   /** Document open in the reader. */
   opened = $state<Document | null>(null);
   /** Running add batch; null when idle. */
@@ -36,6 +42,7 @@ export class Library {
   }
 
   async setFilter(f: LibraryFilter): Promise<void> {
+    this.section = "library";
     this.filter = f;
     this.selectedId = null;
     await this.refresh();

@@ -6,6 +6,10 @@
   import DocumentList from "./ui/views/DocumentList.svelte";
   import ReaderView from "./ui/views/ReaderView.svelte";
   import Sidebar from "./ui/views/Sidebar.svelte";
+  import AiView from "./ui/views/AiView.svelte";
+  import NotesView from "./ui/views/NotesView.svelte";
+  import SplitView from "./ui/views/SplitView.svelte";
+  import StudyView from "./ui/views/StudyView.svelte";
   import type { Library } from "./ui/library.svelte";
 
   let { lib }: { lib: Library } = $props();
@@ -25,7 +29,9 @@
   <Button onclick={addFolder}>Klasör ekle</Button>
 {/snippet}
 
-{#if lib.opened}
+{#if lib.split}
+  <SplitView {lib} docs={lib.split} />
+{:else if lib.opened}
   {#key lib.opened.id}<ReaderView {lib} doc={lib.opened} />{/key}
 {:else if lib.counts.all === 0}
   <main class="empty">
@@ -37,13 +43,21 @@
 {:else}
   <div class="shell">
     <Sidebar {lib} />
-    <main class="center">
-      <header class="toolbar">
-        <div class="row">{@render addButtons()}</div>
-      </header>
-      <DocumentList {lib} />
-    </main>
-    <DetailPanel {lib} />
+    {#if lib.section === "study"}
+      <StudyView {lib} />
+    {:else if lib.section === "notes"}
+      <NotesView {lib} />
+    {:else if lib.section === "ai"}
+      <AiView {lib} />
+    {:else}
+      <main class="center">
+        <header class="toolbar">
+          <div class="row">{@render addButtons()}</div>
+        </header>
+        <DocumentList {lib} />
+      </main>
+      <DetailPanel {lib} />
+    {/if}
   </div>
 {/if}
 <AddProgress {lib} />

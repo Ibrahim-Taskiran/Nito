@@ -3,6 +3,7 @@
   import { formatTimestamp } from "../../core/recording";
   import type { LabelKey } from "../../core/types";
   import type { Reader } from "../reader.svelte";
+  import RecordingList from "./RecordingList.svelte";
   let { reader, onjump }: { reader: Reader; onjump: (page: number) => void } = $props();
 </script>
 
@@ -32,6 +33,7 @@
   {:else}
     <p class="hint">Metni seçip bir etiket seçerek vurgu ekleyin.</p>
   {/each}
+  <RecordingList {reader} />
 </aside>
 
 <style>

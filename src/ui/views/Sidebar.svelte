@@ -1,11 +1,16 @@
 <script lang="ts">
   import type { LibraryFilter } from "../../core/types";
   import ThemeSwitch from "../components/ThemeSwitch.svelte";
-  import type { Library } from "../library.svelte";
+  import type { Library, Section } from "../library.svelte";
   let { lib }: { lib: Library } = $props();
 
   const same = (a: LibraryFilter, b: LibraryFilter) =>
     a.kind === b.kind && (a.kind !== "course" || (b.kind === "course" && a.courseId === b.courseId));
+  const tools: { s: Section; name: string }[] = [
+    { s: "study", name: "Çalışma Merkezi" },
+    { s: "notes", name: "Notlar" },
+    { s: "ai", name: "Yapay zekâ" },
+  ];
   const fixed = $derived([
     { f: { kind: "all" } as LibraryFilter, name: "Tümü", count: lib.counts.all },
     { f: { kind: "unread" } as LibraryFilter, name: "Okunmamış", count: lib.counts.unread },
@@ -16,15 +21,21 @@
 <nav class="sidebar" aria-label="Kütüphane">
   <div class="brand">Nito</div>
   {#each fixed as item (item.name)}
-    <button class="item" class:active={same(lib.filter, item.f)} onclick={() => lib.setFilter(item.f)}>
+    <button class="item" class:active={lib.section === "library" && same(lib.filter, item.f)} onclick={() => lib.setFilter(item.f)}>
       <span>{item.name}</span><span class="count">{item.count}</span>
+    </button>
+  {/each}
+  <div class="heading">Çalışma</div>
+  {#each tools as t (t.s)}
+    <button class="item" class:active={lib.section === t.s} onclick={() => (lib.section = t.s)}>
+      <span>{t.name}</span>
     </button>
   {/each}
   {#if lib.courses.length}
     <div class="heading">Dersler</div>
     {#each lib.courses as c (c.id)}
       {@const f = { kind: "course", courseId: c.id } as LibraryFilter}
-      <button class="item" class:active={same(lib.filter, f)} onclick={() => lib.setFilter(f)}>
+      <button class="item" class:active={lib.section === "library" && same(lib.filter, f)} onclick={() => lib.setFilter(f)}>
         <span class="name">{c.name}</span><span class="count">{lib.counts.byCourse[c.id] ?? 0}</span>
       </button>
     {/each}
