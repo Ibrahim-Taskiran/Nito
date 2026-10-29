@@ -1,0 +1,51 @@
+// Tauri platform: rusqlite, app storage and native dialogs through Rust commands (src-tauri/src).
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-dialog";
+import type { Row, SqlDb } from "../../core/db/sql";
+import type { SourceFile } from "../../core/library/addDocuments";
+import type { Platform } from "../types";
+
+interface PdfEntry {
+  path: string;
+  name: string;
+  folder: string | null;
+}
+
+const db: SqlDb = {
+  run: (sql, params = []) => invoke("db_run", { sql, params }),
+  exec: (sql) => invoke("db_exec", { sql }),
+  all: <T = Row>(sql: string, params = []) => invoke<T[]>("db_all", { sql, params }),
+};
+
+const source = (e: PdfEntry): SourceFile => ({
+  name: e.name,
+  folder: e.folder,
+  hash: () => invoke("file_hash", { path: e.path }),
+  store: (rel) => invoke("storage_copy", { src: e.path, rel }),
+});
+
+const listPdfs = async (paths: string[], recursive: boolean) =>
+  paths.length ? (await invoke<PdfEntry[]>("list_pdfs", { paths, recursive })).map(source) : [];
+
+const asList = (v: string | string[] | null) => (v == null ? [] : Array.isArray(v) ? v : [v]);
+
+export function createTauriPlatform(): Platform {
+  return {
+    name: "tauri",
+    db,
+    storage: {
+      read: async (rel) => new Uint8Array(await invoke<ArrayBuffer>("storage_read", { rel })),
+      remove: (rel) => invoke("storage_remove", { rel }),
+    },
+    pickers: {
+      pickPdfs: async () => listPdfs(asList(await open({ multiple: true, filters: [{ name: "PDF", extensions: ["pdf"] }] })), false),
+      pickFolder: async (recursive) => listPdfs(asList(await open({ directory: true })), recursive),
+    },
+    async onDrop(cb) {
+      return getCurrentWebview().onDragDropEvent(async (e) => {
+        if (e.payload.type === "drop") cb(await listPdfs(e.payload.paths, true));
+      });
+    },
+  };
+}

@@ -14,7 +14,7 @@ tests/.out/
 storage/
 recordings/
 *.pdf
-!tests/fixtures/*.pdf
+!tests/fixtures/**/*.pdf
 *.webm
 *.m4a
 .env

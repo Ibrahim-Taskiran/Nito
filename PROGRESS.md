@@ -2,6 +2,22 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Phase 1 steps 1–5: core, adapters, add flow, library UI
+- **Done:**
+  - Importer leftovers removed (`source_key` columns, legacy colour map, `import:cli` script). Migration 001 was never shipped, so it was edited in place.
+  - `src/core/library/addDocuments.ts`: one add flow for picker, folder and drag-drop. Hash, duplicate skip (DB and within batch), copy to `docs/<hash>.pdf`, clean title and week, subfolder → course, progress, cancel, summary text.
+  - `src/platform/`: port in `types.ts`; web adapter (sql.js in memory, file input, folder input, drag-drop with folders); Tauri adapter (invoke commands, dialog plugin, webview drag-drop).
+  - `src-tauri/`: Tauri 2 + rusqlite (bundled) + sha2. Commands `db_run`, `db_exec`, `db_all`, `file_hash`, `storage_copy`, `storage_read`, `storage_remove`, `list_pdfs`. DB at `<app data>/nito.sqlite`, files in `<app data>/storage/`. Icons generated from `nito.ico`.
+  - UI: tokens (light/dark), Button, IconButton, Dialog, ProgressBar; empty state, sidebar with counts, week-grouped list (read dot, star), detail panel, add progress dialog and summary toast.
+  - TypeScript pinned to 6 (svelte-check does not support TS 7 alone).
+  - Fixtures: `node scripts/make-fixtures.mjs` writes tiny PDFs to `tests/fixtures/`. Screenshots: `npm run screenshots` (needs `npm run dev`; uses installed Edge).
+- **Checks:** `npx tsc --noEmit` clean, `svelte-check` 0 errors, vitest 8 passed, `cargo check` clean, `cargo test --lib` 3 passed, `vite build` ok, Playwright add flow ok in light and dark (`docs/screenshots/`).
+- **Half done:** step 3 is not tested inside the real Tauri window (`npm run tauri dev` not run yet). Step 9: licence scripts (`npm run licenses`, `cargo deny`) still missing.
+- **Next step:**
+  1. Run `npm run tauri dev`, add PDFs by picker, folder and drag-drop, confirm rows and files in app data.
+  2. Phase 1 step 6: PDF reader (pdf.js, lazy pages, highlights with 5 labels).
+- **Known problems:** sql.js wasm (685 kB) is still copied into `dist/` for the Tauri build, though only the web adapter loads it. No "target course" picker yet: files without a folder go to the course selected in the sidebar.
+
 ## 2026-10-29 — Decision from the owner: empty library and bulk add
 - The app ships with no PDFs. Users add their own.
 - Removed `src/core/importer/legacyLibrary.ts`. There is no importer for the owner's personal library (`C:\Users\ibrah\Nito`), and agents must not touch that library.

@@ -64,15 +64,15 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
 - ✅ GitHub repo: https://github.com/Ibrahim-Taskiran/Nito_01 (private, branch `main`).
 
 ### Phase 1: Foundation 🟨
-1. 🟨 Scaffold: Tauri 2, Svelte 5, TypeScript and Vite. README covering dev, test and build, plus notes for `tauri ios init` / `tauri android init`.
-2. 🟨 Our own schema with versioned migrations (`src/core/db/migrations/`):
+1. ✅ Scaffold: Tauri 2, Svelte 5, TypeScript and Vite. README covering dev, test and build, plus notes for `tauri ios init` / `tauri android init`.
+2. ✅ Our own schema with versioned migrations (`src/core/db/migrations/`):
    - course
    - document: title, week, file, hash, read status, favourite
    - annotation: page, rects, colour label, text, comment
    - note: kind = live / template / digest / ai / transcript / free
    - recording, recording_mark (annotation ↔ offset in seconds)
    - tag, document_tag
-3. ⬜ Adding PDFs (`src/core/library/addDocuments.ts` plus the UI):
+3. 🟨 Adding PDFs (`src/core/library/addDocuments.ts` plus the UI):
    - **Single add:** a "PDF ekle" button with a file picker.
    - **Bulk add:**
      - Pick many files at once.
@@ -87,8 +87,8 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - Progress bar with a cancel button for big batches. At the end, show a summary: "X eklendi, Y zaten vardı, Z hatalı".
    - First run: an empty-state screen with "PDF ekle" and "Klasör ekle".
    - Removed: the old `src/core/importer/legacyLibrary.ts` (importer for the owner's personal library).
-4. ⬜ Platform adapters: Tauri (rusqlite commands, files, dialogs) and web/in-memory.
-5. ⬜ Library UI:
+4. ✅ Platform adapters: Tauri (rusqlite commands, files, dialogs) and web/in-memory.
+5. ✅ Library UI:
    - Sidebar: courses, Tümü, Okunmamış, Favoriler.
    - Document list grouped by week, with a read-status dot and a favourite star.
    - Detail panel.
@@ -106,7 +106,7 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
      - Later for iPad: add `NSMicrophoneUsageDescription`.
      - Later for Android: add `RECORD_AUDIO`.
 8. ⬜ App icon from nito.ico, and light and dark themes.
-9. ⬜ Tests and checks:
+9. 🟨 Tests and checks:
    - vitest for `src/core`.
    - Playwright screenshots of the main screens in light and dark, saved to `docs/screenshots/`.
    - `npm run licenses` and `cargo deny` licence checks.
