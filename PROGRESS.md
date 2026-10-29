@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 3.5 richer UI started (wip)
+- **Why:** the owner said the UI looks empty and could not find audio recording (the "● Kaydet" button reads as "Save").
+- **Done:** `@lucide/svelte` (ISC) added for icons (d3719a1). Owner-only todos saved to Claude memory (asked at the next session start).
+- **Running:** three worktree agents (branches under `.claude/worktrees/`): Reader (migration 006), Library (007), Home + Plan (008). Scope in ROADMAP Phase 3.5. The Home agent also adds a copy of 007 to its branch: keep the Library one at merge.
+- **Next step:** merge the three branches in order Library, Reader, Home; fix `migrate.ts` order `[..., m005, m006_ink_kinds, m007_reading, m008_plan]`, the package.json e2e chain and e2e selectors; run svelte-check, vitest, `npm run e2e`; update this entry; push. If the agent branches are lost, redo from the ROADMAP Phase 3.5 list.
+- **Owner asked:** shut down the PC when the work is done.
+
 ## 2026-10-30 — Android set up (APK blocked), backup/restore, real Tauri smoke test
 - **Android (975fbf8):** cmdline-tools + NDK 27.2.12479018 installed, Rust Android targets added, user env vars ANDROID_HOME / NDK_HOME / JAVA_HOME set. `tauri android init` done (`src-tauri/gen/android`), RECORD_AUDIO + MODIFY_AUDIO_SETTINGS in the manifest. Whisper Rust module and its crates are desktop-only (`#[cfg(desktop)]`, target-specific deps). See `docs/android.md`.
   - **Blocked:** `tauri android build` fails with "Creation symbolic link is not allowed for this system". The owner must turn on Windows Developer Mode (Settings > System > For developers). Then: `npx tauri android build --apk --debug --target x86_64` (emulator image android-37 x86_64 is installed) or `--target aarch64` for a device.
