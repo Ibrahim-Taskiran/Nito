@@ -20,3 +20,4 @@ recordings/
 .env
 src-tauri/target
 dist
+graphify-out/

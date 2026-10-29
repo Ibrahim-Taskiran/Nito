@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — graphify set up
+- Owner ran `graphify claude install`: graphify section in CLAUDE.md, hooks in `.claude/settings.json`.
+- Graph built with `graphify update . --no-cluster` and `graphify cluster-only . --no-label` (357 nodes, 17 communities).
+- `graphify-out/` is gitignored (derived). Rebuild it locally with the same two commands.
+- Port 1420 clash during the owner's `npm run tauri dev`: a leftover Vite from the screenshot run held it. It is stopped. Stop `npm run dev` before `tauri dev`.
+- **Next step:** unchanged. Owner tests `npm run tauri dev`, then Phase 1 step 6 (PDF reader).
+
 ## 2026-10-29 — Phase 1 steps 1–5: core, adapters, add flow, library UI
 - **Done:**
   - Importer leftovers removed (`source_key` columns, legacy colour map, `import:cli` script). Migration 001 was never shipped, so it was edited in place.
