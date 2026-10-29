@@ -1,6 +1,7 @@
 // Platform port. One implementation per host: Tauri (real app) and web (dev, tests).
 import type { SqlDb } from "../core/db/sql";
 import type { SourceFile } from "../core/library/addDocuments";
+import type { Transcriber } from "./transcriber";
 
 export interface Storage {
   /** Bytes of a file inside app storage (path relative to the storage dir). */
@@ -21,6 +22,8 @@ export interface Platform {
   db: SqlDb;
   storage: Storage;
   pickers: Pickers;
+  /** Speech-to-text; undefined where it is not available. See canTranscribe. */
+  transcriber?: Transcriber;
   /** Calls back with dropped PDFs (files or folders). Returns an unsubscribe function. */
   onDrop(cb: (files: SourceFile[]) => void): Promise<() => void>;
 }

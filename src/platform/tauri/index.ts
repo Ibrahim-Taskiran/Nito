@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { Row, SqlDb } from "../../core/db/sql";
 import type { SourceFile } from "../../core/library/addDocuments";
 import type { Platform } from "../types";
+import { tauriTranscriber } from "./transcriber";
 
 interface PdfEntry {
   path: string;
@@ -34,6 +35,7 @@ export function createTauriPlatform(): Platform {
   return {
     name: "tauri",
     db,
+    transcriber: tauriTranscriber,
     storage: {
       read: async (rel) => new Uint8Array(await invoke<ArrayBuffer>("storage_read", { rel })),
       write: (rel, data) => invoke("storage_write", data, { headers: { "x-rel": rel } }),

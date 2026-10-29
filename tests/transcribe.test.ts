@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { TranscriptStore } from "../src/core/transcribe/store";
-import { groupParagraphs, parseClock, parseWhisperJson, transcriptMarkdown } from "../src/core/transcribe/transcript";
+import {
+  groupParagraphs, parseClock, parseTimestamp, parseWhisperJson, transcriptMarkdown, transcriptParagraphs,
+} from "../src/core/transcribe/transcript";
 import { encodeWav, mixToMono } from "../src/core/transcribe/wav";
 import { freshRepo } from "./helpers";
 
@@ -70,6 +72,17 @@ describe("transcript markdown", () => {
     expect(md.match(/^## \d\d:\d\d$/gm)!.length).toBeGreaterThanOrEqual(2);
     expect(md).toContain("Normalization removes repeated data.");
     expect(transcriptMarkdown([])).toContain("konuşma bulunamadı");
+  });
+});
+
+describe("transcript paragraphs", () => {
+  it("reads the note body back", () => {
+    expect(parseTimestamp("1:02:05")).toBe(3725);
+    expect(parseTimestamp("01:15")).toBe(75);
+    expect(parseTimestamp("x")).toBeNaN();
+    const segs = parseWhisperJson(fixture);
+    expect(transcriptParagraphs(transcriptMarkdown(segs))).toEqual(groupParagraphs(segs).map((p) => ({ ...p, start: Math.floor(p.start) })));
+    expect(transcriptParagraphs("düz metin")).toEqual([]);
   });
 });
 

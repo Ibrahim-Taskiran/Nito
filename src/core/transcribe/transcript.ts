@@ -69,6 +69,24 @@ export function transcriptMarkdown(segments: readonly Segment[]): string {
   return paras.map((p) => `## ${formatTimestamp(p.start)}\n\n${p.text}\n`).join("\n");
 }
 
+/** "01:15" -> 75, "1:02:05" -> 3725; NaN when not a timestamp. */
+export function parseTimestamp(t: string): number {
+  const m = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(t.trim());
+  return m ? Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]) : NaN;
+}
+
+/** Reads a transcript note body back into paragraphs (for the in-reader preview). */
+export function transcriptParagraphs(md: string): Paragraph[] {
+  const out: Paragraph[] = [];
+  for (const block of md.split(/^## /m).slice(1)) {
+    const nl = block.indexOf("\n");
+    const start = parseTimestamp(nl < 0 ? block : block.slice(0, nl));
+    const text = nl < 0 ? "" : block.slice(nl + 1).trim();
+    if (Number.isFinite(start) && text) out.push({ start, text });
+  }
+  return out;
+}
+
 /** "Ders kaydı 29.10.2026 14:05 — yazıya döküm" */
 export function transcriptTitle(startedAt: string): string {
   const d = new Date(startedAt);

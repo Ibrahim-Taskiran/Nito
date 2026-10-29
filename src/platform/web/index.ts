@@ -4,6 +4,7 @@ import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import type { SourceFile } from "../../core/library/addDocuments";
 import type { Platform } from "../types";
 import { sqljsDb } from "./sqljsDb";
+import { webTranscriber } from "./transcriber";
 
 const toHex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -36,6 +37,7 @@ export async function createWebPlatform(): Promise<Platform> {
   return {
     name: "web",
     db,
+    transcriber: webTranscriber(),
     storage: {
       read: async (rel) => {
         const b = files.get(rel);
