@@ -11,6 +11,7 @@ Newest entry first. Each entry records: what was finished, the files touched, th
   - UI: tokens (light/dark), Button, IconButton, Dialog, ProgressBar; empty state, sidebar with counts, week-grouped list (read dot, star), detail panel, add progress dialog and summary toast.
   - TypeScript pinned to 6 (svelte-check does not support TS 7 alone).
   - Fixtures: `node scripts/make-fixtures.mjs` writes tiny PDFs to `tests/fixtures/`. Screenshots: `npm run screenshots` (needs `npm run dev`; uses installed Edge).
+- **Commit:** 07186bf.
 - **Checks:** `npx tsc --noEmit` clean, `svelte-check` 0 errors, vitest 8 passed, `cargo check` clean, `cargo test --lib` 3 passed, `vite build` ok, Playwright add flow ok in light and dark (`docs/screenshots/`).
 - **Half done:** step 3 is not tested inside the real Tauri window (`npm run tauri dev` not run yet). Step 9: licence scripts (`npm run licenses`, `cargo deny`) still missing.
 - **Next step:**
