@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+src-tauri/target/
+src-tauri/gen/schemas/
+test-results/
+playwright-report/
+tests/.out/
+*.log
+# user data must never be committed
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+storage/
+recordings/
+*.pdf
+!tests/fixtures/*.pdf
+*.webm
+*.m4a
+.env
+src-tauri/target
+dist
