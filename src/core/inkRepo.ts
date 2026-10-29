@@ -1,6 +1,6 @@
 // Data access for handwriting strokes.
 import type { Row, SqlDb } from "./db/sql";
-import type { InkPoint, InkStroke } from "./ink";
+import { asInkKind, type InkKind, type InkPoint, type InkStroke } from "./ink";
 import type { Id } from "./types";
 
 function parsePoints(json: string): InkPoint[] {
@@ -19,6 +19,7 @@ const toStroke = (r: Row): InkStroke => ({
   color: String(r.color),
   width: Number(r.width),
   points: parsePoints(String(r.points ?? "[]")),
+  kind: asInkKind(r.kind),
 });
 
 export class InkRepo {
@@ -28,10 +29,10 @@ export class InkRepo {
     return (await this.db.all("SELECT * FROM ink_stroke WHERE document_id = ? ORDER BY id", [documentId])).map(toStroke);
   }
 
-  async add(s: Omit<InkStroke, "id">): Promise<Id> {
+  async add(s: Omit<InkStroke, "id" | "kind"> & { kind?: InkKind }): Promise<Id> {
     return (await this.db.run(
-      "INSERT INTO ink_stroke (document_id, page, color, width, points) VALUES (?, ?, ?, ?, ?)",
-      [s.documentId, s.page, s.color, s.width, JSON.stringify(s.points)],
+      "INSERT INTO ink_stroke (document_id, page, color, width, points, kind) VALUES (?, ?, ?, ?, ?, ?)",
+      [s.documentId, s.page, s.color, s.width, JSON.stringify(s.points), s.kind ?? "pen"],
     )).lastId;
   }
 

@@ -7,6 +7,9 @@ export interface InkPoint {
   p: number;
 }
 
+/** Saved pen kinds. The laser pointer is never saved, so it is not here. */
+export type InkKind = "pen" | "pencil" | "highlighter";
+
 export interface InkStroke {
   id: number;
   documentId: number;
@@ -15,15 +18,82 @@ export interface InkStroke {
   /** Base width as a fraction of the page width. */
   width: number;
   points: InkPoint[];
+  kind: InkKind;
 }
 
-export const INK_COLORS = [
+export interface InkColor {
+  color: string;
+  name: string;
+}
+
+/** Ballpoint colours: dark, saturated, readable on white paper. */
+const PEN_COLORS: readonly InkColor[] = [
   { color: "#1f2a44", name: "Koyu" },
+  { color: "#000000", name: "Siyah" },
   { color: "#c0392b", name: "Kırmızı" },
   { color: "#2f6fb0", name: "Mavi" },
-] as const;
+  { color: "#1e8449", name: "Yeşil" },
+  { color: "#7d3c98", name: "Mor" },
+  { color: "#d35400", name: "Turuncu" },
+  { color: "#b03a6f", name: "Pembe" },
+  { color: "#117a8b", name: "Turkuaz" },
+  { color: "#6e4b2a", name: "Kahverengi" },
+];
 
-export const INK_WIDTH = 0.0025;
+/** Pencil: graphite greys first, then soft coloured pencils. */
+const PENCIL_COLORS: readonly InkColor[] = [
+  { color: "#4a4a4a", name: "Grafit" },
+  { color: "#777777", name: "Gri" },
+  { color: "#222222", name: "Siyah" },
+  { color: "#a04238", name: "Kırmızı" },
+  { color: "#3d6a99", name: "Mavi" },
+  { color: "#3f7d4f", name: "Yeşil" },
+  { color: "#6d4f8c", name: "Mor" },
+  { color: "#b5652b", name: "Turuncu" },
+  { color: "#2f7f86", name: "Turkuaz" },
+  { color: "#7a5a3a", name: "Kahverengi" },
+];
+
+/** Highlighter: bright, light colours that keep black text readable under multiply. */
+const HIGHLIGHTER_COLORS: readonly InkColor[] = [
+  { color: "#ffe14d", name: "Sarı" },
+  { color: "#8ce99a", name: "Yeşil" },
+  { color: "#ff9ecb", name: "Pembe" },
+  { color: "#8cc8ff", name: "Mavi" },
+  { color: "#ffb35c", name: "Turuncu" },
+  { color: "#c9a7ff", name: "Mor" },
+  { color: "#7ee8e0", name: "Turkuaz" },
+  { color: "#ff8a80", name: "Kırmızı" },
+  { color: "#d4f06a", name: "Fıstık" },
+  { color: "#d0d4d8", name: "Gri" },
+];
+
+export interface InkKindInfo {
+  kind: InkKind;
+  name: string;
+  colors: readonly InkColor[];
+  /** Base widths (page-width fraction) for the thin / medium / thick setting. */
+  widths: readonly [number, number, number];
+  opacity: number;
+  /** Pressure changes the width (pen, pencil) or not (highlighter). */
+  pressure: boolean;
+}
+
+export const INK_KINDS: Record<InkKind, InkKindInfo> = {
+  pen: { kind: "pen", name: "Tükenmez", colors: PEN_COLORS, widths: [0.0017, 0.0025, 0.004], opacity: 1, pressure: true },
+  pencil: { kind: "pencil", name: "Kurşun kalem", colors: PENCIL_COLORS, widths: [0.0009, 0.0014, 0.0022], opacity: 0.72, pressure: true },
+  highlighter: { kind: "highlighter", name: "Fosforlu", colors: HIGHLIGHTER_COLORS, widths: [0.009, 0.014, 0.02], opacity: 0.45, pressure: false },
+};
+
+export const INK_COLORS = PEN_COLORS;
+
+export const INK_WIDTH = INK_KINDS.pen.widths[1];
+
+/** Unknown kinds in old or foreign rows fall back to the ballpoint. */
+export const asInkKind = (v: unknown): InkKind => (v === "pencil" || v === "highlighter" ? v : "pen");
+
+/** Accepts only #rrggbb, so a stored colour can always go into an SVG attribute. */
+export const isHexColor = (v: unknown): v is string => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
 
 function distToSegment(p: InkPoint, a: InkPoint, b: InkPoint): number {
   const dx = b.x - a.x;
@@ -76,13 +146,16 @@ export function strokePath(points: InkPoint[], w: number, h: number): string {
 }
 
 /** Stroke width in pixels from base width and the average pressure (0.5 pressure = base). */
-export function strokeWidth(s: Pick<InkStroke, "width" | "points">, pageWidthPx: number): number {
+export function strokeWidth(s: Pick<InkStroke, "width" | "points"> & { kind?: InkKind }, pageWidthPx: number): number {
+  if (s.kind && !INK_KINDS[s.kind].pressure) return Math.max(1, s.width * pageWidthPx);
   const avg = s.points.reduce((a, q) => a + q.p, 0) / Math.max(1, s.points.length);
   return Math.max(1, s.width * pageWidthPx * (0.5 + avg));
 }
 
 /** True when `p` is within `radius` (page fraction) of the stroke. For the eraser. */
-export function hitsStroke(s: Pick<InkStroke, "points">, p: Pick<InkPoint, "x" | "y">, radius = 0.01): boolean {
+export function hitsStroke(s: Pick<InkStroke, "points"> & { width?: number }, p: Pick<InkPoint, "x" | "y">, radius = 0.01): boolean {
+  // Wide strokes (highlighter) are hit anywhere on their body, not only near the centre line.
+  radius = Math.max(radius, (s.width ?? 0) / 2);
   const q = { ...p, p: 0 };
   if (s.points.length === 1) return Math.hypot(s.points[0].x - p.x, s.points[0].y - p.y) <= radius;
   for (let i = 1; i < s.points.length; i++) if (distToSegment(q, s.points[i - 1], s.points[i]) <= radius) return true;
