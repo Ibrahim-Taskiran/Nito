@@ -15,7 +15,7 @@ Every agent working on this project must follow [CLAUDE.md](CLAUDE.md) and recor
 | PDF | pdf.js (`pdfjs-dist`, Apache-2.0) |
 | Database | SQLite through rusqlite with bundled SQLite. File `nito.sqlite` in the app data folder |
 | Tests | vitest for `src/core`, Playwright for screenshots and e2e |
-| Licences | Only MIT, Apache-2.0, BSD, ISC, Zlib and MPL-2.0. Never GPL, LGPL, AGPL, SSPL or non-commercial licences |
+| Licences | Only MIT, Apache-2.0, BSD, ISC, Zlib and MPL-2.0 (plus public-domain-like CC0, Unlicense, 0BSD, BSL-1.0 and the Unicode data licences used by Rust crates). Never GPL, LGPL, AGPL, SSPL or non-commercial licences |
 | Cost | No paid libraries or services |
 | Look | Calm and plain: neutral greys, one muted accent (slate blue around `#4f6d8f`), 8–12 px corners, light and dark themes |
 | Icon | `C:\Users\ibrah\Desktop\nito.ico` (really a JPEG on white). Make clean PNGs, then run `npx tauri icon` |
@@ -105,11 +105,11 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
      - Windows: WebView2 prompts by itself.
      - Later for iPad: add `NSMicrophoneUsageDescription`.
      - Later for Android: add `RECORD_AUDIO`.
-8. ⬜ App icon from nito.ico, and light and dark themes.
-9. 🟨 Tests and checks:
+8. ✅ App icon from nito.ico, and light and dark themes.
+9. ✅ Tests and checks:
    - vitest for `src/core`.
    - Playwright screenshots of the main screens in light and dark, saved to `docs/screenshots/`.
-   - `npm run licenses` and `cargo deny` licence checks.
+   - `npm run licenses`: one script checks shipped npm packages and every Rust crate (`cargo metadata`) against the allow list. No `cargo deny` install needed.
 10. ⬜ `tauri build` produces a Windows installer. Smoke test it.
 
 ### Phase 2: Study tools ⬜

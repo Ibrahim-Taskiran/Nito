@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Phase 1 steps 8 and 9: theme switch, licence check
+- **Done:**
+  - Theme switch (Sistem / Açık / Koyu) at the bottom of the sidebar; `src/ui/theme.ts` stores it in localStorage and sets `data-theme`. Favicon `public/icon.png` from the Tauri icons.
+  - `scripts/check-licenses.mjs` (`npm run licenses`): shipped npm tree + all 421 crates from `cargo metadata` against the allow list. Result: all allowed.
+  - Screenshots refreshed (`npm run screenshots`).
+- **Next step:** step 10, `npm run tauri build` and smoke test the installer.
+
 ## 2026-10-29 — Phase 1 step 7: recording while reading
 - Owner confirmed the reader works in the Tauri window, and asked agents to finish the remaining steps alone, testing themselves.
 - **Done:**

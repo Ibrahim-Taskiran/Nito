@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LibraryFilter } from "../../core/types";
+  import ThemeSwitch from "../components/ThemeSwitch.svelte";
   import type { Library } from "../library.svelte";
   let { lib }: { lib: Library } = $props();
 
@@ -28,10 +29,12 @@
       </button>
     {/each}
   {/if}
+  <div class="foot"><ThemeSwitch /></div>
 </nav>
 
 <style>
-  .sidebar { width: 232px; flex: none; padding: 12px 8px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; }
+  .sidebar { width: 232px; flex: none; display: flex; flex-direction: column; padding: 12px 8px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; }
+  .foot { margin-top: auto; padding: 16px 4px 4px; }
   .brand { font-weight: 600; font-size: 15px; padding: 6px 12px 14px; color: var(--accent); }
   .heading { font-size: 12px; color: var(--text-2); padding: 16px 12px 6px; text-transform: uppercase; letter-spacing: 0.04em; }
   .item {
