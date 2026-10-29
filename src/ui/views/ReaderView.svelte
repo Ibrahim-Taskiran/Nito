@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { LABELS } from "../../core/labels";
   import { normaliseRects, pagesToRender, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
@@ -37,6 +37,13 @@
       for (let n = 2; n <= pdf.numPages; n++) {
         const vp = (await pdf.getPage(n)).getViewport({ scale: 1 });
         if (vp.width !== first.width || vp.height !== first.height) sizes[n - 1] = { w: vp.width, h: vp.height };
+      }
+      const f = lib.pendingFocus;
+      if (f?.documentId === doc.id) {
+        lib.pendingFocus = null;
+        reader.focusedId = f.annotationId;
+        await tick();
+        goTo(f.page);
       }
     });
     return () => void reader.close();

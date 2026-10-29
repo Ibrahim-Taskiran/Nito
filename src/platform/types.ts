@@ -23,4 +23,8 @@ export interface Platform {
   pickers: Pickers;
   /** Calls back with dropped PDFs (files or folders). Returns an unsubscribe function. */
   onDrop(cb: (files: SourceFile[]) => void): Promise<() => void>;
+  /** PDFs of a known folder, without a dialog (watched folders). Web: always empty. */
+  listFolder(path: string, recursive: boolean): Promise<SourceFile[]>;
+  /** Saves a text export. Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
+  saveExport(name: string, text: string): Promise<string | null>;
 }
