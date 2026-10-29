@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Phase 1 done (step 10), Phase 2 started
+- **Step 10:** `npm run tauri build` ok (release 2 m 53 s). Installer `src-tauri/target/release/bundle/nsis/Nito_0.1.0_x64-setup.exe`, 2.51 MiB. Smoke test: silent install (`/S /D=<temp>`) exit 0, `nito.exe` running after 6 s with window title "Nito", silent uninstall exit 0. Unsigned (Phase 4).
+- **Phase 2 scaffold (e9cc8bd):** `Library.section` ("library" | "study" | "notes" | "ai") and `Library.split`; sidebar "Çalışma" items; placeholder views StudyView, NotesView, AiView, SplitView, RecordingList (bottom of AnnotationPanel). `npm run e2e` runs screenshots + recording e2e.
+- **Phase 2 running now:** four agents in separate git worktrees: 2A study (migration 002, port 1431), 2B notes (003, 1432), 2C transcription (004, 1433), 2D AI + split view (005, 1434). The main agent merges their branches into main.
+- **Next step:** merge the four branches, resolve conflicts (MIGRATIONS array, lib.rs command list, package.json), run all checks and e2e scripts, update ROADMAP.
+- **Known problems:** one e2e run timed out while the release build was using the CPU; the rerun passed.
+
 ## 2026-10-29 — Phase 1 steps 8 and 9: theme switch, licence check
 - **Done:**
   - Theme switch (Sistem / Açık / Koyu) at the bottom of the sidebar; `src/ui/theme.ts` stores it in localStorage and sets `data-theme`. Favicon `public/icon.png` from the Tauri icons.

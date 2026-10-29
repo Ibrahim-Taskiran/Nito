@@ -63,7 +63,7 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
 - ✅ Node 24 and npm 11, Rust 1.99.1 (`%USERPROFILE%\.cargo\bin`), MSVC Build Tools 2022, WebView2.
 - ✅ GitHub repo: https://github.com/Ibrahim-Taskiran/Nito_01 (private, branch `main`).
 
-### Phase 1: Foundation 🟨
+### Phase 1: Foundation ✅
 1. ✅ Scaffold: Tauri 2, Svelte 5, TypeScript and Vite. README covering dev, test and build, plus notes for `tauri ios init` / `tauri android init`.
 2. ✅ Our own schema with versioned migrations (`src/core/db/migrations/`):
    - course
@@ -110,9 +110,9 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - vitest for `src/core`.
    - Playwright screenshots of the main screens in light and dark, saved to `docs/screenshots/`.
    - `npm run licenses`: one script checks shipped npm packages and every Rust crate (`cargo metadata`) against the allow list. No `cargo deny` install needed.
-10. ⬜ `tauri build` produces a Windows installer. Smoke test it.
+10. ✅ `tauri build` produces a Windows installer. Smoke test it.
 
-### Phase 2: Study tools ⬜
+### Phase 2: Study tools 🟨
 These four groups are independent and can run in parallel, each in its own git worktree.
 
 - **2A Study:**
