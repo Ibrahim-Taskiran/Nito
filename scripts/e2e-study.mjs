@@ -24,7 +24,7 @@ await page.goto(url);
 const chooser = page.waitForEvent("filechooser");
 await page.getByRole("button", { name: "PDF ekle" }).click();
 await (await chooser).setFiles(fixtures);
-await page.getByRole("button", { name: /Hafta 5/ }).click();
+await page.getByRole("button", { name: /Hafta 5: Protokoller/ }).click();
 await page.getByRole("button", { name: "Aç" }).click();
 await page.locator(".textLayer span").first().waitFor();
 
