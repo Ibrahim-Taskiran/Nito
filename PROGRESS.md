@@ -2,6 +2,12 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-29 — Decision from the owner: empty library and bulk add
+- The app ships with no PDFs. Users add their own.
+- Removed `src/core/importer/legacyLibrary.ts`. There is no importer for the owner's personal library (`C:\Users\ibrah\Nito`), and agents must not touch that library.
+- ROADMAP Phase 1 step 3 is now "Adding PDFs": single add, bulk add (multi-select, folder, drag and drop), duplicate check by hash, and a progress summary.
+- **Next step:** unchanged (see below). When you reach step 3, build the add flow. Remove any leftover references to the importer in `src/core` (types, repo, tests).
+
 ## 2026-10-29 — Phase 1 foundation agent (stopped; user's token budget nearly used up)
 - **Done:**
   - Tooling is ready: Rust 1.99.1 and MSVC Build Tools 2022.

@@ -34,22 +34,12 @@ Every agent working on this project must follow [CLAUDE.md](CLAUDE.md) and recor
   - Keep the JS bundle small.
 - **Touch first:** hit targets at least 40 px, pointer events, layouts from 768 px upwards.
 
-## User data (read-only)
+## Library content (decided 2026-10-29)
 
-The existing library is at `C:\Users\ibrah\Nito\`. It is used by the Zotero-based Nito fork in `..\Nito`.
-
-- Database: `nito.sqlite`, with Zotero-style tables:
-  - `items`, `itemData`/`itemDataValues`/`fields`, `collections`, `collectionItems`
-  - `itemAttachments`, `itemNotes`, `tags`/`itemTags`, `itemAnnotations`, `deletedItems`
-- PDF files: `storage\<attachmentKey>\<file>.pdf`.
-
-Importer rules:
-- Copy the database (and `-wal` if present) to a temp file first. Never write to `C:\Users\ibrah\Nito`.
-- Skip anything in `deletedItems`. There are 70 trashed duplicates.
-- Expected import result: 3 courses (algo_analiz, Veritabanı_Yönetim, Yazılım_Tasarım_Mimarisi), 14 PDFs, 2 notes, 0 annotations.
-- Map these tags to read status and favourite: `Okunmadı`, `Okunuyor`, `Okundu`, `⭐ Favori`.
-
-Never commit user PDFs, `nito.sqlite`, `storage/` or recordings.
+- Nito_01 starts with an **empty library**. Users add their own PDFs.
+- There is **no importer** for the old library. `C:\Users\ibrah\Nito\` holds the owner's personal PDFs for the Zotero-based fork. It is not app content. Do not read it, ship it, seed from it or test against it.
+- Test with small generated PDFs only, e.g. made with pdf-lib (MIT), and keep them in `tests/fixtures/`.
+- Never commit user PDFs, `nito.sqlite`, `storage/` or recordings.
 
 ## Logic we may port (we wrote it)
 
@@ -82,7 +72,21 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - note: kind = live / template / digest / ai / transcript / free
    - recording, recording_mark (annotation ↔ offset in seconds)
    - tag, document_tag
-3. 🟨 Importer for the existing library: `src/core/importer/legacyLibrary.ts`, plus a first-run "Kütüphaneni içe aktar" action.
+3. ⬜ Adding PDFs (`src/core/library/addDocuments.ts` plus the UI):
+   - **Single add:** a "PDF ekle" button with a file picker.
+   - **Bulk add:**
+     - Pick many files at once.
+     - Pick a folder (optionally with subfolders: each subfolder becomes a course).
+     - Drag and drop many files or folders onto the window.
+   - Shared rules, written once in `src/core` and used by every path (DRY):
+     - Hash each file. Skip duplicates and report them.
+     - Copy the file into app storage.
+     - Clean the title and read the week from the file name ("Hafta N: …").
+     - New documents start as Okunmadı.
+     - Optionally choose a target course.
+   - Progress bar with a cancel button for big batches. At the end, show a summary: "X eklendi, Y zaten vardı, Z hatalı".
+   - First run: an empty-state screen with "PDF ekle" and "Klasör ekle".
+   - Removed: the old `src/core/importer/legacyLibrary.ts` (importer for the owner's personal library).
 4. ⬜ Platform adapters: Tauri (rusqlite commands, files, dialogs) and web/in-memory.
 5. ⬜ Library UI:
    - Sidebar: courses, Tümü, Okunmamış, Favoriler.
@@ -117,7 +121,7 @@ These four groups are independent and can run in parallel, each in its own git w
   - Study Center: due cards, Sınav highlights, unread PDFs and progress, grouped by week.
   - Cornell note template.
   - Course pack export: PDFs with annotations, Markdown notes and colour digests, zipped.
-- **2B Notes:**
+- **2B Notes** (folder watch reuses the add logic from Phase 1 step 3):
   - Live note per PDF built from its highlights.
   - Colour digest note per course.
   - Markdown export.
