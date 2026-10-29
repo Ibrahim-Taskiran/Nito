@@ -1,4 +1,6 @@
 // Reader screen state for one open document. Only this file talks to Repo for annotations.
+import { INK_COLORS, INK_WIDTH, hitsStroke, simplify, type InkPoint, type InkStroke } from "../core/ink";
+import { InkRepo } from "../core/inkRepo";
 import type { AnnotationMark } from "../core/repo";
 import type { Annotation, Document, Id, LabelKey, Rect } from "../core/types";
 import type { Library } from "./library.svelte";
@@ -16,17 +18,23 @@ export class Reader {
   /** Annotation whose recording is playing. */
   playingId = $state<Id | null>(null);
   readonly recorder: Recorder;
+  /** Handwriting on this document. */
+  ink = $state<InkStroke[]>([]);
+  inkTool = $state<"none" | "pen" | "eraser">("none");
+  inkColor = $state<string>(INK_COLORS[0].color);
+  private inkRepo: InkRepo;
 
   private player: HTMLAudioElement | null = null;
   private audioUrls = new Map<string, string>();
 
   constructor(readonly lib: Library, readonly doc: Document) {
+    this.inkRepo = new InkRepo(lib.repo.db);
     this.recorder = new Recorder(lib, doc.id, () => void this.reloadAnnotations());
   }
 
   async load(): Promise<void> {
     try {
-      const [pdf] = await Promise.all([openPdf(await this.lib.platform.storage.read(this.doc.filePath)), this.reloadAnnotations()]);
+      const [pdf] = await Promise.all([openPdf(await this.lib.platform.storage.read(this.doc.filePath)), this.reloadAnnotations(), this.reloadInk()]);
       this.pdf = pdf;
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
@@ -59,6 +67,25 @@ export class Reader {
   async update(id: Id, patch: { label?: LabelKey; comment?: string }): Promise<void> {
     await this.lib.repo.updateAnnotation(id, patch);
     await this.reloadAnnotations();
+  }
+
+  private async reloadInk(): Promise<void> {
+    this.ink = await this.inkRepo.list(this.doc.id);
+  }
+
+  async addStroke(page: number, points: InkPoint[]): Promise<void> {
+    const pts = simplify(points);
+    if (!pts.length) return;
+    await this.inkRepo.add({ documentId: this.doc.id, page, color: this.inkColor, width: INK_WIDTH, points: pts });
+    await this.reloadInk();
+  }
+
+  /** Deletes every stroke on `page` that passes near `at`. */
+  async eraseAt(page: number, at: { x: number; y: number }): Promise<void> {
+    const hit = this.ink.filter((s) => s.page === page && hitsStroke(s, at));
+    if (!hit.length) return;
+    for (const s of hit) await this.inkRepo.remove(s.id);
+    await this.reloadInk();
   }
 
   async remove(id: Id): Promise<void> {

@@ -1,10 +1,11 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { labelInfo } from "../../core/labels";
   import type { Annotation, Id } from "../../core/types";
   import { pdfjs, type PDFDocumentProxy } from "../pdf";
   import "../textLayer.css";
 
-  let { pdf, num, width, height, scale, active, annotations, focusedId }: {
+  let { pdf, num, width, height, scale, active, annotations, focusedId, children }: {
     pdf: PDFDocumentProxy;
     num: number;
     /** Page size in PDF points at scale 1. */
@@ -15,6 +16,8 @@
     active: boolean;
     annotations: Annotation[];
     focusedId: Id | null;
+    /** Overlays drawn above the text layer (handwriting). */
+    children?: Snippet;
   } = $props();
 
   let canvas: HTMLCanvasElement;
@@ -75,6 +78,7 @@
     {/each}
   {/each}
   <div class="textLayer" bind:this={textLayer}></div>
+  {@render children?.()}
 </div>
 
 <style>

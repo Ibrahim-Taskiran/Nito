@@ -36,6 +36,7 @@ export async function createWebPlatform(): Promise<Platform> {
 
   return {
     name: "web",
+    mobile: false,
     db,
     transcriber: webTranscriber(),
     storage: {

@@ -7,6 +7,7 @@ import type { Row, SqlDb } from "../../core/db/sql";
 import type { SourceFile } from "../../core/library/addDocuments";
 import type { Platform } from "../types";
 import { tauriTranscriber } from "./transcriber";
+import { isMobileDevice } from "../device";
 
 interface PdfEntry {
   path: string;
@@ -33,6 +34,7 @@ const listPdfs = async (paths: string[], recursive: boolean) =>
 const asList = (v: string | string[] | null) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 
 export function createTauriPlatform(): Platform {
+  const mobile = isMobileDevice();
   const storage: Platform["storage"] = {
     read: async (rel) => new Uint8Array(await invoke<ArrayBuffer>("storage_read", { rel })),
     write: (rel, data) => invoke("storage_write", data, { headers: { "x-rel": rel } }),
@@ -40,8 +42,9 @@ export function createTauriPlatform(): Platform {
   };
   return {
     name: "tauri",
+    mobile,
     db,
-    transcriber: tauriTranscriber,
+    transcriber: mobile ? undefined : tauriTranscriber,
     storage,
     listFolder: (path, recursive) => listPdfs([path], recursive),
     async saveExport(name, text) {

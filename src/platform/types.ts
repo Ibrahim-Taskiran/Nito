@@ -19,6 +19,8 @@ export interface Pickers {
 
 export interface Platform {
   name: "tauri" | "web";
+  /** Phone or tablet build: desktop-only tools (Whisper, Ollama) are hidden. */
+  mobile: boolean;
   db: SqlDb;
   storage: Storage;
   pickers: Pickers;

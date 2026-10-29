@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { LABELS } from "../../core/labels";
+  import { INK_COLORS } from "../../core/ink";
   import { normaliseRects, pagesToRender, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
   import Button from "../components/Button.svelte";
@@ -8,6 +9,7 @@
   import type { Library } from "../library.svelte";
   import { Reader } from "../reader.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
+  import InkLayer from "./InkLayer.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
   import SplitPicker from "./SplitPicker.svelte";
@@ -40,7 +42,7 @@
       const first = (await pdf.getPage(1)).getViewport({ scale: 1 });
       if (!alive) return;
       sizes = Array.from({ length: pdf.numPages }, () => ({ w: first.width, h: first.height }));
-      scale = clampZoom((scroller.clientWidth - 48) / first.width);
+      fitWidth();
       if (lib.openPage && !compact) {
         const page = lib.openPage;
         lib.openPage = null;
@@ -106,6 +108,12 @@
     getSelection()?.removeAllRanges();
   }
 
+  /** Zoom so the current page fills the width (minus the scroller padding). */
+  function fitWidth() {
+    const w = sizes[current - 1]?.w ?? sizes[0]?.w;
+    if (w) scale = clampZoom((scroller.clientWidth - 48) / w);
+  }
+
   function goTo(page: number) {
     scroller.querySelector(`[data-page="${page}"]`)?.scrollIntoView({ block: "start" });
   }
@@ -115,6 +123,41 @@
     e.preventDefault();
     scale = e.deltaY < 0 ? zoomIn(scale) : zoomOut(scale);
   }
+
+  // Touch: two-finger pinch zooms; a quick horizontal swipe turns the page when nothing scrolls sideways.
+  let pinch: { dist: number; scale: number } | null = null;
+  let swipe: { x: number; y: number; t: number } | null = null;
+  const fingerDist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
+  function onTouchStart(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      pinch = { dist: fingerDist(e.touches), scale };
+      swipe = null;
+    } else if (e.touches.length === 1 && reader.inkTool === "none") {
+      swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: e.timeStamp };
+    }
+  }
+
+  function onTouchMove(e: TouchEvent) {
+    if (pinch && e.touches.length === 2) {
+      scale = clampZoom((pinch.scale * fingerDist(e.touches)) / pinch.dist);
+    }
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    if (e.touches.length < 2) pinch = null;
+    const s = swipe;
+    swipe = null;
+    if (!s || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - s.x;
+    const dy = e.changedTouches[0].clientY - s.y;
+    const sideways = scroller.scrollWidth > scroller.clientWidth + 1;
+    if (!sideways && Math.abs(dx) > 80 && Math.abs(dx) > 2 * Math.abs(dy) && e.timeStamp - s.t < 500) {
+      goTo(Math.min(sizes.length, Math.max(1, current + (dx < 0 ? 1 : -1))));
+    }
+  }
+
+  const setTool = (t: "pen" | "eraser") => (reader.inkTool = reader.inkTool === t ? "none" : t);
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -135,10 +178,21 @@
     {/if}
     <h1 title={doc.title}>{doc.title}</h1>
     {#if !compact}<RecordBar recorder={reader.recorder} />{/if}
+    <div class="ink-tools" role="group" aria-label="Kalem">
+      <IconButton label="Kalem" pressed={reader.inkTool === "pen"} onclick={() => setTool("pen")}>✎</IconButton>
+      {#if reader.inkTool === "pen"}
+        {#each INK_COLORS as c (c.color)}
+          <button class="swatch" aria-label="Renk: {c.name}" aria-pressed={reader.inkColor === c.color}
+            style:background={c.color} onclick={() => (reader.inkColor = c.color)}></button>
+        {/each}
+      {/if}
+      <IconButton label="Silgi" pressed={reader.inkTool === "eraser"} onclick={() => setTool("eraser")}>⌫</IconButton>
+    </div>
     <span class="pages">{current} / {sizes.length || "–"}</span>
     <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}>−</IconButton>
     <span class="zoom">{Math.round(scale * 100)}%</span>
     <IconButton label="Yakınlaştır" onclick={() => (scale = zoomIn(scale))}>+</IconButton>
+    <IconButton label="Genişliğe sığdır" onclick={fitWidth}>↔</IconButton>
     {#if compact}
       <IconButton label="Vurgular paneli" pressed={showPanel} onclick={() => (showPanel = !showPanel)}>☰</IconButton>
     {:else}
@@ -147,7 +201,8 @@
   </header>
   <div class="body">
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}>
+    <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
+      ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
       {#if reader.error}
         <p class="msg">PDF açılamadı: {reader.error}</p>
       {:else if !reader.pdf || !sizes.length}
@@ -155,7 +210,9 @@
       {:else}
         {#each sizes as size, i (i)}
           <PdfPage pdf={reader.pdf} num={i + 1} width={size.w} height={size.h} {scale} active={active.has(i + 1)}
-            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId} />
+            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId}>
+            <InkLayer {reader} page={i + 1} />
+          </PdfPage>
         {/each}
       {/if}
     </div>
@@ -182,6 +239,10 @@
   .pages, .zoom { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
   .body { flex: 1; display: flex; min-height: 0; }
   .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
+  .ink-tools { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
+  .ink-tools :global([aria-pressed="true"]) { background: var(--accent-soft); color: var(--accent); }
+  .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; margin: 0 2px; }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .picker {
     position: fixed; transform: translateX(-50%); z-index: 20; display: flex; gap: 2px; padding: 4px;

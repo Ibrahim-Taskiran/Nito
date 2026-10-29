@@ -6,11 +6,12 @@
 
   const same = (a: LibraryFilter, b: LibraryFilter) =>
     a.kind === b.kind && (a.kind !== "course" || (b.kind === "course" && a.courseId === b.courseId));
-  const tools: { s: Section; name: string }[] = [
+  const tools: { s: Section; name: string }[] = $derived([
     { s: "study", name: "Çalışma Merkezi" },
     { s: "notes", name: "Notlar" },
-    { s: "ai", name: "Yapay zekâ" },
-  ];
+    // Ollama runs on desktop only.
+    ...(lib.platform.mobile ? [] : [{ s: "ai" as Section, name: "Yapay zekâ" }]),
+  ]);
   const fixed = $derived([
     { f: { kind: "all" } as LibraryFilter, name: "Tümü", count: lib.counts.all },
     { f: { kind: "unread" } as LibraryFilter, name: "Okunmamış", count: lib.counts.unread },
