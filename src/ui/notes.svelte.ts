@@ -29,7 +29,10 @@ export class Notes {
   /** Short status line (export path, errors). */
   message = $state<string | null>(null);
 
-  selected = $derived(this.notes.find((n) => n.id === this.selectedId) ?? null);
+  // A getter, not $derived: this object outlives the view that first created it.
+  get selected(): Note | null {
+    return this.notes.find((n) => n.id === this.selectedId) ?? null;
+  }
 
   constructor(readonly lib: Library) {
     this.repo = new NotesRepo(lib.platform.db);
