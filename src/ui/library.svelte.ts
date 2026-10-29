@@ -22,6 +22,8 @@ export class Library {
   split = $state<[Document, Document] | null>(null);
   /** Document open in the reader. */
   opened = $state<Document | null>(null);
+  /** Page the reader should jump to once loaded (AI citations); the reader clears it. */
+  openPage = $state<number | null>(null);
   /** Running add batch; null when idle. */
   adding = $state<{ done: number; total: number; abort: AbortController } | null>(null);
   /** Summary of the last finished batch. */
@@ -68,10 +70,12 @@ export class Library {
     }
   }
 
-  async open(d: Document): Promise<void> {
+  async open(d: Document, page: number | null = null): Promise<void> {
     if (d.readStatus === "unread") await this.repo.setReadStatus(d.id, "reading");
     this.selectedId = d.id;
     this.addSummary = null;
+    this.openPage = page;
+    this.split = null;
     this.opened = d;
   }
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { LABELS } from "../../core/labels";
   import { normaliseRects, pagesToRender, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
@@ -10,8 +10,10 @@
   import AnnotationPanel from "./AnnotationPanel.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
+  import SplitPicker from "./SplitPicker.svelte";
 
-  let { lib, doc }: { lib: Library; doc: Document } = $props();
+  /** `compact`: one half of the split view; `onclose` replaces "back to library". */
+  let { lib, doc, compact = false, onclose }: { lib: Library; doc: Document; compact?: boolean; onclose?: () => void } = $props();
 
   // The view is keyed by document id, so the first lib and doc are the only ones.
   // svelte-ignore state_referenced_locally
@@ -23,6 +25,9 @@
   let current = $state(1);
   /** Pending selection waiting for a label. */
   let pick = $state<{ page: number; rects: Rect[]; text: string; x: number; y: number } | null>(null);
+  // svelte-ignore state_referenced_locally
+  let showPanel = $state(!compact);
+  let picking = $state(false);
 
   const active = $derived(pagesToRender(visible, sizes.length));
 
@@ -34,6 +39,12 @@
       const first = (await pdf.getPage(1)).getViewport({ scale: 1 });
       sizes = Array.from({ length: pdf.numPages }, () => ({ w: first.width, h: first.height }));
       scale = clampZoom((scroller.clientWidth - 48) / first.width);
+      if (lib.openPage && !compact) {
+        const page = lib.openPage;
+        lib.openPage = null;
+        await tick();
+        goTo(page);
+      }
       for (let n = 2; n <= pdf.numPages; n++) {
         const vp = (await pdf.getPage(n)).getViewport({ scale: 1 });
         if (vp.width !== first.width || vp.height !== first.height) sizes[n - 1] = { w: vp.width, h: vp.height };
@@ -96,7 +107,7 @@
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
       if (pick) pick = null;
-      else lib.close();
+      else if (!compact && !picking) lib.close();
     }
   }
 </script>
@@ -105,13 +116,22 @@
 
 <div class="reader">
   <header class="toolbar">
-    <Button variant="ghost" onclick={() => lib.close()}>← Kütüphane</Button>
+    {#if onclose}
+      <IconButton label="Bu belgeyi kapat" onclick={onclose}>×</IconButton>
+    {:else}
+      <Button variant="ghost" onclick={() => lib.close()}>← Kütüphane</Button>
+    {/if}
     <h1 title={doc.title}>{doc.title}</h1>
-    <RecordBar recorder={reader.recorder} />
+    {#if !compact}<RecordBar recorder={reader.recorder} />{/if}
     <span class="pages">{current} / {sizes.length || "–"}</span>
     <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}>−</IconButton>
     <span class="zoom">{Math.round(scale * 100)}%</span>
     <IconButton label="Yakınlaştır" onclick={() => (scale = zoomIn(scale))}>+</IconButton>
+    {#if compact}
+      <IconButton label="Vurgular paneli" pressed={showPanel} onclick={() => (showPanel = !showPanel)}>☰</IconButton>
+    {:else}
+      <Button variant="ghost" onclick={() => (picking = true)}>Yan yana</Button>
+    {/if}
   </header>
   <div class="body">
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -127,9 +147,13 @@
         {/each}
       {/if}
     </div>
-    <AnnotationPanel {reader} onjump={goTo} />
+    {#if showPanel}<AnnotationPanel {reader} onjump={goTo} />{/if}
   </div>
 </div>
+
+{#if picking}
+  <SplitPicker {lib} {doc} onclose={() => (picking = false)} />
+{/if}
 
 {#if pick}
   <div class="picker" role="toolbar" aria-label="Vurgu etiketi" style:left="{pick.x}px" style:top="{pick.y}px">
