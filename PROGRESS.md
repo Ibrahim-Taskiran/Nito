@@ -2,6 +2,18 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 2 done: 2A, 2B, 2C, 2D merged into main
+- **Merged:** study (e9afeef), notes (merge after 182e0d6), transcription (079f536), AI + split view (a75d547). Migrations in order `[001, 002_study, 003_notes, 004_transcripts]` (2D added none).
+- **2A Study:** cards from Tanım/Soru highlights, Leitner 1/2/4/8/16 days (`card_review` table), multiple-choice quiz, Study Center, Cornell note (kind 'template'), course pack zip (fflate).
+- **2B Notes:** live note per PDF, colour digest per course, safe Markdown renderer, `nito://annotation/<id>` back-links open the reader on that page, free notes, Markdown export (`Platform.saveExport`), watched folders (`watched_folder` table, rescan at start and every 10 min, `Platform.listFolder`).
+- **2C Transcription:** Rust `transcribe.rs` (`whisper_status`, `whisper_setup`, `whisper_transcribe`; ureq + native-tls + zip). whisper.cpp b5454 CPU x64 and `ggml-base.bin` downloaded into `<app data>/whisper/` on this machine and run for real on an English SAPI clip. webm → 16 kHz WAV in the webview, transcript note with `## mm:ss` paragraphs, `recording.transcript_note_id`.
+- **2D AI:** `src/core/ai/` (tokenizer, chunks, BM25, prompts, Ollama client), AiView (summary saved as 'ai' note, chat with [s. N] citations), `@tauri-apps/plugin-http` scoped to localhost:11434 (default features off, so no webpki-roots). Split view with "Yan yana". Real chat with local qwen2.5:3b answered in Turkish.
+- **Checks on main:** tsc 0, svelte-check 0, vitest 61 passed, `cargo check` ok, licences all allowed (447 crates), `npm run e2e` (screenshots, record, study, notes, transcribe, ai) all passed.
+- **Not verified in the Tauri window:** mic permission, Whisper setup/transcribe buttons, plugin-http streaming, watched-folder scan.
+- **Known limits:** pack has original PDFs (no burned-in highlights); definition card back repeats the term; transcript links not shown in NotesView list beyond the note body; Whisper setup cannot be cancelled; long recordings make large WAVs in memory; AI page-text cache is memory only; 3b model citations vary.
+- **Lesson:** never `git worktree remove --force` a worktree whose `node_modules` is a junction to main: it emptied main's node_modules once. Unlink with `cmd /c rmdir` first.
+- **Next step:** Phase 3 (tablets): `tauri android init` / `tauri ios init` need Android SDK/NDK and a Mac for iOS.
+
 ## 2026-10-29 — Phase 1 done (step 10), Phase 2 started
 - **Step 10:** `npm run tauri build` ok (release 2 m 53 s). Installer `src-tauri/target/release/bundle/nsis/Nito_0.1.0_x64-setup.exe`, 2.51 MiB. Smoke test: silent install (`/S /D=<temp>`) exit 0, `nito.exe` running after 6 s with window title "Nito", silent uninstall exit 0. Unsigned (Phase 4).
 - **Phase 2 scaffold (e9cc8bd):** `Library.section` ("library" | "study" | "notes" | "ai") and `Library.split`; sidebar "Çalışma" items; placeholder views StudyView, NotesView, AiView, SplitView, RecordingList (bottom of AnnotationPanel). `npm run e2e` runs screenshots + recording e2e.

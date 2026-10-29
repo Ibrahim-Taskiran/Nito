@@ -112,28 +112,28 @@ Status values: ⬜ not started, 🟨 in progress, ✅ done. Update the status he
    - `npm run licenses`: one script checks shipped npm packages and every Rust crate (`cargo metadata`) against the allow list. No `cargo deny` install needed.
 10. ✅ `tauri build` produces a Windows installer. Smoke test it.
 
-### Phase 2: Study tools 🟨
+### Phase 2: Study tools ✅
 These four groups are independent and can run in parallel, each in its own git worktree.
 
-- **2A Study:**
+- ✅ **2A Study:**
   - Flashcards from Tanım and Soru highlights, with Leitner boxes at 1/2/4/8/16 days.
   - Multiple-choice quiz.
   - Study Center: due cards, Sınav highlights, unread PDFs and progress, grouped by week.
   - Cornell note template.
   - Course pack export: PDFs with annotations, Markdown notes and colour digests, zipped.
-- **2B Notes** (folder watch reuses the add logic from Phase 1 step 3):
+- ✅ **2B Notes** (folder watch reuses the add logic from Phase 1 step 3):
   - Live note per PDF built from its highlights.
   - Colour digest note per course.
   - Markdown export.
   - Links from a note back to the highlight's place in the PDF.
   - Clean titles from file names ("Hafta N: …").
   - Watch course folders: rescan at start and every 10 minutes, skip duplicates by hash.
-- **2C Transcription:**
+- ✅ **2C Transcription:**
   - whisper.cpp (MIT) as a Tauri sidecar on desktop. Setup script downloads it into the app data folder.
   - Recording is converted to 16 kHz WAV, then transcribed.
   - The transcript becomes a note with mm:ss headings and is searchable.
   - Larger optional model for better Turkish: large-v3-turbo.
-- **2D AI and side-by-side:**
+- ✅ **2D AI and side-by-side:**
   - Ollama (local, free) for summaries and "chat with notes", using BM25 retrieval over course texts.
   - Choose a model whose licence allows commercial use, e.g. `qwen2.5:7b` (Apache-2.0). Note: `qwen2.5:3b` is research-only.
   - Side-by-side reading of two PDFs in one window (split view).
