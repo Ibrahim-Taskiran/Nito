@@ -138,12 +138,12 @@ These four groups are independent and can run in parallel, each in its own git w
   - Choose a model whose licence allows commercial use, e.g. `qwen2.5:7b` (Apache-2.0). Note: `qwen2.5:3b` is research-only.
   - Side-by-side reading of two PDFs in one window (split view).
 
-### Phase 3: Tablets ⬜
+### Phase 3: Tablets 🟨
 - `tauri android init` and `tauri ios init`.
 - Platform adapters for mobile storage and for the microphone.
-- Pencil and stylus: handwriting and ink annotations with pointer events and pressure.
-- Touch gestures: pinch zoom and swipe between pages.
-- Whisper and Ollama are desktop-only at first. Hide them on mobile, or offer a "send to desktop" option later.
+- ✅ Pencil and stylus: handwriting and ink annotations with pointer events and pressure.
+- ✅ Touch gestures: pinch zoom and swipe between pages.
+- ✅ Whisper and Ollama are desktop-only at first. Hide them on mobile, or offer a "send to desktop" option later.
 
 ### Phase 4: Release ⬜
 - Code signing (free options first), installer, and an auto-update channel we control.

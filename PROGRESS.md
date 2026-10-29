@@ -2,6 +2,17 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 3: tablet input (9b95b27)
+- **Done:**
+  - Ink: `src/core/ink.ts` (RDP simplify, smooth SVG path, pressure width, eraser hit test), `src/core/inkRepo.ts`, migration `005_ink.ts` (`ink_stroke` table). `InkLayer.svelte` per page (rendered through a new `children` snippet in PdfPage). Toolbar: Kalem (3 colours), Silgi. After a stylus is seen, fingers scroll instead of drawing.
+  - Touch: two-finger pinch zoom and quick horizontal swipe to the next/previous page (only when nothing scrolls sideways), "Genişliğe sığdır" button.
+  - `Platform.mobile` (`src/platform/device.ts`): on Android/iOS the Tauri adapter drops the transcriber and the sidebar hides "Yapay zekâ".
+  - `scripts/e2e-touch.mjs` (in `npm run e2e`): pen stroke saved and still there after reopen, eraser removes it, CDP pinch 110% → 330%, swipe 1 → 2.
+- **Checks:** svelte-check 0, vitest 65, `npm run e2e` all 7 scripts passed.
+- **Running:** an agent installs the Android NDK/cmdline-tools, gates desktop-only Rust (Whisper) for mobile, runs `tauri android init` and builds an APK. Its `src-tauri/` edits are not committed yet.
+- **Not possible here:** iOS (`tauri ios init` needs a Mac with Xcode). When done on a Mac, add `NSMicrophoneUsageDescription` to the generated Info.plist.
+- **Known problems:** after the dependency changes Vite needed `--force` once ("Outdated Optimize Dep" 504).
+
 ## 2026-10-30 — Phase 2 done: 2A, 2B, 2C, 2D merged into main
 - **Merged:** study (e9afeef), notes (merge after 182e0d6), transcription (079f536), AI + split view (a75d547). Migrations in order `[001, 002_study, 003_notes, 004_transcripts]` (2D added none).
 - **2A Study:** cards from Tanım/Soru highlights, Leitner 1/2/4/8/16 days (`card_review` table), multiple-choice quiz, Study Center, Cornell note (kind 'template'), course pack zip (fflate).
