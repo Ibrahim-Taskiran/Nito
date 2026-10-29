@@ -46,6 +46,16 @@ export function createTauriPlatform(): Platform {
     db,
     transcriber: mobile ? undefined : tauriTranscriber,
     storage,
+    backup: {
+      async backup() {
+        const dest = await open({ directory: true, title: "Yedeğin kaydedileceği klasör" });
+        return typeof dest === "string" ? invoke<string>("backup_to", { dest }) : null;
+      },
+      async restore() {
+        const src = await open({ directory: true, title: "Nito yedek klasörü (Nito-yedek-…)" });
+        return typeof src === "string" ? invoke<string>("restore_from", { src }) : null;
+      },
+    },
     listFolder: (path, recursive) => listPdfs([path], recursive),
     async saveExport(name, text) {
       await storage.write(`exports/${name}`, new TextEncoder().encode(text));

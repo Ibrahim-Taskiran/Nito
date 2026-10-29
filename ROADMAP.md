@@ -145,9 +145,9 @@ These four groups are independent and can run in parallel, each in its own git w
 - ✅ Touch gestures: pinch zoom and swipe between pages.
 - ✅ Whisper and Ollama are desktop-only at first. Hide them on mobile, or offer a "send to desktop" option later.
 
-### Phase 4: Release ⬜
+### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.
-- Sync between devices: file-based (folder or cloud drive) or our own small server later.
+- 🟨 Sync between devices: file-based (folder or cloud drive) or our own small server later. Done: manual backup / restore of the whole library to a folder (Yedekle / Geri yükle). Not done: automatic two-way sync.
 - Store listings for Microsoft Store, Google Play and the App Store. These have fees, so the user decides first.
 
 ## Commands

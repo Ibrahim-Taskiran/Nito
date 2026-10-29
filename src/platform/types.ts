@@ -17,10 +17,19 @@ export interface Pickers {
   pickFolder(recursive: boolean): Promise<SourceFile[]>;
 }
 
+/** Whole-library copy to a folder (e.g. a cloud-drive folder). Desktop and mobile app only. */
+export interface Backup {
+  /** Asks for a folder and writes a backup into it. Returns the backup path, or null when cancelled. */
+  backup(): Promise<string | null>;
+  /** Asks for a backup folder and restores it. Returns the safety copy path, or null when cancelled. */
+  restore(): Promise<string | null>;
+}
+
 export interface Platform {
   name: "tauri" | "web";
   /** Phone or tablet build: desktop-only tools (Whisper, Ollama) are hidden. */
   mobile: boolean;
+  backup?: Backup;
   db: SqlDb;
   storage: Storage;
   pickers: Pickers;

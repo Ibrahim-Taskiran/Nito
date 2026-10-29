@@ -1,3 +1,4 @@
+mod backup;
 mod db;
 mod files;
 #[cfg(desktop)]
@@ -8,7 +9,7 @@ use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{
     ipc::{InvokeBody, Request, Response},
@@ -124,6 +125,21 @@ fn list_pdfs(paths: Vec<String>, recursive: bool) -> Result<Vec<files::PdfEntry>
     Ok(files::collect_pdfs(&paths, recursive))
 }
 
+/// Backs up the library into `dest` (a folder the user picked); returns the new folder path.
+#[tauri::command]
+fn backup_to(state: State<AppState>, dest: String) -> Result<String, String> {
+    let conn = state.conn()?;
+    backup::backup_to(&conn, &state.storage, Path::new(&dest)).map(|p| p.to_string_lossy().into_owned())
+}
+
+/// Restores a backup folder; the current state is saved under `<app data>/backups/` first.
+#[tauri::command]
+fn restore_from(state: State<AppState>, src: String) -> Result<String, String> {
+    let mut conn = state.conn()?;
+    let safety = state.storage.parent().map(|p| p.join("backups")).ok_or("No app data folder")?;
+    backup::restore_from(&mut conn, &state.storage, &safety, Path::new(&src)).map(|p| p.to_string_lossy().into_owned())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
@@ -152,6 +168,8 @@ pub fn run() {
         storage_read,
         storage_write,
         storage_remove,
+        backup_to,
+        restore_from,
         list_pdfs,
         transcribe::whisper_status,
         transcribe::whisper_setup,
@@ -168,6 +186,8 @@ pub fn run() {
         storage_read,
         storage_write,
         storage_remove,
+        backup_to,
+        restore_from,
         list_pdfs
     ]);
     builder

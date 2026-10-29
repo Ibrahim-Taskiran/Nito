@@ -18,7 +18,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-http = { version = "2", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 sha2 = "0.10"
 
 # Whisper setup/transcribe is desktop-only.

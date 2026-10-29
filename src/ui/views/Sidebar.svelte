@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LibraryFilter } from "../../core/types";
+  import BackupButtons from "../components/BackupButtons.svelte";
   import ThemeSwitch from "../components/ThemeSwitch.svelte";
   import type { Library, Section } from "../library.svelte";
   let { lib }: { lib: Library } = $props();
@@ -41,7 +42,10 @@
       </button>
     {/each}
   {/if}
-  <div class="foot"><ThemeSwitch /></div>
+  <div class="foot">
+    <ThemeSwitch />
+    {#if lib.platform.backup}<BackupButtons backup={lib.platform.backup} />{/if}
+  </div>
 </nav>
 
 <style>

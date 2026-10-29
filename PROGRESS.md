@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Android set up (APK blocked), backup/restore, real Tauri smoke test
+- **Android (975fbf8):** cmdline-tools + NDK 27.2.12479018 installed, Rust Android targets added, user env vars ANDROID_HOME / NDK_HOME / JAVA_HOME set. `tauri android init` done (`src-tauri/gen/android`), RECORD_AUDIO + MODIFY_AUDIO_SETTINGS in the manifest. Whisper Rust module and its crates are desktop-only (`#[cfg(desktop)]`, target-specific deps). See `docs/android.md`.
+  - **Blocked:** `tauri android build` fails with "Creation symbolic link is not allowed for this system". The owner must turn on Windows Developer Mode (Settings > System > For developers). Then: `npx tauri android build --apk --debug --target x86_64` (emulator image android-37 x86_64 is installed) or `--target aarch64` for a device.
+- **Backup / restore (Phase 4, free part):** `src-tauri/src/backup.rs`: `VACUUM INTO` copy of the DB + recursive copy of `storage/` into `<folder>/Nito-yedek-<time>/`; restore checks the folder, saves the current state to `<app data>/backups/` first, then uses the SQLite backup API and copies files back. Commands `backup_to`, `restore_from`; `Platform.backup` (Tauri only); sidebar buttons "Yedekle" / "Geri yükle" with a confirm dialog; app reloads after restore. Rust tests: round trip and bad folder (cargo test 9 passed).
+- **Real Tauri smoke test:** `npm run smoke:tauri` starts the debug build with the WebView2 DevTools port and checks it read-only: `tauri=true | schema=v5 | library has documents | backup buttons | AI: Ollama reachable`, no console errors. It ran on the owner's real library (migrations 002–005 applied); a copy of the DB from before was kept in the session scratchpad. The screenshot goes to `test-results/` (gitignored) because it shows real data.
+- **Next step (needs the owner):** Developer Mode for the APK; Phase 4 code signing, update server and store listings are paid or need accounts, so they wait for the owner's decision.
+
 ## 2026-10-30 — Phase 3: tablet input (9b95b27)
 - **Done:**
   - Ink: `src/core/ink.ts` (RDP simplify, smooth SVG path, pressure width, eraser hit test), `src/core/inkRepo.ts`, migration `005_ink.ts` (`ink_stroke` table). `InkLayer.svelte` per page (rendered through a new `children` snippet in PdfPage). Toolbar: Kalem (3 colours), Silgi. After a stylus is seen, fingers scroll instead of drawing.
