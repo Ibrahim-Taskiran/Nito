@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "screenshots": "node scripts/screenshots.mjs",
-    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs",
+    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs && node scripts/e2e-transcribe.mjs",
     "licenses": "node scripts/check-licenses.mjs",
     "tauri": "tauri"
   },

@@ -22,3 +22,6 @@ src-tauri/target
 dist
 graphify-out/
 .claude/worktrees/
+*.wav
+whisper/
+ggml-*.bin

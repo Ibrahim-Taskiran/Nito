@@ -6,6 +6,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { Row, SqlDb } from "../../core/db/sql";
 import type { SourceFile } from "../../core/library/addDocuments";
 import type { Platform } from "../types";
+import { tauriTranscriber } from "./transcriber";
 
 interface PdfEntry {
   path: string;
@@ -40,6 +41,7 @@ export function createTauriPlatform(): Platform {
   return {
     name: "tauri",
     db,
+    transcriber: tauriTranscriber,
     storage,
     listFolder: (path, recursive) => listPdfs([path], recursive),
     async saveExport(name, text) {
