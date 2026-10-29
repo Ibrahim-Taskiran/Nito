@@ -2,8 +2,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+// One line per array item; a string is a single line.
 function pdf(text) {
-  const stream = `BT /F1 24 Tf 72 720 Td (${text}) Tj ET`;
+  const lines = [text].flat();
+  const stream = `BT /F1 24 Tf 72 720 Td ${lines.map((l) => `(${l}) Tj`).join(" 0 -40 Td ")} ET`;
   const objs = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -28,6 +30,7 @@ const files = {
   "Hafta 1_Giris.pdf": "Hafta 1 Giris",
   "Hafta 2_Katmanlar.pdf": "Hafta 2 Katmanlar",
   "Ozet.pdf": "Ozet",
+  "Hafta 5_Protokoller.pdf": ["Protokol: iletisim kurallari", "OSI modeli kac katmandir?", "Kapsulleme sinavda cikar"],
   "Aglar/Hafta 3_TCP.pdf": "Hafta 3 TCP",
   "Aglar/Hafta 4_UDP.pdf": "Hafta 4 UDP",
 };
