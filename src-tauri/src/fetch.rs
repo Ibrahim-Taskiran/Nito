@@ -54,6 +54,15 @@ pub fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
+/// Deletes `file` and fails when its download sha256 is not `want`.
+pub fn check(sha: &str, want: &str, file: &Path) -> Result<(), String> {
+    if sha == want {
+        return Ok(());
+    }
+    let _ = fs::remove_file(file);
+    Err("İndirilen dosya bozuk çıktı (sha256 tutmadı). Yeniden dene.".into())
+}
+
 /// Streams `url` into `dest` through a `.part` file so a cut download never looks complete.
 /// Returns the sha256 of the bytes. `cancel` stops it between chunks.
 pub fn download(
