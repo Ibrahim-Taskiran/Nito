@@ -94,14 +94,68 @@ export function scaleFromCorner(box: Box, corner: 0 | 1 | 2 | 3, to: Pt): Transf
   return { dx: 0, dy: 0, k, ox, oy };
 }
 
-/** Keeps a moved / scaled box on the writable area (the page and its added margin). */
-export function clampMove(t: Transform, box: Box, bounds: { w: number; h: number }): Transform {
-  const b = applyBox(t, box);
+/** Shift that brings a box back on the writable area (the page and its added margin). */
+function pullInside(b: Box, bounds: { w: number; h: number }): Pt {
   const fix = (pos: number, size: number, max: number) => (size >= max ? -pos : pos < 0 ? -pos : pos + size > max ? max - size - pos : 0);
-  return { ...t, dx: t.dx + fix(b.x, b.w, bounds.w), dy: t.dy + fix(b.y, b.h, bounds.h) };
+  return { x: fix(b.x, b.w, bounds.w), y: fix(b.y, b.h, bounds.h) };
+}
+
+/** Keeps a moved / scaled box on the writable area. */
+export function clampMove(t: Transform, box: Box, bounds: { w: number; h: number }): Transform {
+  const f = pullInside(applyBox(t, box), bounds);
+  return { ...t, dx: t.dx + f.x, dy: t.dy + f.y };
 }
 
 /** Offset for a pasted copy: down and right, and back on the page if that leaves it. */
 export function pasteOffset(box: Box, bounds: { w: number; h: number }, step = 0.03): Transform {
   return clampMove({ ...IDENTITY, dx: step, dy: step }, box, bounds);
+}
+
+// ---- Moving to another page ----
+
+/** One page's units to another's: x' = x * sx + dx. Two axes, as pages may differ in shape. */
+export interface PageMap {
+  sx: number;
+  sy: number;
+  dx: number;
+  dy: number;
+}
+
+/** Where a page sits (screen pixels, or PDF points from 0, 0) and its writable area in page units. */
+export interface PagePlace {
+  rect: Box;
+  bounds: { w: number; h: number };
+}
+
+/**
+ * Map that keeps things where they are on screen (or the same size on paper), shifted by `shift` in the
+ * same units as the rects. The result is pulled back onto the target page.
+ */
+export function pageMap(from: PagePlace, to: PagePlace, box: Box, shift: Pt = { x: 0, y: 0 }): PageMap {
+  const ux = from.rect.w / from.bounds.w, uy = from.rect.h / from.bounds.h;
+  const vx = to.bounds.w / to.rect.w, vy = to.bounds.h / to.rect.h;
+  const m = { sx: ux * vx, sy: uy * vy, dx: (from.rect.x + shift.x - to.rect.x) * vx, dy: (from.rect.y + shift.y - to.rect.y) * vy };
+  const f = pullInside(mapBox(m, box), to.bounds);
+  return { ...m, dx: m.dx + f.x, dy: m.dy + f.y };
+}
+
+/** Same spot and paper size on a page of `size` PDF points (no screen needed). */
+export const paperPlace = (size: { w: number; h: number }, bounds: { w: number; h: number }): PagePlace => ({
+  rect: { x: 0, y: 0, w: size.w * bounds.w, h: size.h * bounds.h },
+  bounds,
+});
+
+export const mapPt = (m: PageMap, p: Pt): Pt => ({ x: p.x * m.sx + m.dx, y: p.y * m.sy + m.dy });
+
+export function mapPoints(m: PageMap, pts: readonly InkPoint[]): InkPoint[] {
+  const r = (v: number) => Math.round(v * 1e4) / 1e4;
+  return pts.map((q) => {
+    const a = mapPt(m, q);
+    return { x: r(a.x), y: r(a.y), p: q.p };
+  });
+}
+
+export function mapBox(m: PageMap, b: Box): Box {
+  const a = mapPt(m, b);
+  return { x: a.x, y: a.y, w: b.w * m.sx, h: b.h * m.sy };
 }

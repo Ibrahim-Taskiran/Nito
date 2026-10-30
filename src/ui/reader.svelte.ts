@@ -269,9 +269,9 @@ export class Reader {
     return id;
   }
 
-  async moveImage(id: Id, rect: ImageRect): Promise<void> {
-    this.images = this.images.map((i) => (i.id === id ? { ...i, ...rect } : i));
-    await this.imageRepo.move(id, rect);
+  async moveImage(id: Id, rect: ImageRect, page?: number): Promise<void> {
+    this.images = this.images.map((i) => (i.id === id ? { ...i, ...rect, ...(page != null && { page }) } : i));
+    await this.imageRepo.move(id, rect, page);
   }
 
   async removeImage(id: Id): Promise<void> {

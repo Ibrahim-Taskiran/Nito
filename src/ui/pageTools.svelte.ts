@@ -115,7 +115,7 @@ export class PageTools {
     return id;
   }
 
-  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean }>): Promise<void> {
+  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean; page: number }>): Promise<void> {
     this.notes = this.notes.map((n) => (n.id === id ? { ...n, ...patch } : n));
     await this.repo.updateNote(id, patch);
   }

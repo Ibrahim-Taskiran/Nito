@@ -65,10 +65,10 @@ export class PageToolsRepo {
     )).lastId;
   }
 
-  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean }>): Promise<void> {
+  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean; page: number }>): Promise<void> {
     const cols: string[] = [];
     const vals: (string | number)[] = [];
-    for (const k of ["x", "y", "w", "h", "body"] as const) {
+    for (const k of ["page", "x", "y", "w", "h", "body"] as const) {
       if (patch[k] !== undefined) {
         cols.push(`${k} = ?`);
         vals.push(patch[k]);
