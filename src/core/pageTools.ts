@@ -27,6 +27,8 @@ export interface PageNote extends PageRect {
   body: string;
   /** Sticky notes fold to an icon. */
   collapsed: boolean;
+  /** Sticky note paper colour (one of NOTE_COLORS). */
+  color: string;
 }
 
 /** Extra writable area: right as a fraction of the page width, bottom of the page height. */
@@ -38,6 +40,23 @@ export interface Margin {
 export const NO_MARGIN: Margin = Object.freeze({ right: 0, bottom: 0 });
 export const MARGIN_STEP = 0.25;
 export const MARGIN_MAX = 1;
+
+/** Calm paper colours for sticky notes; the first is the default. */
+export const NOTE_COLORS = [
+  { color: "#fff3a8", name: "Sarı" },
+  { color: "#ffd6e0", name: "Pembe" },
+  { color: "#d4f5c9", name: "Yeşil" },
+  { color: "#d3e8ff", name: "Mavi" },
+  { color: "#ffe0b8", name: "Turuncu" },
+  { color: "#e6dcff", name: "Mor" },
+  { color: "#ebedf0", name: "Gri" },
+] as const;
+
+export const DEFAULT_NOTE_COLOR: string = NOTE_COLORS[0].color;
+
+/** A stored note colour; anything not in NOTE_COLORS becomes the default. */
+export const asNoteColor = (v: unknown): string =>
+  NOTE_COLORS.find((c) => c.color === (typeof v === "string" ? v.toLowerCase() : v))?.color ?? DEFAULT_NOTE_COLOR;
 
 export const asNoteKind = (v: unknown): NoteKind => (v === "sticky" ? "sticky" : "text");
 

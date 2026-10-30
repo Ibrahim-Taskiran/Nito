@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { formatStudyTime } from "../../core/study/studyTime";
   import { groupByWeek } from "../../core/week";
   import Button from "../components/Button.svelte";
   import ProgressBar from "../components/ProgressBar.svelte";
@@ -69,6 +70,7 @@
         <div class="progress">
           <div class="line"><span class="name">{p.name}</span><span class="muted">{p.read}/{p.total} okundu</span></div>
           <ProgressBar value={p.read} max={p.total} />
+          {#if p.studyMs > 0}<span class="muted">Çalışma süresi: {formatStudyTime(p.studyMs)}</span>{/if}
           <div class="row end">
             <Button variant="ghost" disabled={st.busy || !p.total} onclick={() => st.exportPack(p)}>Paketi dışa aktar</Button>
           </div>
@@ -80,6 +82,18 @@
 
     <section class="card wide" aria-label="Sınav hazırlığı">
       {#key st.courseId}<ExamPrep {lib} courseId={st.courseId} />{/key}
+    </section>
+
+    <section class="card" aria-label="Çalışma süresi">
+      <h2>Çalışma süresi</h2>
+      {#each st.timed as d (d.id)}
+        <div class="docrow" data-testid="study-time">
+          <span class="name">{d.title}</span>
+          <span class="muted time">{formatStudyTime(st.times.get(d.id) ?? 0)}</span>
+        </div>
+      {:else}
+        <p class="muted">Okuyucudaki kronometre çalışırken açık olan PDF'e süre yazılır.</p>
+      {/each}
     </section>
 
     <section class="card">
@@ -144,6 +158,8 @@
     border-radius: var(--radius-sm); background: transparent; cursor: pointer;
   }
   .doc:hover { background: var(--surface-2); }
+  .time { flex: none; }
+  .docrow { min-height: var(--hit); }
   .docrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

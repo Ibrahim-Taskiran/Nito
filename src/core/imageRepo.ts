@@ -28,7 +28,9 @@ export class ImageRepo {
     )).lastId;
   }
 
-  async move(id: Id, r: ImageRect): Promise<void> {
+  /** New place, and a new page when `page` is given. */
+  async move(id: Id, r: ImageRect, page?: number): Promise<void> {
+    if (page != null) await this.db.run("UPDATE page_image SET page = ? WHERE id = ?", [page, id]);
     await this.db.run("UPDATE page_image SET x = ?, y = ?, w = ?, h = ? WHERE id = ?", [r.x, r.y, r.w, r.h, id]);
   }
 

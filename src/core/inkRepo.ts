@@ -36,10 +36,11 @@ export class InkRepo {
     )).lastId;
   }
 
-  /** Moved, scaled, recoloured or shape-corrected strokes keep their id (and their moment in a recording). */
-  async update(id: Id, patch: Partial<Pick<InkStroke, "points" | "width" | "color">>): Promise<void> {
+  /** Moved (also to another page), scaled, recoloured or shape-corrected strokes keep their id (and their moment in a recording). */
+  async update(id: Id, patch: Partial<Pick<InkStroke, "points" | "width" | "color" | "page">>): Promise<void> {
     const sets: string[] = [];
     const vals: unknown[] = [];
+    if (patch.page != null) sets.push("page = ?"), vals.push(patch.page);
     if (patch.points) sets.push("points = ?"), vals.push(JSON.stringify(patch.points));
     if (patch.width != null) sets.push("width = ?"), vals.push(patch.width);
     if (patch.color != null) sets.push("color = ?"), vals.push(patch.color);

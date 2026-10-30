@@ -2,9 +2,36 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (12) — Phase 3.8 four branches merged; redesign still running
+- **Merged on main:** notebook (3fcc524), cross-page selection move, toolbar groups + note colours + "Sayfayı kaldır" (2222301), study time + Whisper accuracy (2b71a1a).
+- **Migration order (final):** m013 notebook, m014 note colour (renamed from 015), m015 study time (renamed from 014). Nobody ran the app between merges, so no real DB has the old numbers.
+- **Checks on main:** svelte-check 0, vitest 193 passed, cargo check ok, full `npm run e2e` (17 scripts) exit 0. e2e-notebook now uses the `e2e-ink.mjs` Kalem helpers.
+- **Half done:** redesign agent (owner's Stitch design) in its own worktree; StudyView and ReaderView second pass still to do after it merges main.
+- **Owner action:** re-run "Whisper kur" and pick the suggested large-v3-turbo-q5_0 (also downloads the Silero VAD file); try a real Turkish lecture.
+- **Known limits:** q5_0 model not run on a real lecture yet; one notebook per PDF; notebook pages not in PDF export.
+
+## 2026-10-30 (11) — Study time per PDF + Whisper accuracy (branch `feat/study-time-whisper`)
+- **Study time:** `core/study/studyTime.ts` (pure `advance`: stopwatch time goes to the PDF open in the reader at that moment; switching PDFs splits, closed reader or split view credits nothing; `formatStudyTime` → "1 sa 25 dk"). `ui/studyTime.svelte.ts` tracks from App, flushes every 30 s, on pause/switch/close and when the page hides. Migration `015_study_time.ts` (study_time: document_id, day, ms); final order m013 notebook, m014 note colour, m015 study time. Çalışma Merkezi: new "Çalışma süresi" card per PDF, course total in "Ders ilerlemesi".
+- **Whisper:** new model `large-v3-turbo-q5_0` (574 MB, suggested; base = "Hızlı"; full turbo kept), sha256 checked for every model and the Silero VAD v5.1.2 (MIT, 885 KB, downloaded in setup). whisper-cli gets `-bs 5 -bo 5 -mc 128 --suppress-nst --prompt … --vad -vm …`; an old binary that says "unknown argument" is retried with the basic flags. Prompt = course + title + PDF key terms + a punctuated Turkish seed (`core/transcribe/prompt.ts`). WAV is DC-centred and raised to 0.9 peak (gain ≤ 8). `dropHallucinations` removes subtitle credits, thanks lines, the prompt read back, repeated segments and repetition loops.
+- **Checked:** svelte-check 0; vitest 183 passed; cargo check ok, cargo test --lib 14 passed; real whisper-cli 1.9.5 run with all new flags + VAD (base model, English TTS sample) ok; e2e-timer (now checks Çalışma Merkezi), e2e-study, e2e-transcribe ok.
+- **Not verified:** the q5_0 model was not downloaded or run here; no real Turkish lecture compared before/after.
+- **Next step:** lead merges, fixes migration order, owner reinstalls Whisper with the suggested model (setup also fetches the VAD file).
+## 2026-10-30 (10) — Phase 3.8 cross-page move (branch feat/selection-move-page)
+- **Done:** drag a lasso selection past the page edge onto another page (target page outlined, edge auto-scroll); "Sayfaya taşı" menu (page "2" or "2a"); "Kes" button + Ctrl+X (cut, then paste on any page). Strokes, pictures and notes change page; one undo step. No migration.
+- **Files:** `src/core/selection.ts` (PageMap, pageMap, paperPlace, mapPoints, mapBox), `inkRepo.ts` / `imageRepo.ts` / `pageToolsRepo.ts` (page in update), `ui/inkEdit.svelte.ts` (moveTo, cut, dropPage), `ui/reader.svelte.ts` (moveImage page), `ui/pageTools.svelte.ts`, `ui/views/SelectionLayer.svelte`, `ui/views/PenTools.svelte`, tests, `scripts/e2e-pen.mjs`.
+- **Checks:** check 0 errors, vitest 174 passed, e2e-pen phone + tablet ok.
+- **Next step:** merge into main with the other 3.8 branches. PenTools.svelte also touched by the toolbar branch.
+## 2026-10-30 (9) — Phase 3.8 notebook ("Defter") on branch feat/notebook
+- **Done:** "Defter" toolbar button opens a notebook beside the PDF (resizable column on wide screens, covers the reader body under 760 px). Starts with one Düz page; add Düz/Kareli/Çizgili/Noktalı (CSS backgrounds), move up/down, delete with confirm (last page stays). Same pen, eraser, lasso, text and sticky notes as PDF pages: notebook pages use page keys -(1e9 + notebook_page.id) in the existing layer tables.
+- **Files:** `src/core/notebook.ts`, `src/core/db/migrations/013_notebook.ts`, `migrate.ts`, `src/ui/notebook.svelte.ts`, `src/ui/views/NotebookPane.svelte`, `ReaderView.svelte` (button, mount, `.body` relative), `tests/notebook.test.ts`, `scripts/e2e-notebook.mjs`, `package.json` e2e chain.
+- **Checks:** svelte-check 0, vitest 175 passed, e2e-notebook OK.
+- **Limits:** one notebook per PDF; pictures cannot be added to notebook pages; notebook pages are not in the PDF export.
+- **Next step:** coordinator merges; migration order m013 before m014/m015.
+
 ## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
 - **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
 - **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
+- **Also running:** a fifth worktree agent restyles the app to the owner's design (zip on Desktop, `stitch_tablet_pdf_study_app.zip`; DESIGN.md + 3 screens: Bugün, Kütüphane, Çalışma Merkezi). It leaves StudyView/ReaderView markup alone; second pass after merge.
 - **Next step:** merge the four branches, fix the migration order in `migrate.ts` to `[…, m012, m013, m014, m015]`, add new e2e scripts to the chain, run check + vitest + full e2e, update ROADMAP 3.8 icons, push.
 
 ## 2026-10-30 (7) — Phase 3.7 done: pages, pen, lasso, timer; double scrollbar fixed

@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { ClipboardPaste, Copy, Globe, Hand, Lasso, Trash2, Undo2 } from "@lucide/svelte";
+  import { ClipboardPaste, Copy, FileOutput, FolderOpen, Hand, ImagePlus, Lasso, Scissors, Trash2, Undo2 } from "@lucide/svelte";
   import { INK_KINDS } from "../../core/ink";
+  import { keyForInput } from "../../core/pages";
+  import { paperPlace } from "../../core/selection";
   import { parseImageUrl } from "../../core/webImage";
   import type { FingerMode } from "../../core/touchInput";
   import MenuButton from "../components/MenuButton.svelte";
@@ -8,20 +10,23 @@
   import type { Reader } from "../reader.svelte";
   import { clipboardImage, imageFrom, placeBytes } from "../webImages";
 
-  /** Toolbar part for the pen round 2: select tool, undo, pen and touch settings, pictures from the web. */
-  let { reader, current, sizeOf, mine, onnotice }: {
+  /** Toolbar part for the pen round 2: select tool, undo, pen and touch settings, the "Resim" menu (file, clipboard, link). */
+  let { reader, current, sizeOf, mine, onnotice, onaddimage }: {
     reader: Reader;
     current: number;
     sizeOf: (page: number) => { w: number; h: number } | undefined;
     /** True when this reader has the focus (split view: only one pane takes keys and pastes). */
     mine: () => boolean;
     onnotice: (msg: string | null) => void;
+    /** Picture from a file on this device. */
+    onaddimage: () => void;
   } = $props();
 
   const edit = $derived(reader.edit);
   const prefs = $derived(edit.prefs);
   const sel = $derived(reader.inkTool === "select" ? edit.selection : null);
   let url = $state("");
+  let target = $state("");
   let busy = $state(false);
 
   const FINGER: { mode: FingerMode; name: string; hint: string }[] = [
@@ -72,6 +77,23 @@
     });
   }
 
+  /** "Sayfaya taşı": same spot and paper size on the chosen page ("12" or "12a"). */
+  async function moveToPage(close: () => void) {
+    const s = edit.selection;
+    const key = keyForInput(reader.pages.slots, target, reader.pages.numPages);
+    const from = s && sizeOf(s.page);
+    const to = key != null && sizeOf(key);
+    if (!s || !from || !to || key === s.page) {
+      onnotice(key === s?.page ? "Seçim zaten bu sayfada." : "Geçerli bir sayfa yazın (ör. 2 ya da 2a).");
+      return;
+    }
+    const t = reader.tools;
+    await run(() => edit.moveTo(key, paperPlace(from, t.bounds(s.page)), paperPlace(to, t.bounds(key))));
+    onnotice(`Seçim ${reader.pages.label(key)}. sayfaya taşındı.`);
+    target = "";
+    close();
+  }
+
   function onKey(e: KeyboardEvent) {
     if (!mine() || typing(e.target) || e.defaultPrevented) return;
     const mod = e.ctrlKey || e.metaKey;
@@ -82,6 +104,9 @@
     } else if (mod && k === "c" && sel) {
       e.preventDefault();
       edit.copy();
+    } else if (mod && k === "x" && sel) {
+      e.preventDefault();
+      void edit.cut();
     } else if ((e.key === "Delete" || e.key === "Backspace") && sel) {
       e.preventDefault();
       void edit.remove();
@@ -142,9 +167,10 @@
       <span>Otomatik düzelt<small>Çok düzgün şekiller tutmadan düzelir</small></span></label>
   {/snippet}
 </MenuButton>
-<MenuButton label="Web resmi" title="Panodan ya da bağlantıdan resim ekle">
-  {#snippet icon()}<Globe size={18} />{/snippet}
+<MenuButton label="Resim" title="Bu sayfaya resim ekle: dosyadan, panodan ya da bağlantıdan">
+  {#snippet icon()}<ImagePlus size={18} />{/snippet}
   {#snippet children(close)}
+    <button class="item" disabled={busy} onclick={() => { close(); onaddimage(); }}><FolderOpen size={16} />Dosyadan resim ekle</button>
     <button class="item" disabled={busy} onclick={() => { close(); void pasteHere(); }}><ClipboardPaste size={16} />Panodan yapıştır</button>
     <p class="hint">Tarayıcıdan bir resmi sayfaya sürükleyebilir ya da Ctrl+V ile yapıştırabilirsiniz.</p>
     <form class="link" onsubmit={(e) => { e.preventDefault(); void fromLink(close); }}>
@@ -155,10 +181,20 @@
 </MenuButton>
 {#if sel}
   <span class="sep" aria-hidden="true"></span>
+  <ToolButton label="Kes" title="Seçimi kes; başka sayfada yapıştırın (Ctrl+X)" onclick={() => edit.cut()}><Scissors size={18} /></ToolButton>
   <ToolButton label="Kopyala" title="Seçimi kopyala (Ctrl+C)" onclick={() => edit.copy()}><Copy size={18} /></ToolButton>
   <ToolButton label="Yapıştır" title="Kopyalananı yapıştır (Ctrl+V)" disabled={!edit.clipReady} onclick={() => run(() => edit.paste(current))}>
     <ClipboardPaste size={18} />
   </ToolButton>
+  <MenuButton label="Sayfaya taşı" title="Seçimi başka bir sayfaya taşı (ya da sürükleyip o sayfaya bırakın)">
+    {#snippet icon()}<FileOutput size={18} />{/snippet}
+    {#snippet children(close)}
+      <form class="link" onsubmit={(e) => { e.preventDefault(); void moveToPage(close); }}>
+        <input placeholder="Sayfa (ör. 2 ya da 2a)" aria-label="Hedef sayfa" bind:value={target} />
+        <button class="item" type="submit" disabled={busy || !target.trim()}>Taşı</button>
+      </form>
+    {/snippet}
+  </MenuButton>
   <ToolButton label="Seçimi sil" title="Seçimi sil (Delete)" onclick={() => edit.remove()}><Trash2 size={18} /></ToolButton>
   {#if sel.strokes.length}
     <div class="swatches" role="group" aria-label="Seçimin rengi">

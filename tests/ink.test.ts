@@ -32,6 +32,8 @@ describe("ink", () => {
     const ink = new InkRepo(repo.db);
     const id = await ink.add({ documentId: d, page: 2, color: "#000", width: 0.003, points: [pt(0.1, 0.1), pt(0.2, 0.2, 0.9)] });
     expect((await ink.list(d))[0]).toMatchObject({ id, page: 2, points: [pt(0.1, 0.1), pt(0.2, 0.2, 0.9)] });
+    await ink.update(id, { page: -3, points: [pt(0.3, 0.3)] });
+    expect((await ink.list(d))[0]).toMatchObject({ id, page: -3, points: [pt(0.3, 0.3)] });
     await ink.remove(id);
     expect(await ink.list(d)).toEqual([]);
   });

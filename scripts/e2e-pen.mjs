@@ -1,8 +1,10 @@
 // E2E for the pen, round 2, on a phone (390×844) and a tablet (820×1180), with CDP pen and touch input:
 // hold-to-correct shapes (line saved straight after reopen, circle), undo back to the raw stroke, palm rejection
-// (large contact, "Yalnız kalemle çiz"), pictures from paste / drop / link, lasso select → move → scale 2× → reopen.
+// (large contact, "Yalnız kalemle çiz"), pictures from paste / drop / link, lasso select → move → scale 2× → reopen,
+// moving a selection to page 2 (drag, undo, "Sayfaya taşı", reopen).
 // Needs `npm run dev`.
 import { chromium } from "@playwright/test";
+import { penToggle } from "./e2e-ink.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -95,7 +97,7 @@ async function run(vp, label) {
   const circle = (cx, cy, r, n = 40) =>
     Array.from({ length: n + 1 }, (_, i) => [cx + r * Math.cos((i / n) * 2.05 * Math.PI) + jit(2), cy + r * Math.sin((i / n) * 2.05 * Math.PI) + jit(2)]);
   const count = () => strokes.count();
-  const tool = (name) => page.getByRole("button", { name, exact: true }).click();
+  const tool = (name) => (name === "Tükenmez" ? penToggle(page) : page.getByRole("button", { name, exact: true }).click());
   const penMenu = async (option) => {
     await page.getByRole("button", { name: "Kalem ve dokunma" }).click();
     await page.getByRole("radio", { name: new RegExp(option) }).check();
@@ -172,13 +174,13 @@ async function run(vp, label) {
   }, { x: b.x + W * 0.7, y: b.y + H * 0.3, src: imgUrl });
   await page.waitForFunction(() => document.querySelectorAll('[data-page="1"] .pimg').length === 2, null, { timeout: 4000 })
     .catch(() => fail(`${label}: dropped browser image missing`));
-  await page.getByRole("button", { name: "Web resmi" }).click();
+  await page.getByRole("button", { name: "Resim", exact: true }).click();
   await page.getByRole("textbox", { name: "Resim bağlantısı" }).fill(imgUrl);
   await page.getByRole("button", { name: "Bağlantıdan resim ekle" }).click();
   await page.waitForFunction(() => document.querySelectorAll('[data-page="1"] .pimg').length === 3, null, { timeout: 5000 })
     .catch(() => fail(`${label}: link image missing`));
   // A web page link is refused with a message.
-  await page.getByRole("button", { name: "Web resmi" }).click();
+  await page.getByRole("button", { name: "Resim", exact: true }).click();
   await page.getByRole("textbox", { name: "Resim bağlantısı" }).fill(new URL("/", url).href);
   await page.getByRole("button", { name: "Bağlantıdan resim ekle" }).click();
   await page.getByRole("alert").waitFor({ timeout: 4000 }).catch(() => fail(`${label}: no message for a non-image link`));
@@ -251,9 +253,49 @@ async function run(vp, label) {
   await page.keyboard.press("Control+z");
   await page.waitForTimeout(300);
   if ((await count()) !== n0) fail(`${label}: undo did not bring the deleted stroke back`);
+
+  // ---- Move across pages: drag the selection onto page 2, undo, then "Sayfaya taşı", reopen ----
+  const strokes2 = page.locator('[data-page="2"] svg.ink:not(.under) path[data-id]');
+  const counts = async () => [await count(), await strokes2.count()];
+  const expectCounts = async (want, what) => {
+    await page.waitForTimeout(300);
+    const got = await counts();
+    if (got[0] !== want[0] || got[1] !== want[1]) fail(`${label}: ${what}: pages hold ${got} strokes, expected ${want}`);
+  };
+  const selectLast = async () => {
+    const at = await strokes.last().evaluate((p) => {
+      const q = p.getPointAtLength(p.getTotalLength() / 2).matrixTransform(p.getScreenCTM());
+      return [q.x, q.y];
+    });
+    await penStroke([at, at]);
+    await selBox.waitFor({ timeout: 3000 }).catch(() => fail(`${label}: tap did not select the stroke`));
+  };
+  await expectCounts([n0, 0], "before the move");
+  // The stroke just below the top of the scroller, so the top of page 2 is in view too.
+  await strokes.last().evaluate((p) => {
+    const s = p.closest(".scroller");
+    s.scrollTop += p.getBoundingClientRect().top - s.getBoundingClientRect().top - 40;
+  });
+  await page.waitForTimeout(200);
+  await selectLast();
+  sb = await selBox.boundingBox();
+  const p2 = await page.locator('[data-page="2"]').boundingBox();
+  const cx = sb.x + sb.width / 2, cy = sb.y + sb.height / 2;
+  const ty = Math.min(p2.y + 80, (vp.height + p2.y) / 2);
+  await penStroke(Array.from({ length: 13 }, (_, i) => [cx, cy + ((ty - cy) * i) / 12]));
+  await expectCounts([n0 - 1, 1], "drag to page 2");
+  await page.keyboard.press("Control+z");
+  await expectCounts([n0, 0], "undo of the drag");
+  await selectLast();
+  await page.getByRole("button", { name: "Sayfaya taşı" }).click();
+  await page.getByRole("textbox", { name: "Hedef sayfa" }).fill("2");
+  await page.getByRole("button", { name: "Taşı", exact: true }).click();
+  await expectCounts([n0 - 1, 1], "Sayfaya taşı");
+  await reopen();
+  await expectCounts([n0 - 1, 1], "reopen after the move");
   await page.screenshot({ path: `tests/.out/pen-${label}.png` });
   await page.close();
-  return `${label}: line+circle+undo ok, palm ok, 3 images ok, lasso move ${dx.toFixed(0)}px scale ${(after.w / before.w).toFixed(2)}×`;
+  return `${label}: line+circle+undo ok, palm ok, 3 images ok, lasso move ${dx.toFixed(0)}px scale ${(after.w / before.w).toFixed(2)}×, page move ok`;
 }
 
 const out = [];

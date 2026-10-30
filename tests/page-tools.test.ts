@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { escapeHtml, inline, renderMarkdown, richNeeds } from "../src/core/markdown";
 import { moveRect, resizeRect } from "../src/core/pageImage";
 import {
+  DEFAULT_NOTE_COLOR, asNoteColor,
   ALL_LAYERS, MARGIN_MAX, asMargin, clearMargin, contentExtent, growMargin, isTapeSized, moveWithin, noteRectAt,
   pageBounds, parseLayers, rectFrom, resizeWithin, tapeAt,
 } from "../src/core/pageTools";
@@ -141,6 +142,14 @@ describe("page tools repo", () => {
     const n = await tools.addNote(docId, 1, "sticky", { x: 1.1, y: 0.2, w: 0.2, h: 0.1 }, "$x$");
     await tools.updateNote(n, { body: "yeni", collapsed: true, x: 1.2 });
     expect(await tools.notes(docId)).toMatchObject([{ kind: "sticky", body: "yeni", collapsed: true, x: 1.2, page: 1 }]);
+    expect((await tools.notes(docId))[0].color).toBe(DEFAULT_NOTE_COLOR);
+    await tools.updateNote(n, { color: "#FFD6E0" });
+    expect((await tools.notes(docId))[0].color).toBe("#ffd6e0");
+    await tools.updateNote(n, { color: "red" });
+    expect((await tools.notes(docId))[0].color).toBe(DEFAULT_NOTE_COLOR);
+    const green = await tools.addNote(docId, 2, "sticky", { x: 0.1, y: 0.1, w: 0.2, h: 0.1 }, "", "#d4f5c9");
+    expect((await tools.notes(docId)).find((x) => x.id === green)?.color).toBe("#d4f5c9");
+    await tools.removeNote(green);
 
     await tools.setMargin(docId, 1, { right: 0.5, bottom: 0 });
     await tools.setMargin(docId, 1, { right: 0.75, bottom: 0.25 });
@@ -152,5 +161,13 @@ describe("page tools repo", () => {
     expect(await tools.tapes(docId)).toEqual([]);
     expect(await tools.notes(docId)).toEqual([]);
     expect((await tools.margins(docId)).size).toBe(0);
+  });
+});
+
+describe("note colours", () => {
+  it("keeps preset colours and falls back to the default", () => {
+    expect(asNoteColor("#FFD6E0")).toBe("#ffd6e0");
+    expect(asNoteColor(null)).toBe(DEFAULT_NOTE_COLOR);
+    expect(asNoteColor("#123456")).toBe(DEFAULT_NOTE_COLOR);
   });
 });

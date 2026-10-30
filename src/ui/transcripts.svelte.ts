@@ -1,10 +1,14 @@
 // Recordings of the open document and their transcripts. Web Audio conversion lives here;
 // WAV encoding, whisper JSON and Markdown rules are in core/transcribe.
 import { TranscriptStore } from "../core/transcribe/store";
-import { parseWhisperJson, transcriptMarkdown, transcriptTitle } from "../core/transcribe/transcript";
-import { WHISPER_SAMPLE_RATE, encodeWav, mixToMono } from "../core/transcribe/wav";
+import { keyTerms, lecturePrompt } from "../core/transcribe/prompt";
+import { dropHallucinations, parseWhisperJson, transcriptMarkdown, transcriptTitle } from "../core/transcribe/transcript";
+import { WHISPER_SAMPLE_RATE, encodeWav, mixToMono, normalize } from "../core/transcribe/wav";
 import type { Id, Recording } from "../core/types";
-import { canSetupWhisper, canTranscribe, type SetupProgress, type WhisperModel, type WhisperStatus } from "../platform/transcriber";
+import {
+  bestWhisperModel, canSetupWhisper, canTranscribe, suggestWhisperModel, type SetupProgress, type WhisperModel, type WhisperStatus,
+} from "../platform/transcriber";
+import { pageTexts } from "./pageText";
 import type { Reader } from "./reader.svelte";
 
 export interface Job {
@@ -12,12 +16,12 @@ export interface Job {
   percent: number;
 }
 
-/** Any recording (webm/opus, m4a) -> 16 kHz mono 16-bit WAV bytes. Decoding at 16 kHz resamples too. */
+/** Any recording (webm/opus, m4a) -> 16 kHz mono 16-bit WAV bytes, levelled. Decoding at 16 kHz resamples (band-limited) too. */
 export async function recordingToWav(bytes: Uint8Array): Promise<Uint8Array> {
   const ctx = new OfflineAudioContext(1, 1, WHISPER_SAMPLE_RATE);
   const audio = await ctx.decodeAudioData(bytes.slice().buffer);
   const channels = Array.from({ length: audio.numberOfChannels }, (_, i) => audio.getChannelData(i));
-  return encodeWav(mixToMono(channels), audio.sampleRate);
+  return encodeWav(normalize(mixToMono(channels)), audio.sampleRate);
 }
 
 export class Transcripts {
@@ -27,7 +31,7 @@ export class Transcripts {
   /** Shown after "Yazıya dök" without whisper. */
   missing = $state(false);
   setupOpen = $state(false);
-  setupModel = $state<WhisperModel>("base");
+  setupModel = $state<WhisperModel>(suggestWhisperModel((navigator as { deviceMemory?: number }).deviceMemory ?? null));
   setupProgress = $state<SetupProgress | null>(null);
   setupError = $state<string | null>(null);
   expandedId = $state<Id | null>(null);
@@ -68,8 +72,15 @@ export class Transcripts {
 
   /** The model to run: the best installed one. */
   private model(): WhisperModel | null {
-    const m = this.status?.models ?? [];
-    return m.includes("large-v3-turbo") ? "large-v3-turbo" : m.includes("base") ? "base" : null;
+    return bestWhisperModel(this.status?.models ?? []);
+  }
+
+  /** Course, title and the PDF's key terms, so whisper spells the subject right. */
+  private async prompt(): Promise<string> {
+    const { doc, lib } = this.reader;
+    const course = lib.courses.find((c) => c.id === doc.courseId)?.name ?? null;
+    const pages = await pageTexts(lib.platform, doc).catch(() => [] as string[]);
+    return lecturePrompt(course, doc.title, keyTerms(pages));
   }
 
   async transcribe(rec: Recording): Promise<void> {
@@ -86,14 +97,18 @@ export class Transcripts {
     const wavRel = `transcripts/${rec.id}.wav`;
     this.jobs[rec.id] = { phase: "convert", percent: 0 };
     try {
-      const wav = await recordingToWav(await this.reader.lib.platform.storage.read(rec.filePath));
+      const [wav, prompt] = await Promise.all([
+        this.reader.lib.platform.storage.read(rec.filePath).then(recordingToWav),
+        this.prompt(),
+      ]);
       await this.reader.lib.platform.storage.write(wavRel, wav);
       this.jobs[rec.id] = { phase: "whisper", percent: 0 };
       const json = await t.transcribe(wavRel, model, (p) => {
         if (this.jobs[rec.id]) this.jobs[rec.id].percent = p;
-      });
+      }, prompt);
       this.jobs[rec.id] = { phase: "save", percent: 100 };
-      await this.store.save(rec, transcriptTitle(rec.startedAt), transcriptMarkdown(parseWhisperJson(json)));
+      const segments = dropHallucinations(parseWhisperJson(json), prompt);
+      await this.store.save(rec, transcriptTitle(rec.startedAt), transcriptMarkdown(segments));
       await this.load();
       this.expandedId = rec.id;
     } catch (e) {

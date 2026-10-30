@@ -151,8 +151,8 @@ describe("study repo", () => {
     expect(exam.map((e) => [e.ann.text, e.doc.title, e.doc.id])).toEqual([["Sınav konusu", "Hafta 2: Katmanlar", d1]]);
 
     expect(await study.courseProgress()).toEqual([
-      { courseId: c, name: "Ağlar", read: 0, total: 1 },
-      { courseId: null, name: "Derssiz", read: 1, total: 1 },
+      { courseId: c, name: "Ağlar", read: 0, total: 1, studyMs: 0 },
+      { courseId: null, name: "Derssiz", read: 1, total: 1, studyMs: 0 },
     ]);
 
     const doc = (await repo.getDocument(d1))!;

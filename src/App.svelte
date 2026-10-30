@@ -15,6 +15,7 @@
   import Logo from "./ui/views/Logo.svelte";
   import StudyView from "./ui/views/StudyView.svelte";
   import type { Library } from "./ui/library.svelte";
+  import { trackStudyTime } from "./ui/studyTime.svelte";
   import type { SourceFile } from "./core/library/addDocuments";
 
   let { lib }: { lib: Library } = $props();
@@ -22,7 +23,11 @@
 
   onMount(() => {
     const off = lib.platform.onDrop(addFiles);
-    return () => void off.then((f) => f());
+    const stopTracking = trackStudyTime(lib);
+    return () => {
+      stopTracking();
+      void off.then((f) => f());
+    };
   });
 
   /** New files show up in the library, so leave Bugün/Program for it. */

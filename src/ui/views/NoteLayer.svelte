@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Check, Minimize2, Pencil, StickyNote, Trash2 } from "@lucide/svelte";
+  import { Check, Minimize2, Palette, Pencil, StickyNote, Trash2 } from "@lucide/svelte";
   import { tick } from "svelte";
-  import { moveWithin, resizeWithin, type PageNote, type PageRect } from "../../core/pageTools";
+  import { NOTE_COLORS, moveWithin, resizeWithin, type PageNote, type PageRect } from "../../core/pageTools";
   import RichText from "../components/RichText.svelte";
   import { longPress } from "../longpress";
   import { isInkTool, type Reader } from "../reader.svelte";
@@ -13,6 +13,8 @@
   let drag = $state<{ id: number; mode: "move" | "resize"; x0: number; y0: number; from: PageRect; rect: PageRect } | null>(null);
   let draft = $state("");
   let editor = $state<HTMLTextAreaElement>();
+  /** Note whose colour row is open. */
+  let palette = $state<number | null>(null);
 
   const tools = $derived(reader.tools);
   const notes = $derived(tools.layers.notes ? tools.notes.filter((n) => n.page === page) : []);
@@ -124,11 +126,11 @@
     {@const selected = tools.selectedNoteId === n.id}
     {@const editing = tools.editingNoteId === n.id}
     {#if n.kind === "sticky" && n.collapsed && !editing}
-      <button class="pnote icon" style:left="{(r.x / b.w) * 100}%" style:top="{(r.y / b.h) * 100}%" aria-label="Notu aç" title="Notu aç"
+      <button class="pnote icon" style:background={n.color} style:left="{(r.x / b.w) * 100}%" style:top="{(r.y / b.h) * 100}%" aria-label="Notu aç" title="Notu aç"
         onclick={(e) => { e.stopPropagation(); void tools.updateNote(n.id, { collapsed: false }); }}><StickyNote size={20} /></button>
     {:else}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="pnote {n.kind}" class:selected class:editing class:empty={!n.body.trim()} style={pos(r, n.kind === "text" && !editing)} data-note={n.id}
+      <div class="pnote {n.kind}" class:selected class:editing class:empty={!n.body.trim()} style={pos(r, n.kind === "text" && !editing)} style:background={n.kind === "sticky" ? n.color : null} data-note={n.id}
         aria-label={n.kind === "sticky" ? "Yapışkan not" : "Metin kutusu"} role="group"
         onpointerdown={(e) => start(e, n, "move")} onpointermove={move} onpointerup={end} onpointercancel={end}
         ondblclick={() => startEdit(n.id)} {@attach longPress(() => void startEdit(n.id))}>
@@ -146,12 +148,22 @@
               <button aria-label="Düzenle" title="Düzenle (çift tıkla)" onclick={() => startEdit(n.id)}><Pencil size={16} /></button>
             {/if}
             {#if n.kind === "sticky"}
+              <button aria-label="Not rengi" title="Not rengi" aria-expanded={palette === n.id}
+                onclick={() => (palette = palette === n.id ? null : n.id)}><Palette size={16} /></button>
               <button aria-label="Notu küçült" title="Simgeye küçült"
                 onclick={async () => { await finishEdit(); await tools.updateNote(n.id, { collapsed: true }); tools.selectedNoteId = null; }}>
                 <Minimize2 size={16} /></button>
             {/if}
             <button class="danger" aria-label="Notu sil" title="Sil (Delete)" onclick={() => tools.removeNote(n.id)}><Trash2 size={16} /></button>
           </div>
+          {#if n.kind === "sticky" && palette === n.id}
+            <div class="palette" role="group" aria-label="Not renkleri">
+              {#each NOTE_COLORS as c (c.color)}
+                <button aria-label="Not rengi: {c.name}" title={c.name} aria-pressed={n.color === c.color}
+                  onclick={() => tools.setNoteColor(n.id, c.color)}><span style:background={c.color}></span></button>
+              {/each}
+            </div>
+          {/if}
           {#if !editing}
             <span class="handle" aria-label="Boyutlandır" role="slider" aria-valuenow={Math.round(r.w * 100)} tabindex="-1"
               onpointerdown={(e) => { e.stopPropagation(); start(e, n, "resize"); }} onpointermove={move} onpointerup={end} onpointercancel={end}></span>
@@ -193,6 +205,16 @@
   }
   .bar button:hover { background: var(--surface-2); color: var(--text); }
   .bar .danger { color: var(--danger); }
+  .palette {
+    position: absolute; right: 0; top: 100%; margin-top: 6px; z-index: 1; display: flex; flex-wrap: wrap; max-width: 200px; padding: 2px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+  }
+  .palette button {
+    width: var(--hit); height: var(--hit); display: grid; place-items: center; border: 0; padding: 0; background: transparent;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .palette span { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.18); }
+  .palette [aria-pressed="true"] span { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
   .handle {
     position: absolute; right: -9px; bottom: -9px; width: 18px; height: 18px; border-radius: 50%;
     background: var(--surface); border: 2px solid var(--accent); cursor: nwse-resize; touch-action: none;
