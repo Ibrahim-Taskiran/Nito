@@ -137,13 +137,14 @@ These four groups are independent and can run in parallel, each in its own git w
   - Ollama (local, free) for summaries and "chat with notes", using BM25 retrieval over course texts.
   - Choose a model whose licence allows commercial use, e.g. `qwen2.5:7b` (Apache-2.0). Note: `qwen2.5:3b` is research-only.
   - Side-by-side reading of two PDFs in one window (split view).
+- ✅ **2E Built-in AI for buyers (2026-10-30):** no Ollama needed on desktop. The app downloads llama.cpp (MIT, pinned b11849 CPU x64) and one Apache-2.0 GGUF model ("Hızlı" Qwen3-4B-Instruct-2507 Q4_K_M 2.3 GB, "Kaliteli" Qwen2.5-7B-Instruct Q4_K_M 4.4 GB, sha256 checked) into `<app data>/ai/` and runs `llama-server` on 127.0.0.1 (random port + key). Ollama stays as an option when it runs. No AI at all on Android/iOS (`Platform.ai` undefined). Not yet: macOS/Linux engine builds, GPU builds.
 
 ### Phase 3: Tablets 🟨
 - `tauri android init` and `tauri ios init`.
 - Platform adapters for mobile storage and for the microphone.
 - ✅ Pencil and stylus: handwriting and ink annotations with pointer events and pressure.
 - ✅ Touch gestures: pinch zoom and swipe between pages.
-- ✅ Whisper and Ollama are desktop-only at first. Hide them on mobile, or offer a "send to desktop" option later.
+- ✅ Whisper and AI are desktop-only. Hidden on mobile (no AI entry point anywhere), or a "send to desktop" option later.
 
 ### Phase 3.5: Richer UI (owner request 2026-10-30) ✅
 The owner found the UI too empty next to similar apps. Three parallel worktree agents:
