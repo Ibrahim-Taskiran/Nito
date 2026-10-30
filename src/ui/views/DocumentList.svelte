@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { MoreVertical, Star } from "@lucide/svelte";
+  import { Ellipsis, Star } from "@lucide/svelte";
+  import { longPress } from "../longpress";
   import { READ_STATUS_NAMES } from "../../core/labels";
   import type { Document } from "../../core/types";
   import type { WeekGroup } from "../../core/week";
@@ -17,10 +18,11 @@
       {#if g.label}<h3>{g.label}</h3>{/if}
       {#each g.items as d (d.id)}
         <div class="row" class:selected={lib.selectedId === d.id} role="group" aria-label={d.title}
+          {@attach longPress((x, y) => { lib.selectedId = d.id; onmenu(d, x, y); })}
           oncontextmenu={(e) => { e.preventDefault(); lib.selectedId = d.id; onmenu(d, e.clientX, e.clientY); }}>
           <button class="dot {d.readStatus}" aria-label="Durum: {READ_STATUS_NAMES[d.readStatus]}" title={READ_STATUS_NAMES[d.readStatus]}
             onclick={() => lib.cycleReadStatus(d)}></button>
-          <button class="title" aria-label={d.title} onclick={() => (lib.selectedId = d.id)} ondblclick={() => lib.resume(d)}>
+          <button class="title" aria-label={d.title} onclick={() => lib.activate(d)} ondblclick={() => lib.resume(d)}>
             <span class="name">{d.title}</span>
             <span class="meta">{[courseName(d), d.week != null ? `Hafta ${d.week}` : null].filter(Boolean).join(" · ")}</span>
           </button>
@@ -28,7 +30,7 @@
           <button class="icon star" class:on={d.favorite} aria-label="Favori" aria-pressed={d.favorite} title="Favori"
             onclick={() => lib.toggleFavorite(d)}><Star size={16} fill={d.favorite ? "currentColor" : "none"} /></button>
           <button class="icon" aria-label="Diğer işlemler" aria-haspopup="menu" title="Diğer işlemler"
-            onclick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onmenu(d, r.right, r.bottom + 4); }}><MoreVertical size={16} /></button>
+            onclick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onmenu(d, r.right, r.bottom + 4); }}><Ellipsis size={18} /></button>
         </div>
       {/each}
     </section>
@@ -39,7 +41,7 @@
   .list { padding: 4px 0 24px; }
   h3 { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 16px 8px 4px; }
   /* Off-screen rows skip layout and paint: cheap virtualisation for long lists. */
-  .row { display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); content-visibility: auto; contain-intrinsic-size: auto 52px; padding-right: 4px; }
+  .row { display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); content-visibility: auto; contain-intrinsic-size: auto 52px; padding-right: 4px; -webkit-touch-callout: none; user-select: none; }
   .row:hover { background: var(--surface-2); }
   .row.selected { background: var(--accent-soft); }
   button { border: 0; background: transparent; cursor: pointer; min-height: var(--hit); color: inherit; }
@@ -52,7 +54,7 @@
   .meta { font-size: 12px; color: var(--text-2); }
   .meta:empty { display: none; }
   .stats { width: 170px; flex: none; padding: 0 8px; }
-  .icon { width: 36px; flex: none; display: grid; place-items: center; color: var(--text-2); border-radius: var(--radius-sm); }
+  .icon { width: var(--hit); flex: none; display: grid; place-items: center; color: var(--text-2); border-radius: var(--radius-sm); }
   .icon:hover { color: var(--text); }
   .star.on { color: #c9a23e; }
   @media (max-width: 640px) { .stats { width: 90px; } }

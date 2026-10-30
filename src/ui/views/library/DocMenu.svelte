@@ -15,8 +15,11 @@
   } = $props();
   let el: HTMLDivElement;
   let pos = $state({ left: 0, top: 0 });
+  // The finger that long-pressed lifts over the backdrop; only a press that starts there closes the menu.
+  let armed = false;
 
-  const run = (f: () => unknown) => () => { onclose(); void f(); };
+  // Run first: closing unmounts this menu, and its props (doc) are gone after that.
+  const run = (f: () => unknown) => () => { void f(); onclose(); };
   const items = $derived([
     { label: "Aç", Icon: BookOpen, act: run(() => lib.resume(doc)) },
     { label: "Yeniden adlandır", Icon: Pencil, act: run(() => onaction("rename", doc)) },
@@ -53,7 +56,7 @@
 
 <svelte:window onkeydown={onkeydown} onresize={onclose} />
 <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
-<div class="catch" onclick={onclose} oncontextmenu={(e) => { e.preventDefault(); onclose(); }}></div>
+<div class="catch" onpointerdown={() => (armed = true)} onclick={() => armed && onclose()} oncontextmenu={(e) => { e.preventDefault(); onclose(); }}></div>
 <div class="menu" role="menu" aria-label="Belge işlemleri" bind:this={el} style:left="{pos.left}px" style:top="{pos.top}px">
   {#each items as it, i (it.label)}
     {#if it.danger}<div class="sep" role="separator"></div>{/if}
@@ -70,7 +73,7 @@
     border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 32px rgb(0 0 0 / 0.16);
   }
   button {
-    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 0 10px;
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--hit); padding: 0 10px;
     border: 0; background: transparent; border-radius: 6px; cursor: pointer; text-align: left; color: var(--text);
   }
   button :global(svg) { color: var(--text-2); flex: none; }

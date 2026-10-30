@@ -118,7 +118,7 @@
   .search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
   .search input::-webkit-search-cancel-button { display: none; }
   kbd { font: 11px var(--font); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--text-2); white-space: nowrap; }
-  .clear { border: 0; background: transparent; color: var(--text-2); cursor: pointer; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; }
+  .clear { border: 0; background: transparent; color: var(--text-2); cursor: pointer; display: grid; place-items: center; width: 32px; height: 32px; margin-right: -6px; border-radius: 50%; }
   .clear:hover { background: var(--surface-2); color: var(--text); }
   .sort {
     position: relative; display: flex; align-items: center; gap: 6px; padding-left: 10px; color: var(--text-2);
@@ -128,13 +128,13 @@
   .sort select option { background: var(--surface); color: var(--text); }
   .sort:focus-within { border-color: var(--accent); }
   .seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-  .seg button { width: var(--hit); height: calc(var(--hit) - 2px); border: 0; background: var(--surface); color: var(--text-2); cursor: pointer; display: grid; place-items: center; }
+  .seg button { width: var(--hit); height: var(--hit); border: 0; background: var(--surface); color: var(--text-2); cursor: pointer; display: grid; place-items: center; }
   .seg button + button { border-left: 1px solid var(--border); }
   .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
   .add { display: flex; gap: 8px; margin-left: auto; }
   .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
   .chip {
-    flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border-radius: 999px;
+    flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit); padding: 0 14px; border-radius: 999px;
     border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; font-size: 13px;
   }
   .chip:hover { color: var(--text); background: var(--surface-2); }

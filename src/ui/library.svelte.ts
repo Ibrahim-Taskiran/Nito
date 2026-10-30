@@ -26,6 +26,9 @@ function savePref(key: string, value: string): void {
   }
 }
 
+/** Below this width DetailPanel is hidden (keep in sync with its CSS media query). */
+const NO_DETAIL_PANEL = "(max-width: 1023px)";
+
 /** Cached cover of a document's first page. */
 export const thumbPath = (d: Pick<Document, "fileHash">) => `thumbs/${d.fileHash}.png`;
 
@@ -123,6 +126,12 @@ export class Library {
     this.openPage = page;
     this.split = null;
     this.opened = d;
+  }
+
+  /** Tap on a card or row: select it, or open it when there is no detail panel (tablet portrait, phone). */
+  activate(d: Document): void {
+    if (typeof matchMedia === "function" && matchMedia(NO_DETAIL_PANEL).matches) void this.resume(d);
+    else this.selectedId = d.id;
   }
 
   /** Opens at the saved page ("continue where you left off"). */
