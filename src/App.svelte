@@ -2,8 +2,7 @@
   import { onMount } from "svelte";
   import Button from "./ui/components/Button.svelte";
   import AddProgress from "./ui/views/AddProgress.svelte";
-  import DetailPanel from "./ui/views/DetailPanel.svelte";
-  import DocumentList from "./ui/views/DocumentList.svelte";
+  import LibraryView from "./ui/views/LibraryView.svelte";
   import ReaderView from "./ui/views/ReaderView.svelte";
   import Sidebar from "./ui/views/Sidebar.svelte";
   import AiView from "./ui/views/AiView.svelte";
@@ -50,13 +49,7 @@
     {:else if lib.section === "ai"}
       <AiView {lib} />
     {:else}
-      <main class="center">
-        <header class="toolbar">
-          <div class="row">{@render addButtons()}</div>
-        </header>
-        <DocumentList {lib} />
-      </main>
-      <DetailPanel {lib} />
+      <LibraryView {lib} {addButtons} />
     {/if}
   </div>
 {/if}
@@ -64,8 +57,6 @@
 
 <style>
   .shell { display: flex; height: 100%; }
-  .center { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .toolbar { display: flex; justify-content: flex-end; padding: 10px 16px; border-bottom: 1px solid var(--border); }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   .empty { height: 100%; display: grid; place-content: center; justify-items: center; text-align: center; padding: 16px; gap: 12px; }
   .empty h1 { font-size: 20px; font-weight: 600; margin: 0; }

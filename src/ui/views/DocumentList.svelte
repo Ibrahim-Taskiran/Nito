@@ -1,44 +1,61 @@
 <script lang="ts">
+  import { Ellipsis, Star } from "@lucide/svelte";
+  import { longPress } from "../longpress";
   import { READ_STATUS_NAMES } from "../../core/labels";
-  import { groupByWeek } from "../../core/week";
+  import type { Document } from "../../core/types";
+  import type { WeekGroup } from "../../core/week";
   import type { Library } from "../library.svelte";
-  let { lib }: { lib: Library } = $props();
-  const groups = $derived(groupByWeek(lib.documents));
+  import DocStats from "./library/DocStats.svelte";
+
+  /** Compact list mode of the library; same information as the cards, without covers. */
+  let { lib, groups, onmenu }: { lib: Library; groups: WeekGroup<Document>[]; onmenu: (d: Document, x: number, y: number) => void } = $props();
+  const courseName = (d: Document) => lib.courses.find((c) => c.id === d.courseId)?.name;
 </script>
 
 <div class="list">
-  {#each groups as g (g.week)}
+  {#each groups as g (g.label)}
     <section>
-      <h3>{g.label}</h3>
+      {#if g.label}<h3>{g.label}</h3>{/if}
       {#each g.items as d (d.id)}
-        <div class="row" class:selected={lib.selectedId === d.id}>
+        <div class="row" class:selected={lib.selectedId === d.id} role="group" aria-label={d.title}
+          {@attach longPress((x, y) => { lib.selectedId = d.id; onmenu(d, x, y); })}
+          oncontextmenu={(e) => { e.preventDefault(); lib.selectedId = d.id; onmenu(d, e.clientX, e.clientY); }}>
           <button class="dot {d.readStatus}" aria-label="Durum: {READ_STATUS_NAMES[d.readStatus]}" title={READ_STATUS_NAMES[d.readStatus]}
             onclick={() => lib.cycleReadStatus(d)}></button>
-          <button class="title" onclick={() => (lib.selectedId = d.id)} ondblclick={() => lib.open(d)}>{d.title}</button>
-          <button class="star" class:on={d.favorite} aria-label="Favori" aria-pressed={d.favorite}
-            onclick={() => lib.toggleFavorite(d)}>{d.favorite ? "★" : "☆"}</button>
+          <button class="title" aria-label={d.title} onclick={() => lib.activate(d)} ondblclick={() => lib.resume(d)}>
+            <span class="name">{d.title}</span>
+            <span class="meta">{[courseName(d), d.week != null ? `Hafta ${d.week}` : null].filter(Boolean).join(" · ")}</span>
+          </button>
+          <div class="stats"><DocStats doc={d} stats={lib.stats.get(d.id)} /></div>
+          <button class="icon star" class:on={d.favorite} aria-label="Favori" aria-pressed={d.favorite} title="Favori"
+            onclick={() => lib.toggleFavorite(d)}><Star size={16} fill={d.favorite ? "currentColor" : "none"} /></button>
+          <button class="icon" aria-label="Diğer işlemler" aria-haspopup="menu" title="Diğer işlemler"
+            onclick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onmenu(d, r.right, r.bottom + 4); }}><Ellipsis size={18} /></button>
         </div>
       {/each}
     </section>
-  {:else}
-    <p class="none">Bu görünümde belge yok.</p>
   {/each}
 </div>
 
 <style>
-  .list { flex: 1; overflow-y: auto; padding: 8px 16px 24px; }
+  .list { padding: 4px 0 24px; }
   h3 { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 16px 8px 4px; }
   /* Off-screen rows skip layout and paint: cheap virtualisation for long lists. */
-  .row { display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); content-visibility: auto; contain-intrinsic-size: auto 40px; }
+  .row { display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); content-visibility: auto; contain-intrinsic-size: auto 52px; padding-right: 4px; -webkit-touch-callout: none; user-select: none; }
   .row:hover { background: var(--surface-2); }
   .row.selected { background: var(--accent-soft); }
-  button { border: 0; background: transparent; cursor: pointer; min-height: var(--hit); }
-  .dot { width: var(--hit); display: grid; place-items: center; }
+  button { border: 0; background: transparent; cursor: pointer; min-height: var(--hit); color: inherit; }
+  .dot { width: var(--hit); display: grid; place-items: center; flex: none; }
   .dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--accent); }
   .dot.reading::before { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
   .dot.read::before { border-color: var(--border); background: var(--border); }
-  .title { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
-  .star { width: var(--hit); color: var(--text-2); font-size: 16px; }
+  .title { flex: 1; min-width: 0; text-align: left; padding: 6px 4px; display: grid; gap: 1px; }
+  .name, .meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { font-size: 12px; color: var(--text-2); }
+  .meta:empty { display: none; }
+  .stats { width: 170px; flex: none; padding: 0 8px; }
+  .icon { width: var(--hit); flex: none; display: grid; place-items: center; color: var(--text-2); border-radius: var(--radius-sm); }
+  .icon:hover { color: var(--text); }
   .star.on { color: #c9a23e; }
-  .none { color: var(--text-2); padding: 24px 8px; }
+  @media (max-width: 640px) { .stats { width: 90px; } }
 </style>

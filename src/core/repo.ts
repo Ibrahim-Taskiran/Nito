@@ -2,7 +2,7 @@
 import type { SqlDb, Row, SqlValue } from "./db/sql";
 import { get } from "./db/sql";
 import type {
-  Annotation, Course, Document, Id, LabelKey, LibraryFilter, Note, NoteKind,
+  Annotation, Course, Document, DocumentStats, Id, LabelKey, LibraryFilter, Note, NoteKind,
   ReadStatus, Recording, RecordingMark, Rect,
 } from "./types";
 import { weekNumber } from "./week";
@@ -27,6 +27,9 @@ export function toDocument(r: Row): Document {
     favorite: n(r.favorite) === 1,
     addedAt: s(r.added_at),
     updatedAt: s(r.updated_at),
+    lastPage: nn(r.last_page),
+    pageCount: nn(r.page_count),
+    lastOpenedAt: r.last_opened_at == null ? null : s(r.last_opened_at),
   };
 }
 
@@ -179,6 +182,55 @@ export class Repo {
 
   async setFavorite(id: Id, favorite: boolean): Promise<void> {
     await this.db.run("UPDATE document SET favorite = ?, updated_at = ? WHERE id = ?", [favorite ? 1 : 0, now(), id]);
+  }
+
+  /** Saves where the reader is. Marks unread -> reading, and read once the last page is reached. */
+  async setReadingPosition(id: Id, page: number, pageCount: number): Promise<void> {
+    const t = now();
+    await this.db.run(
+      `UPDATE document SET last_page = ?, page_count = ?, last_opened_at = ?, updated_at = ?,
+         read_status = CASE WHEN ? >= ? THEN 'read' WHEN read_status = 'unread' THEN 'reading' ELSE read_status END
+       WHERE id = ?`,
+      [page, pageCount, t, t, page, pageCount, id],
+    );
+  }
+
+  async renameDocument(id: Id, title: string): Promise<void> {
+    const name = title.trim();
+    if (!name) throw new Error("Ad boş olamaz.");
+    await this.db.run("UPDATE document SET title = ?, updated_at = ? WHERE id = ?", [name, now(), id]);
+  }
+
+  async moveToCourse(id: Id, courseId: Id | null): Promise<void> {
+    await this.db.run("UPDATE document SET course_id = ?, updated_at = ? WHERE id = ?", [courseId, now(), id]);
+  }
+
+  async setWeek(id: Id, week: number | null): Promise<void> {
+    await this.db.run("UPDATE document SET week = ?, updated_at = ? WHERE id = ?", [week, now(), id]);
+  }
+
+  /**
+   * Deletes the document row; annotations, notes, recordings, ink cascade.
+   * Returns the storage paths the caller should remove (PDF and recordings).
+   */
+  async deleteDocument(id: Id): Promise<string[]> {
+    const d = await this.getDocument(id);
+    if (!d) return [];
+    const recs = await this.db.all<{ file_path: string }>("SELECT file_path FROM recording WHERE document_id = ? AND file_path <> ''", [id]);
+    await this.db.run("DELETE FROM document WHERE id = ?", [id]);
+    return [d.filePath, ...recs.map((r) => String(r.file_path))];
+  }
+
+  /** Highlight, recording and note counts for every document, in one query. */
+  async documentStats(): Promise<Map<Id, DocumentStats>> {
+    const rows = await this.db.all(
+      `SELECT d.id,
+         (SELECT COUNT(*) FROM annotation a WHERE a.document_id = d.id) AS highlights,
+         (SELECT COUNT(*) FROM recording r WHERE r.document_id = d.id AND r.file_path <> '') AS recordings,
+         (SELECT COUNT(*) FROM note t WHERE t.document_id = d.id) AS notes
+       FROM document d`,
+    );
+    return new Map(rows.map((r) => [n(r.id), { highlights: n(r.highlights), recordings: n(r.recordings), notes: n(r.notes) }]));
   }
 
   async counts(): Promise<{ all: number; unread: number; favorites: number; byCourse: Record<Id, number> }> {
