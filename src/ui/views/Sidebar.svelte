@@ -17,8 +17,8 @@
   const tools: { s: Section; name: string; icon: Icon }[] = $derived([
     { s: "study", name: "Çalışma Merkezi", icon: GraduationCap },
     { s: "notes", name: "Notlar", icon: NotebookPen },
-    // Ollama runs on desktop only.
-    ...(lib.platform.mobile ? [] : [{ s: "ai" as Section, name: "Yapay zekâ", icon: Sparkles }]),
+    // AI exists on desktop only (Platform.ai is undefined on Android and iOS).
+    ...(!lib.platform.ai ? [] : [{ s: "ai" as Section, name: "Yapay zekâ", icon: Sparkles }]),
   ]);
   const fixed: { f: LibraryFilter; name: string; count: number; icon: Icon }[] = $derived([
     { f: { kind: "all" }, name: "Tümü", count: lib.counts.all, icon: LibraryIcon },

@@ -7,6 +7,7 @@ import type { Row, SqlDb } from "../../core/db/sql";
 import type { SourceFile } from "../../core/library/addDocuments";
 import { IMAGE_EXTENSIONS } from "../../core/pageImage";
 import type { Platform } from "../types";
+import { tauriAi } from "./ai";
 import { tauriTranscriber } from "./transcriber";
 import { isMobileDevice } from "../device";
 
@@ -46,6 +47,7 @@ export function createTauriPlatform(): Platform {
     mobile,
     db,
     transcriber: mobile ? undefined : tauriTranscriber,
+    ai: mobile ? undefined : tauriAi,
     storage,
     backup: {
       async backup() {

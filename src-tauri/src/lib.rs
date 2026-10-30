@@ -1,5 +1,9 @@
+#[cfg(desktop)]
+mod ai;
 mod backup;
 mod db;
+#[cfg(desktop)]
+mod fetch;
 mod files;
 #[cfg(desktop)]
 mod transcribe;
@@ -155,9 +159,10 @@ pub fn run() {
                 db: Mutex::new(conn),
                 storage,
             });
+            #[cfg(desktop)]
+            app.manage(ai::AiState::default());
             Ok(())
-        })
-        ;
+        });
     #[cfg(desktop)]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db_run,
@@ -173,9 +178,15 @@ pub fn run() {
         list_pdfs,
         transcribe::whisper_status,
         transcribe::whisper_setup,
-        transcribe::whisper_transcribe
+        transcribe::whisper_transcribe,
+        ai::ai_status,
+        ai::ai_setup,
+        ai::ai_cancel_setup,
+        ai::ai_start,
+        ai::ai_stop,
+        ai::ai_delete
     ]);
-    // Mobile: no local Whisper (desktop-only), so those commands are absent.
+    // Mobile: no local Whisper or AI engine (desktop-only), so those commands are absent.
     #[cfg(mobile)]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db_run,
@@ -191,6 +202,13 @@ pub fn run() {
         list_pdfs
     ]);
     builder
-        .run(tauri::generate_context!())
-        .expect("error while running Nito");
+        .build(tauri::generate_context!())
+        .expect("error while building Nito")
+        .run(|_app, _event| {
+            // The AI server is a child process: stop it with the app.
+            #[cfg(desktop)]
+            if let tauri::RunEvent::Exit = _event {
+                _app.state::<ai::AiState>().shutdown();
+            }
+        });
 }

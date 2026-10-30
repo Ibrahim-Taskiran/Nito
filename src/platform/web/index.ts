@@ -4,6 +4,8 @@ import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import type { SourceFile } from "../../core/library/addDocuments";
 import type { Platform } from "../types";
 import { sqljsDb } from "./sqljsDb";
+import { isMobileDevice } from "../device";
+import { webAi } from "./ai";
 import { webTranscriber } from "./transcriber";
 
 const toHex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -39,6 +41,8 @@ export async function createWebPlatform(): Promise<Platform> {
     mobile: false,
     db,
     transcriber: webTranscriber(),
+    // Same rule as the app: no AI on phones and tablets (also lets e2e check it with a mobile user agent).
+    ai: isMobileDevice() ? undefined : webAi(),
     storage: {
       read: async (rel) => {
         const b = files.get(rel);
