@@ -66,7 +66,7 @@
     .topbar { padding: 10px 12px; gap: 6px; }
     .menu { display: grid; }
     kbd { display: none; }
-    .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .lbl, .timer :global(.tool span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .actions :global(.btn) { padding: 0 12px; }
   }
 </style>

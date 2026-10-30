@@ -23,7 +23,7 @@ await page.waitForTimeout(1500);
 await page.getByRole("button", { name: "Tamam" }).click().catch(() => {});
 if (w >= 720) {
   await page.getByRole("button", { name: /Hafta 5: Protokoller/ }).click();
-  await page.getByRole("button", { name: "Aç", exact: true }).click();
+  if (w >= 1024) await page.getByRole("button", { name: "Aç", exact: true }).click();
   await page.locator(".textLayer span").first().waitFor();
   await page.getByRole("button", { name: "← Kütüphane" }).click();
 }
@@ -39,7 +39,7 @@ for (const s of which) {
   else if (s === "dialog") { await go("Program"); await page.getByRole("button", { name: "Plan ekle" }).click(); }
   else {
     try { await go(map[s]); } catch { console.log("skip", s); continue; }
-    if (s === "library") { await page.locator("article.card").first().locator("button.main").click(); await page.waitForTimeout(800); }
+    if (s === "library" && w >= 1024) { await page.locator("article.card").first().locator("button.main").click(); await page.waitForTimeout(800); }
   }
   await page.screenshot({ path: `${out}/${s}-${w}-${theme}.png`, fullPage: false });
   if (s === "drawer" || s === "dialog") await page.keyboard.press("Escape");
