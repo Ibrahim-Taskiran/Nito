@@ -1,15 +1,22 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import {
+    ChevronDown, ChevronUp, Columns2, Eraser, Highlighter, ImagePlus, MessageSquareText, MoveHorizontal, PanelLeft, Pen,
+    Pencil, Search, WandSparkles, X, ZoomIn, ZoomOut,
+  } from "@lucide/svelte";
   import { LABELS } from "../../core/labels";
-  import { INK_COLORS } from "../../core/ink";
-  import { normaliseRects, pagesToRender, zoomIn, zoomOut, clampZoom } from "../../core/reader";
+  import { INK_KINDS } from "../../core/ink";
+  import { hitOnPage, normaliseRects, pagesToRender, parsePageInput, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
   import Button from "../components/Button.svelte";
   import IconButton from "../components/IconButton.svelte";
+  import ToolButton from "../components/ToolButton.svelte";
   import type { Library } from "../library.svelte";
-  import { Reader } from "../reader.svelte";
+  import { Reader, type InkSize } from "../reader.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
+  import ImageLayer from "./ImageLayer.svelte";
   import InkLayer from "./InkLayer.svelte";
+  import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
   import SplitPicker from "./SplitPicker.svelte";
@@ -20,6 +27,7 @@
   // The view is keyed by document id, so the first lib and doc are the only ones.
   // svelte-ignore state_referenced_locally
   const reader = new Reader(lib, doc);
+  let root: HTMLDivElement;
   let scroller: HTMLDivElement;
   let sizes = $state<{ w: number; h: number }[]>([]);
   let scale = $state(1);
@@ -29,9 +37,24 @@
   let pick = $state<{ page: number; rects: Rect[]; text: string; x: number; y: number } | null>(null);
   // svelte-ignore state_referenced_locally
   let showPanel = $state(!compact);
+  // svelte-ignore state_referenced_locally
+  let showNav = $state(!compact && window.innerWidth >= 1200);
   let picking = $state(false);
+  /** Search bar (Ctrl+F or the toolbar button). */
+  let searchOpen = $state(false);
+  let searchInput = $state<HTMLInputElement>();
+  let searchText = $state("");
+  /** Bumped on each hit change so the page scrolls the current mark into view once. */
+  let seek = $state(0);
+  let searchTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Short message, e.g. a failed image insert. */
+  let notice = $state<string | null>(null);
 
   const active = $derived(pagesToRender(visible, sizes.length));
+  const penOn = $derived(reader.inkTool === "pen" || reader.inkTool === "pencil" || reader.inkTool === "highlighter");
+  const kindInfo = $derived(INK_KINDS[reader.inkKind]);
+  const hit = $derived(reader.hits[reader.hitIndex]);
+  const currentMark = $derived(hit ? hitOnPage(reader.hits, reader.hitIndex) : -1);
 
   onMount(() => {
     let alive = true;
@@ -63,6 +86,7 @@
     }).catch((e) => alive && console.error(e));
     return () => {
       alive = false;
+      clearTimeout(searchTimer);
       void reader.close();
     };
   });
@@ -157,11 +181,78 @@
     }
   }
 
-  const setTool = (t: "pen" | "eraser") => (reader.inkTool = reader.inkTool === t ? "none" : t);
+  function jumpBox(e: Event & { currentTarget: HTMLInputElement }) {
+    const n = parsePageInput(e.currentTarget.value, sizes.length);
+    e.currentTarget.value = String(n ?? current);
+    if (n) goTo(n);
+  }
+
+  async function openSearch() {
+    searchOpen = true;
+    await tick();
+    searchInput?.focus();
+    searchInput?.select();
+  }
+
+  function closeSearch() {
+    clearTimeout(searchTimer);
+    searchOpen = false;
+    searchText = "";
+    reader.clearSearch();
+  }
+
+  async function runSearch() {
+    clearTimeout(searchTimer);
+    const q = searchText;
+    await reader.search(q, current);
+    if (reader.searchQuery !== q || !reader.hits.length) return;
+    goTo(reader.hits[reader.hitIndex].page);
+    seek++;
+  }
+
+  function onSearchInput() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(runSearch, 250);
+  }
+
+  function step(dir: 1 | -1) {
+    const page = reader.stepHit(dir);
+    if (page == null) return;
+    goTo(page);
+    seek++;
+  }
+
+  function onSearchKey(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (reader.searchQuery === searchText && reader.hits.length) step(e.shiftKey ? -1 : 1);
+      else void runSearch();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeSearch();
+    }
+  }
+
+  async function addImage() {
+    notice = null;
+    const size = sizes[current - 1];
+    if (!size) return;
+    try {
+      await reader.insertImage(current, size);
+    } catch (e) {
+      notice = e instanceof Error ? e.message : String(e);
+    }
+  }
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === "Escape") {
+    // In the split view only the pane holding the focus opens its search.
+    const mine = !compact || root.contains(document.activeElement);
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f" && mine) {
+      e.preventDefault();
+      void openSearch();
+    } else if (e.key === "Escape" && !e.defaultPrevented && reader.selectedImageId == null) {
       if (pick) pick = null;
+      else if (searchOpen && mine) closeSearch();
       else if (!compact && !picking) lib.close();
     }
   }
@@ -169,37 +260,92 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="reader">
+<div class="reader" bind:this={root}>
   <header class="toolbar">
-    {#if onclose}
-      <IconButton label="Bu belgeyi kapat" onclick={onclose}>×</IconButton>
-    {:else}
-      <Button variant="ghost" onclick={() => lib.close()}>← Kütüphane</Button>
-    {/if}
-    <h1 title={doc.title}>{doc.title}</h1>
-    {#if !compact}<RecordBar recorder={reader.recorder} />{/if}
-    <div class="ink-tools" role="group" aria-label="Kalem">
-      <IconButton label="Kalem" pressed={reader.inkTool === "pen"} onclick={() => setTool("pen")}>✎</IconButton>
-      {#if reader.inkTool === "pen"}
-        {#each INK_COLORS as c (c.color)}
-          <button class="swatch" aria-label="Renk: {c.name}" aria-pressed={reader.inkColor === c.color}
-            style:background={c.color} onclick={() => (reader.inkColor = c.color)}></button>
-        {/each}
+    <div class="row">
+      {#if onclose}
+        <IconButton label="Bu belgeyi kapat" onclick={onclose}><X size={20} /></IconButton>
+      {:else}
+        <Button variant="ghost" onclick={() => lib.close()}>← Kütüphane</Button>
       {/if}
-      <IconButton label="Silgi" pressed={reader.inkTool === "eraser"} onclick={() => setTool("eraser")}>⌫</IconButton>
+      <h1 title={doc.title}>{doc.title}</h1>
+      {#if !compact}<RecordBar recorder={reader.recorder} />{/if}
+      <ToolButton label="Ara" title="PDF'te ara (Ctrl+F)" pressed={searchOpen} onclick={() => (searchOpen ? closeSearch() : openSearch())}>
+        <Search size={18} />
+      </ToolButton>
+      <div class="page-box" title="Sayfaya git">
+        <!-- Plain "N / M" text for tests and tools; the input below is what people see. -->
+        <span class="pages sr" aria-hidden="true">{current} / {sizes.length || "–"}</span>
+        <input class="page-input" type="text" inputmode="numeric" enterkeyhint="go" aria-label="Sayfa numarası" value={current}
+          onchange={jumpBox} onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()} onfocus={(e) => e.currentTarget.select()} />
+        <span class="total">/ {sizes.length || "–"}</span>
+      </div>
+      <div class="group">
+        <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}><ZoomOut size={18} /></IconButton>
+        <span class="zoom">{Math.round(scale * 100)}%</span>
+        <IconButton label="Yakınlaştır" onclick={() => (scale = zoomIn(scale))}><ZoomIn size={18} /></IconButton>
+        <IconButton label="Genişliğe sığdır" onclick={fitWidth}><MoveHorizontal size={18} /></IconButton>
+      </div>
+      <ToolButton label="Sayfalar" title="Sayfalar ve içindekiler" pressed={showNav} onclick={() => (showNav = !showNav)}>
+        <PanelLeft size={18} />
+      </ToolButton>
+      <ToolButton label="Vurgular" title="Vurgular paneli" pressed={showPanel} onclick={() => (showPanel = !showPanel)}>
+        <MessageSquareText size={18} />
+      </ToolButton>
+      {#if !compact}
+        <ToolButton label="Yan yana" onclick={() => (picking = true)}><Columns2 size={18} /></ToolButton>
+      {/if}
     </div>
-    <span class="pages">{current} / {sizes.length || "–"}</span>
-    <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}>−</IconButton>
-    <span class="zoom">{Math.round(scale * 100)}%</span>
-    <IconButton label="Yakınlaştır" onclick={() => (scale = zoomIn(scale))}>+</IconButton>
-    <IconButton label="Genişliğe sığdır" onclick={fitWidth}>↔</IconButton>
-    {#if compact}
-      <IconButton label="Vurgular paneli" pressed={showPanel} onclick={() => (showPanel = !showPanel)}>☰</IconButton>
-    {:else}
-      <Button variant="ghost" onclick={() => (picking = true)}>Yan yana</Button>
+    <div class="row" role="toolbar" aria-label="Kalem araçları">
+      <ToolButton label="Tükenmez" pressed={reader.inkTool === "pen"} onclick={() => reader.setTool("pen")}><Pen size={18} /></ToolButton>
+      <ToolButton label="Kurşun kalem" pressed={reader.inkTool === "pencil"} onclick={() => reader.setTool("pencil")}><Pencil size={18} /></ToolButton>
+      <ToolButton label="Fosforlu" pressed={reader.inkTool === "highlighter"} onclick={() => reader.setTool("highlighter")}><Highlighter size={18} /></ToolButton>
+      <ToolButton label="Lazer" title="Lazer (kaydedilmez, 1-2 saniyede söner)" pressed={reader.inkTool === "laser"} onclick={() => reader.setTool("laser")}>
+        <WandSparkles size={18} />
+      </ToolButton>
+      <ToolButton label="Silgi" pressed={reader.inkTool === "eraser"} onclick={() => reader.setTool("eraser")}><Eraser size={18} /></ToolButton>
+      <ToolButton label="Resim ekle" title="Bu sayfaya resim ekle" onclick={addImage}><ImagePlus size={18} /></ToolButton>
+      {#if penOn}
+        <span class="sep" aria-hidden="true"></span>
+        <div class="swatches" role="group" aria-label="{kindInfo.name} rengi">
+          {#each kindInfo.colors as c (c.color)}
+            <button class="swatch" aria-label="Renk: {c.name}" title={c.name} aria-pressed={reader.inkColor === c.color}
+              onclick={() => reader.setInkColor(c.color)}><span style:background={c.color}></span></button>
+          {/each}
+          <label class="swatch custom" title="Özel renk">
+            <span></span>
+            <input type="color" aria-label="Özel renk" value={reader.inkColor} oninput={(e) => reader.setInkColor(e.currentTarget.value)} />
+          </label>
+        </div>
+        <label class="width">
+          <span>Kalınlık</span>
+          <input type="range" min="0" max="2" step="1" aria-label="Kalınlık" value={reader.inkSizes[reader.inkKind]}
+            oninput={(e) => reader.setInkSize(Number(e.currentTarget.value) as InkSize)} />
+        </label>
+      {/if}
+    </div>
+    {#if searchOpen}
+      <div class="row search" role="search">
+        <input bind:this={searchInput} bind:value={searchText} type="search" enterkeyhint="search" placeholder="PDF'te ara…"
+          aria-label="PDF'te ara" oninput={onSearchInput} onkeydown={onSearchKey} />
+        <span class="count" aria-live="polite">
+          {#if reader.searchQuery && reader.searchQuery === searchText}
+            {reader.hits.length ? `${reader.hitIndex + 1} / ${reader.hits.length}` : "Bulunamadı"}
+          {/if}
+        </span>
+        <IconButton label="Önceki sonuç" onclick={() => step(-1)}><ChevronUp size={18} /></IconButton>
+        <IconButton label="Sonraki sonuç" onclick={() => step(1)}><ChevronDown size={18} /></IconButton>
+        <IconButton label="Aramayı kapat" onclick={closeSearch}><X size={18} /></IconButton>
+      </div>
+    {/if}
+    {#if notice}
+      <div class="row notice" role="alert">
+        <span>{notice}</span><IconButton label="Uyarıyı kapat" onclick={() => (notice = null)}><X size={16} /></IconButton>
+      </div>
     {/if}
   </header>
   <div class="body">
+    {#if showNav && reader.pdf && sizes.length}<PageNav pdf={reader.pdf} {sizes} {current} onjump={goTo} />{/if}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
       ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
@@ -210,7 +356,9 @@
       {:else}
         {#each sizes as size, i (i)}
           <PdfPage pdf={reader.pdf} num={i + 1} width={size.w} height={size.h} {scale} active={active.has(i + 1)}
-            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId}>
+            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId}
+            search={reader.searchQuery} currentMark={hit?.page === i + 1 ? currentMark : -1} {seek}>
+            <ImageLayer {reader} page={i + 1} />
             <InkLayer {reader} page={i + 1} />
           </PdfPage>
         {/each}
@@ -234,15 +382,38 @@
 
 <style>
   .reader { display: flex; flex-direction: column; height: 100%; }
-  .toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  h1 { flex: 1; min-width: 0; margin: 0 8px; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pages, .zoom { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
+  .toolbar { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 4px 12px; }
+  .row + .row { border-top: 1px solid var(--border); }
+  h1 { flex: 1 1 120px; min-width: 80px; margin: 0 8px; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group { display: flex; align-items: center; }
+  .zoom { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 48px; text-align: center; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .page-box { display: flex; align-items: center; gap: 4px; color: var(--text-2); font-variant-numeric: tabular-nums; margin: 0 4px; }
+  .page-input {
+    width: 52px; height: var(--hit); text-align: center; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
+  .swatches { display: flex; flex-wrap: wrap; align-items: center; }
+  .swatch {
+    width: var(--hit); height: var(--hit); display: grid; place-items: center; border: 0; border-radius: 50%;
+    background: transparent; cursor: pointer; position: relative; padding: 0; touch-action: manipulation;
+  }
+  .swatch span { width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
+  .swatch[aria-pressed="true"] span { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .swatch.custom span { background: conic-gradient(#e74c3c, #f1c40f, #2ecc71, #1abc9c, #3498db, #9b59b6, #e74c3c); }
+  .swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .width { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 13px; min-height: var(--hit); margin-left: 6px; }
+  .width input { width: 110px; height: var(--hit); accent-color: var(--accent); }
+  .search input {
+    flex: 1 1 200px; max-width: 420px; height: var(--hit); padding: 0 10px; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .count { min-width: 80px; color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .notice { color: var(--danger); font-size: 13px; }
   .body { flex: 1; display: flex; min-height: 0; }
   .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
-  .ink-tools { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
-  .ink-tools :global([aria-pressed="true"]) { background: var(--accent-soft); color: var(--accent); }
-  .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; margin: 0 2px; }
-  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .picker {
     position: fixed; transform: translateX(-50%); z-index: 20; display: flex; gap: 2px; padding: 4px;
@@ -254,4 +425,5 @@
   }
   .picker button:hover { background: var(--surface-2); }
   .chip { width: 12px; height: 12px; border-radius: 50%; }
+  @media (max-width: 1023px) { .row { padding: 4px 8px; } }
 </style>

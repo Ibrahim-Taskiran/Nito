@@ -22,7 +22,7 @@ await page.getByRole("button", { name: "Aç" }).click();
 await page.locator(".textLayer span").first().waitFor();
 
 // Pen: draw a zigzag on page 1.
-await page.getByRole("button", { name: "Kalem", exact: true }).click();
+await page.getByRole("button", { name: "Tükenmez" }).click();
 await page.getByRole("button", { name: "Renk: Kırmızı" }).click();
 const box = await page.locator('[data-page="1"]').boundingBox();
 await page.mouse.move(box.x + 100, box.y + 300);

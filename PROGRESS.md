@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 3.5 reader tools (branch worktree-agent-ac58affee2bb8af17)
+- **Done:** two-row icon + text toolbar (lucide): "Ses kaydı" with mic icon, Ara (Ctrl+F), page number box (hidden `.pages` "N / M" kept for tests), zoom, Sayfalar (left panel: lazy thumbnails + pdf.js outline), Vurgular, Yan yana. Tool row: Tükenmez, Kurşun kalem, Fosforlu, Lazer (fades, not saved), Silgi, Resim ekle (Platform `pickImage`, move/resize/delete). Pen palette (10 per kind), custom colour, width slider. Search bar with count, next/prev, current hit marked and scrolled into view. All controls ≥40px, toolbar wraps at tablet width (checked at 800px, no sideways scroll).
+- **Files:** src/ui/views/ReaderView.svelte, PageNav.svelte (new), PdfPage.svelte, ImageLayer.svelte, RecordBar.svelte, RecordingList.svelte, src/ui/components/ToolButton.svelte (new), src/core/reader.ts (parsePageInput, flattenOutline, hitOnPage), tests/reader-tools.test.ts, scripts/e2e-reader.mjs (new, in `npm run e2e`), e2e-record/transcribe/touch/ai label updates.
+- **Checks:** svelte-check 0 errors; vitest 80 passed; e2e-reader, touch, record, notes, transcribe, ai, study pass.
+- **Next step:** merge into main (m006 goes before m007 in migrate.ts); try on a real Android tablet once the APK builds.
+- **Known:** search marks are found per text-layer span, so a word split across spans is counted in the bar but not marked on the page.
+
 ## 2026-10-30 — Android set up (APK blocked), backup/restore, real Tauri smoke test
 - **Android (975fbf8):** cmdline-tools + NDK 27.2.12479018 installed, Rust Android targets added, user env vars ANDROID_HOME / NDK_HOME / JAVA_HOME set. `tauri android init` done (`src-tauri/gen/android`), RECORD_AUDIO + MODIFY_AUDIO_SETTINGS in the manifest. Whisper Rust module and its crates are desktop-only (`#[cfg(desktop)]`, target-specific deps). See `docs/android.md`.
   - **Blocked:** `tauri android build` fails with "Creation symbolic link is not allowed for this system". The owner must turn on Windows Developer Mode (Settings > System > For developers). Then: `npx tauri android build --apk --debug --target x86_64` (emulator image android-37 x86_64 is installed) or `--target aarch64` for a device.

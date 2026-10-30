@@ -69,7 +69,7 @@ if (await page.getByRole("complementary", { name: "Vurgular" }).count()) await f
 await panes.nth(1).getByRole("button", { name: "Yakınlaştır" }).click();
 const zooms = await panes.locator(".zoom").allTextContents();
 if (zooms[0] === zooms[1]) await fail(`each pane should zoom on its own, got ${zooms}`);
-await panes.nth(0).getByRole("button", { name: "Vurgular paneli" }).click();
+await panes.nth(0).getByRole("button", { name: "Vurgular", exact: true }).click();
 await page.screenshot({ path: "docs/screenshots/split-light.png" });
 await page.getByRole("button", { name: "Tek görünüme dön" }).click();
 await page.getByRole("button", { name: "← Kütüphane" }).waitFor();
