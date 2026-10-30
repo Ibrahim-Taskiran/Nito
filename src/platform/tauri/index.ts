@@ -10,6 +10,7 @@ import type { Platform } from "../types";
 import { tauriAi } from "./ai";
 import { tauriTranscriber } from "./transcriber";
 import { isMobileDevice } from "../device";
+import { fetchImageWith, userMessage } from "../fetchImage";
 
 interface PdfEntry {
   path: string;
@@ -60,6 +61,20 @@ export function createTauriPlatform(): Platform {
       },
     },
     listFolder: (path, recursive) => listPdfs([path], recursive),
+    async fetchImage(url) {
+      // The webview's fetch works when the site allows other origins (CORS). The http plugin skips CORS, but its
+      // scope only allows this machine (capabilities/ai.json), so other sites end in the "copy and paste" message.
+      try {
+        return await fetchImageWith(fetch, url);
+      } catch (e) {
+        if (!(e instanceof TypeError)) throw userMessage(e);
+      }
+      try {
+        return await fetchImageWith((await import("@tauri-apps/plugin-http")).fetch, url);
+      } catch (e) {
+        throw userMessage(e);
+      }
+    },
     async saveExport(name, data) {
       await storage.write(`exports/${name}`, typeof data === "string" ? new TextEncoder().encode(data) : data);
       return join(await appDataDir(), "storage", "exports", name);

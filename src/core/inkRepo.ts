@@ -36,6 +36,17 @@ export class InkRepo {
     )).lastId;
   }
 
+  /** Moved, scaled, recoloured or shape-corrected strokes keep their id (and their moment in a recording). */
+  async update(id: Id, patch: Partial<Pick<InkStroke, "points" | "width" | "color">>): Promise<void> {
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    if (patch.points) sets.push("points = ?"), vals.push(JSON.stringify(patch.points));
+    if (patch.width != null) sets.push("width = ?"), vals.push(patch.width);
+    if (patch.color != null) sets.push("color = ?"), vals.push(patch.color);
+    if (!sets.length) return;
+    await this.db.run(`UPDATE ink_stroke SET ${sets.join(", ")} WHERE id = ?`, [...vals, id] as never[]);
+  }
+
   async remove(id: Id): Promise<void> {
     await this.db.run("DELETE FROM ink_stroke WHERE id = ?", [id]);
   }
