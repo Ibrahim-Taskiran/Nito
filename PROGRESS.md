@@ -2,6 +2,11 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (2) — Phase 3.5 resumed after token limit
+- **Saved:** the three agents' uncommitted work as wip commits: Library 30a1a90, Home + Plan 7dfa2a5, Reader 67c0724. Branches pushed to origin.
+- **Running:** three new agents finish each branch in the same worktrees (dev ports 1441 Reader, 1442 Library, 1443 Home).
+- **Next step:** unchanged from the entry below (merge Library, Reader, Home; fix migrate.ts order and e2e chain; run all checks).
+
 ## 2026-10-30 — Phase 3.5 richer UI started (wip)
 - **Why:** the owner said the UI looks empty and could not find audio recording (the "● Kaydet" button reads as "Save").
 - **Done:** `@lucide/svelte` (ISC) added for icons (d3719a1). Owner-only todos saved to Claude memory (asked at the next session start).
