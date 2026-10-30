@@ -50,8 +50,12 @@ Her şey cihazında, internetsiz çalışır.
 ### PDF okuyucu
 - Etiketli vurgular (Sınav, Tanım, Soru …) ve vurgulara yorum.
 - Kalemler: **tükenmez, kurşun kalem, fosforlu**. Her biri için 10 renk, özel renk ve kalınlık. Silgi ve **lazer kalem**.
-- Basınca duyarlı kalem desteği. Kalem algılanınca parmak çizmez, sayfayı kaydırır.
-- Sayfaya resim ekleme, taşıma, boyutlandırma.
+- Basınca duyarlı kalem desteği. **Avuç içi ve yanlış dokunma engeli**: büyük temaslar ve kalem ekrandayken gelen dokunuşlar yok sayılır. "Yalnız kalemle çiz", "Parmakla da çiz" ve dokunma hassasiyeti ayarı.
+- **Şekil düzeltme:** çizginin sonunda kalemi bekletince yamuk çizgi düz çizgiye dönüşür; daire, dikdörtgen, üçgen ve ok da tanınır. El yazısına dokunulmaz, geri alınabilir.
+- **Seç aracı:** kementle yazı ve çizimleri seç; taşı, büyüt, küçült, rengini değiştir, kopyala, sil, geri al.
+- Sayfaya resim ekleme, taşıma, boyutlandırma. Galeriden, panodan yapıştırarak, tarayıcıdan sürükleyerek ya da bağlantıdan.
+- **Boş sayfa ekleme:** istediğin yere; PDF dosyası değişmez.
+- **Önemli sayfalar:** "Önemli" işaretli sayfalar yanda küçük ayrı bir PDF gibi durur; istersen gerçek PDF olarak kaydedilir.
 - **Metin kutusu ve yapışkan not:** LaTeX formül (KaTeX) ve renkli kod bloğu desteğiyle.
 - **Bant modu:** tanımı ya da formülü bantla kapat, dokununca aç; kendini test et.
 - **Katmanlar:** vurgu, kalem, resim, not ve bant katmanlarını ayrı ayrı gizle ya da göster.
@@ -65,8 +69,12 @@ Her şey cihazında, internetsiz çalışır.
 - **Slayt–ses senkronu:** kayıt sırasında hangi sayfada olduğun saklanır. Sayfadaki ▶ düğmesi, hocanın o sayfayı anlattığı ana atlar.
 - **Notları sesle birlikte göster:** dinlerken o anda aldığın vurgu ve çizimler zamanı gelince belirir.
 - **Sessizliği atla**, **gürültü azalt**, 0,5×–2,5× hız (sesin tonu korunur), 10 sn geri/ileri, kayıt silme.
+- **Döküm sayfanın yanında:** her sayfanın yanında (telefonda altında) o sayfada söylenenler, süreye dokununca ses o andan çalar.
 - **Sınav ipuçları:** dökümde "sınavda çıkar", "önemli", "dikkat" gibi sözler geçen sayfalara rozet konur.
 - **Yazıya dökme** (masaüstü): whisper.cpp ile cihazda, internetsiz. Dökümdeki her paragrafa tıklayınca ses o andan çalar.
+
+### Kronometre ve alarm
+- Okuyucudaki saat düğmesi: çalışma süreni sayan kronometre ve dakika ayarlı alarm. Okuyucuyu kapatsan da sayar.
 
 ### Çalışma
 - Vurgulardan otomatik kart; aralıklı tekrar (Leitner 1/2/4/8/16 gün).
@@ -193,6 +201,7 @@ Ayrıntı [ROADMAP.md](ROADMAP.md), ilerleme günlüğü [PROGRESS.md](PROGRESS.
 - [x] Faz 1: Kütüphane, okuyucu, vurgular, ses kaydı, Windows kurulumu
 - [x] Faz 2: Çalışma araçları, notlar, yazıya dökme, yapay zekâ
 - [x] Faz 3.5: Zengin arayüz (Bugün, Program, yeni kütüphane ve okuyucu)
+- [x] Faz 3.7: Şekil düzeltme, avuç engeli, Seç aracı, boş sayfa, önemli sayfalar, döküm sayfanın yanında, kronometre
 - [x] Faz 3.6: Slayt–ses senkronu, sessizlik atlama, bant modu, metin kutusu ve LaTeX, sınav görünümü, büyük PDF performansı
 - [ ] Faz 3: Tablet derlemeleri (Android, iPad)
 - [ ] Faz 4: İmzalı sürüm, otomatik güncelleme, mağazalar, cihazlar arası senkron

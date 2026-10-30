@@ -159,9 +159,10 @@ Chosen from the owner's product list. Three parallel agents:
 - ✅ **Exam + performance:** page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı") and an exam view that lists only flagged pages, 300–500 page PDF test and fixes, AI flashcards and questions from slides (desktop), AI chat that also cites lecture transcripts. Migration 011.
 - Postponed: OCR, vector search on images and handwriting, Moodle/Canvas/Drive import, cloud sync.
 
-### Phase 3.7: Pen and page tools, round 2 (owner request 2026-10-30) ⬜
-- ⬜ **Pages:** transcript shown beside the PDF part it belongs to (side column on wide screens, under the page on phones); "Önemli" pages as a separate mini PDF beside the main one (read only the important pages, export them as a real PDF); insert blank pages anywhere. Migration 012.
-- ⬜ **Pen:** shape correction (hold at the end of a stroke: wobbly line → straight line, also circle, rectangle, arrow); palm and accidental touch rejection (contact size, pen-only mode, touch sensitivity setting, ignore touches while the pen is down); images from the web browser (drag and drop, paste, image link).
+### Phase 3.7: Pen and page tools, round 2 (owner request 2026-10-30) ✅
+- ✅ **Pages:** transcript shown beside the PDF part it belongs to (side column on wide screens, under the page on phones); "Önemli" pages as a separate mini PDF beside the main one (read only the important pages, export them as a real PDF); insert blank pages anywhere. Migration 012.
+- ✅ **Pen:** (plus lasso select: move, scale, recolour, copy, delete, undo) shape correction (hold at the end of a stroke: wobbly line → straight line, also circle, rectangle, arrow); palm and accidental touch rejection (contact size, pen-only mode, touch sensitivity setting, ignore touches while the pen is down); images from the web browser (drag and drop, paste, image link).
+- ✅ **Study timer:** stopwatch and alarm in the reader, keeps counting until stopped or the app quits.
 
 ### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.

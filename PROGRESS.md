@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (7) — Phase 3.7 done: pages, pen, lasso, timer; double scrollbar fixed
+- **Merged:** Pages (f9a52cb: transcript beside page, "Önemli" flag + mini PDF + pdf-lib export, virtual blank pages with negative page keys = -page_insert.id, migration 012), Pen (shape recogniser, palm/touch rejection with per-device settings `nito.penInput`, web images by paste/drop/link, lasso select move/scale/recolour/copy/delete/undo; no migration). Study timer (6588624, `src/core/timer.ts`, `ui/timer.svelte.ts`, TimerButton/TimerAlert). Window no longer scrolls, only views (baa503f).
+- **Owner rule:** phones and tablets first, desktop second (ROADMAP architecture rules, Claude memory).
+- **Checks on main:** svelte-check 0, vitest 170 passed, full `npm run e2e` (16 scripts, ends with timer, pages, pen) passed.
+- **Known limits:** text boxes and sticky notes are not burned into exported PDFs; blank pages cannot be moved; pen/lasso not e2e-tested on blank pages; dragging an image from a browser into the Tauri window is blocked by `dragDropEnabled: true` (paste and link work); image links on Tauri only work when the site allows cross-origin requests; undo lasts only while the document is open.
+- **Next step:** owner tries the desktop shortcut (DB backup, then migrations up to 012 run). Then whatever the owner asks next.
+
 ## 2026-10-30 (6) — Phase 3.6 done: Audio, Page tools, Exam + perf + AI merged
 - **Merged:** Audio (009_lecture_audio), Page tools (010_page_tools; its 009 placeholder deleted), Exam (011_page_flags). Migrations `[001 … 011]`. New deps katex (MIT), highlight.js (BSD-3). e2e chain ends with e2e-audio, e2e-pagetools, e2e-exam. `npm run perf:bigpdf` (500 pages, ~2 min, not in the chain).
 - **Checks on main:** svelte-check 0, vitest 134 passed, full `npm run e2e` passed. README features and ROADMAP updated.
