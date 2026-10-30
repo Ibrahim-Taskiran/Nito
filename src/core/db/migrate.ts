@@ -5,9 +5,10 @@ import m003 from "./migrations/003_notes";
 import m004 from "./migrations/004_transcripts";
 import m005 from "./migrations/005_ink";
 import m007 from "./migrations/007_reading";
+import m008 from "./migrations/008_plan";
 
 /** Ordered list; index + 1 is the schema version stored in PRAGMA user_version. */
-export const MIGRATIONS: readonly string[] = [m001, m002, m003, m004, m005, m007];
+export const MIGRATIONS: readonly string[] = [m001, m002, m003, m004, m005, m007, m008];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

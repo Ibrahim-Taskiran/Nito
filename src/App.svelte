@@ -6,21 +6,29 @@
   import ReaderView from "./ui/views/ReaderView.svelte";
   import Sidebar from "./ui/views/Sidebar.svelte";
   import AiView from "./ui/views/AiView.svelte";
+  import HomeView from "./ui/views/HomeView.svelte";
+  import PlanView from "./ui/views/PlanView.svelte";
   import NotesView from "./ui/views/NotesView.svelte";
   import SplitView from "./ui/views/SplitView.svelte";
   import StudyView from "./ui/views/StudyView.svelte";
   import type { Library } from "./ui/library.svelte";
+  import type { SourceFile } from "./core/library/addDocuments";
 
   let { lib }: { lib: Library } = $props();
   let recursive = $state(true);
 
   onMount(() => {
-    const off = lib.platform.onDrop((files) => lib.add(files));
+    const off = lib.platform.onDrop(addFiles);
     return () => void off.then((f) => f());
   });
 
-  const addPdfs = async () => lib.add(await lib.platform.pickers.pickPdfs());
-  const addFolder = async () => lib.add(await lib.platform.pickers.pickFolder(recursive));
+  /** New files show up in the library, so leave Bugün/Program for it. */
+  const addFiles = async (files: SourceFile[]) => {
+    if (files.length && lib.section !== "library") lib.section = "library";
+    await lib.add(files);
+  };
+  const addPdfs = async () => addFiles(await lib.platform.pickers.pickPdfs());
+  const addFolder = async () => addFiles(await lib.platform.pickers.pickFolder(recursive));
 </script>
 
 {#snippet addButtons()}
@@ -42,7 +50,11 @@
 {:else}
   <div class="shell">
     <Sidebar {lib} />
-    {#if lib.section === "study"}
+    {#if lib.section === "home"}
+      <HomeView {lib} />
+    {:else if lib.section === "plan"}
+      <PlanView {lib} />
+    {:else if lib.section === "study"}
       <StudyView {lib} />
     {:else if lib.section === "notes"}
       <NotesView {lib} />
