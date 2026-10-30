@@ -1,6 +1,7 @@
 // Platform port. One implementation per host: Tauri (real app) and web (dev, tests).
 import type { SqlDb } from "../core/db/sql";
 import type { SourceFile } from "../core/library/addDocuments";
+import type { AiHost } from "./ai";
 import type { Transcriber } from "./transcriber";
 
 export interface Storage {
@@ -29,7 +30,7 @@ export interface Backup {
 
 export interface Platform {
   name: "tauri" | "web";
-  /** Phone or tablet build: desktop-only tools (Whisper, Ollama) are hidden. */
+  /** Phone or tablet build: desktop-only tools (Whisper, AI) are hidden. */
   mobile: boolean;
   backup?: Backup;
   db: SqlDb;
@@ -37,6 +38,8 @@ export interface Platform {
   pickers: Pickers;
   /** Speech-to-text; undefined where it is not available. See canTranscribe. */
   transcriber?: Transcriber;
+  /** Local AI (summary, chat with notes); undefined on Android and iOS, so no AI entry point shows. */
+  ai?: AiHost;
   /** Calls back with dropped PDFs (files or folders). Returns an unsubscribe function. */
   onDrop(cb: (files: SourceFile[]) => void): Promise<() => void>;
   /** PDFs of a known folder, without a dialog (watched folders). Web: always empty. */

@@ -58,7 +58,7 @@
       <StudyView {lib} />
     {:else if lib.section === "notes"}
       <NotesView {lib} />
-    {:else if lib.section === "ai"}
+    {:else if lib.section === "ai" && lib.platform.ai}
       <AiView {lib} />
     {:else}
       <LibraryView {lib} {addButtons} />

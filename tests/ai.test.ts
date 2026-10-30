@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Bm25 } from "../src/core/ai/bm25";
 import { buildCorpus } from "../src/core/ai/corpus";
-import { chat, isResearchOnly, listModels, OllamaDown, pickModel, type Fetch } from "../src/core/ai/ollama";
+import { formatGb, suggestModel } from "../src/core/ai/builtin";
+import { EngineDown, openAiChat, sse, type Fetch } from "../src/core/ai/engine";
+import { chat, isCoder, isPermissive, isResearchOnly, listModels, pickModel } from "../src/core/ai/ollama";
 import { chatPrompt, cleanAnswer, emphasis, parseCitations, resolveCitation, summaryPrompt } from "../src/core/ai/prompts";
 import { chunkPages, fitPages, splitText, stem, tokenize, type Chunk } from "../src/core/ai/text";
 import type { Document } from "../src/core/types";
@@ -134,18 +136,29 @@ describe("ollama client", () => {
     const f: Fetch = async () => new Response(JSON.stringify({ models: [{ name: "qwen2.5:3b" }, { name: "llama3.2:3b" }] }));
     const models = await listModels(f);
     expect(models).toEqual(["llama3.2:3b", "qwen2.5:3b"]);
-    expect(pickModel(models, null)).toBe("llama3.2:3b");
+    // Llama community licence and research-only Qwen 3B are never picked on their own.
+    expect(pickModel(models, null)).toBeNull();
     expect(pickModel(models, "qwen2.5:3b")).toBe("qwen2.5:3b");
     expect(pickModel([...models, "qwen2.5:7b"], null)).toBe("qwen2.5:7b");
-    expect(pickModel(["qwen2.5:3b"], null)).toBe("qwen2.5:3b");
+    expect(pickModel(["qwen2.5:3b"], null)).toBeNull();
     expect(pickModel([], null)).toBeNull();
     expect(isResearchOnly("qwen2.5:3b")).toBe(true);
     expect(isResearchOnly("qwen2.5:7b")).toBe(false);
   });
-  it("reports Ollama down on network error", async () => {
+  it("skips coder and non-permissive models in the fallback (this PC: deepseek-coder first)", () => {
+    const installed = ["deepseek-coder:6.7b", "deepseek-r1:7b", "gemma2:9b", "llama3.1:8b", "qwen2.5-coder:7b", "qwen2.5:3b", "qwen3:4b"];
+    expect(pickModel(installed, null)).toBe("qwen3:4b");
+    expect(pickModel(["deepseek-coder:6.7b", "qwen2.5-coder:7b", "nomic-embed-text:latest"], null)).toBeNull();
+    expect(pickModel(["mistral:7b", "phi4:14b"], null)).toBe("mistral:7b");
+    expect(isCoder("deepseek-coder:6.7b") && isCoder("qwen2.5-coder:7b") && isCoder("codellama:7b")).toBe(true);
+    expect(isPermissive("qwen2.5:7b") && isPermissive("qwen3:8b") && isPermissive("phi4:14b")).toBe(true);
+    for (const m of ["deepseek-r1:7b", "llama3.2:3b", "gemma2:9b", "qwen2.5:72b", "qwen2.5-coder:7b"]) expect(isPermissive(m)).toBe(false);
+  });
+  it("reports the engine down on network error", async () => {
     const f: Fetch = async () => { throw new TypeError("Failed to fetch"); };
-    await expect(listModels(f)).rejects.toBeInstanceOf(OllamaDown);
-    await expect(chat(f, { model: "m", messages: [] })).rejects.toBeInstanceOf(OllamaDown);
+    await expect(listModels(f)).rejects.toBeInstanceOf(EngineDown);
+    await expect(chat(f, { model: "m", messages: [] })).rejects.toBeInstanceOf(EngineDown);
+    await expect(openAiChat(f, { url: "http://127.0.0.1:1", key: "k" }, { messages: [] })).rejects.toBeInstanceOf(EngineDown);
   });
   it("streams tokens from NDJSON", async () => {
     let sent: { stream: boolean; model: string } | null = null;
@@ -166,6 +179,50 @@ describe("ollama client", () => {
   it("surfaces model errors", async () => {
     const f: Fetch = async () => new Response(stream([JSON.stringify({ error: "model not found" })]));
     await expect(chat(f, { model: "x", messages: [] })).rejects.toThrow("model not found");
+  });
+});
+
+describe("built-in engine client (llama-server, OpenAI API)", () => {
+  const ep = { url: "http://127.0.0.1:5000", key: "secret" };
+  const events = (...data: string[]) => stream(data.map((d) => `data: ${d}\n`));
+  it("parses SSE payloads until [DONE]", async () => {
+    const out: string[] = [];
+    for await (const d of sse(stream([": ping", "data: {\"a\":1}", "", "data: [DONE]", "data: late"]))) out.push(d);
+    expect(out).toEqual(['{"a":1}']);
+  });
+  it("streams delta tokens and sends the key", async () => {
+    let url = "";
+    let init: RequestInit | undefined;
+    const f: Fetch = async (u, i) => {
+      url = u;
+      init = i;
+      return new Response(events(
+        JSON.stringify({ choices: [{ delta: { role: "assistant" } }] }),
+        JSON.stringify({ choices: [{ delta: { content: "Mer" } }] }),
+        JSON.stringify({ choices: [{ delta: { content: "haba" } }] }),
+        JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop" }] }),
+        "[DONE]",
+      ));
+    };
+    const tokens: string[] = [];
+    const out = await openAiChat(f, ep, { messages: [{ role: "user", content: "selam" }], onToken: (t) => tokens.push(t) });
+    expect(out).toBe("Merhaba");
+    expect(tokens).toEqual(["Mer", "haba"]);
+    expect(url).toBe("http://127.0.0.1:5000/v1/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer secret");
+    expect(JSON.parse(String(init?.body))).toMatchObject({ stream: true, messages: [{ role: "user", content: "selam" }] });
+  });
+  it("surfaces HTTP and stream errors", async () => {
+    const denied: Fetch = async () => new Response("Invalid API Key", { status: 401 });
+    await expect(openAiChat(denied, ep, { messages: [] })).rejects.toThrow("401");
+    const bad: Fetch = async () => new Response(events(JSON.stringify({ error: { message: "context too long" } })));
+    await expect(openAiChat(bad, ep, { messages: [] })).rejects.toThrow("context too long");
+  });
+  it("suggests a model from RAM and formats sizes in Turkish", () => {
+    expect(suggestModel(8 * 1024 ** 3)).toBe("fast");
+    expect(suggestModel(0)).toBe("fast");
+    expect(suggestModel(16 * 1024 ** 3)).toBe("quality");
+    expect(formatGb(2_497_281_120)).toBe("2,3 GB");
   });
 });
 

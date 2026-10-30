@@ -3,7 +3,8 @@
 use serde::Serialize;
 use serde_json::Value;
 use std::fs;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader};
+use crate::fetch::{agent, download, find_file, net_error, SetupProgress};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tauri::{ipc::Channel, AppHandle, Manager, State};
@@ -22,14 +23,6 @@ pub struct WhisperStatus {
     installed: bool,
     has_binary: bool,
     models: Vec<String>,
-}
-
-#[derive(Serialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct SetupProgress {
-    stage: &'static str,
-    received: u64,
-    total: u64,
 }
 
 fn whisper_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -53,23 +46,6 @@ pub fn find_exe(dir: &Path) -> Option<PathBuf> {
     None
 }
 
-fn find_file(dir: &Path, name: &str, depth: u32) -> Option<PathBuf> {
-    let entries = fs::read_dir(dir).ok()?;
-    let mut subdirs = vec![];
-    for e in entries.flatten() {
-        let p = e.path();
-        if p.is_dir() {
-            subdirs.push(p);
-        } else if p.file_name().is_some_and(|n| n.eq_ignore_ascii_case(name)) {
-            return Some(p);
-        }
-    }
-    if depth == 0 {
-        return None;
-    }
-    subdirs.into_iter().find_map(|d| find_file(&d, name, depth - 1))
-}
-
 pub fn status(dir: &Path) -> WhisperStatus {
     let has_binary = find_exe(&dir.join("bin")).is_some();
     let models: Vec<String> = MODELS
@@ -89,50 +65,6 @@ pub fn pick_asset(releases: &Value) -> Option<String> {
     })
 }
 
-fn agent() -> Result<ureq::Agent, String> {
-    let tls = native_tls::TlsConnector::new().map_err(|e| e.to_string())?;
-    Ok(ureq::AgentBuilder::new()
-        .tls_connector(std::sync::Arc::new(tls))
-        .user_agent("nito-study-app")
-        .build())
-}
-
-/// Streams `url` into `dest` through a `.part` file so a cut download never looks complete.
-fn download(agent: &ureq::Agent, url: &str, dest: &Path, stage: &'static str, progress: &mut dyn FnMut(SetupProgress)) -> Result<(), String> {
-    let resp = agent.get(url).call().map_err(|e| format!("Download failed ({url}): {e}"))?;
-    let total = resp.header("Content-Length").and_then(|v| v.parse().ok()).unwrap_or(0);
-    if let Some(parent) = dest.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let part = dest.with_extension("part");
-    let mut out = fs::File::create(&part).map_err(|e| e.to_string())?;
-    let mut reader = resp.into_reader();
-    let mut buf = vec![0u8; 256 * 1024];
-    let (mut received, mut last) = (0u64, 0u64);
-    progress(SetupProgress { stage, received, total });
-    loop {
-        let n = reader.read(&mut buf).map_err(|e| format!("Download failed: {e}"))?;
-        if n == 0 {
-            break;
-        }
-        out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
-        received += n as u64;
-        if received - last >= 1 << 20 {
-            last = received;
-            progress(SetupProgress { stage, received, total });
-        }
-    }
-    out.flush().map_err(|e| e.to_string())?;
-    drop(out);
-    if total > 0 && received != total {
-        let _ = fs::remove_file(&part);
-        return Err(format!("Download incomplete: {received}/{total} bytes"));
-    }
-    fs::rename(&part, dest).map_err(|e| e.to_string())?;
-    progress(SetupProgress { stage, received, total: total.max(received) });
-    Ok(())
-}
-
 /// Installs the binary (if missing) and `model` (if missing) into `dir`.
 pub fn setup(dir: &Path, model: &str, progress: &mut dyn FnMut(SetupProgress)) -> Result<(), String> {
     let model_path = model_file(dir, model)?;
@@ -142,12 +74,12 @@ pub fn setup(dir: &Path, model: &str, progress: &mut dyn FnMut(SetupProgress)) -
         let releases: Value = agent
             .get(RELEASES_API)
             .call()
-            .map_err(|e| format!("GitHub API failed: {e}"))?
+            .map_err(net_error)?
             .into_json()
             .map_err(|e| e.to_string())?;
         let url = pick_asset(&releases).ok_or("No whisper-bin-x64.zip in recent whisper.cpp releases")?;
         let zip_path = dir.join("whisper-bin-x64.zip");
-        download(&agent, &url, &zip_path, "binary", progress)?;
+        download(&agent, &url, &zip_path, "binary", progress, None)?;
         let file = fs::File::open(&zip_path).map_err(|e| e.to_string())?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
         let _ = fs::remove_dir_all(&bin);
@@ -157,7 +89,7 @@ pub fn setup(dir: &Path, model: &str, progress: &mut dyn FnMut(SetupProgress)) -
         find_exe(&bin).ok_or("whisper-cli.exe not found in the release zip")?;
     }
     if !model_path.is_file() {
-        download(&agent, &format!("{MODEL_URL}ggml-{model}.bin"), &model_path, "model", progress)?;
+        download(&agent, &format!("{MODEL_URL}ggml-{model}.bin"), &model_path, "model", progress, None)?;
     }
     Ok(())
 }
