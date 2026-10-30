@@ -7,6 +7,6 @@
 </div>
 
 <style>
-  .track { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
-  .fill { height: 100%; background: var(--accent); transition: width 0.15s; }
+  .track { height: 6px; border-radius: var(--pill); background: var(--surface-3); overflow: hidden; }
+  .fill { height: 100%; border-radius: inherit; background: var(--accent-strong); transition: width 0.15s; }
 </style>

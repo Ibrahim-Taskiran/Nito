@@ -66,7 +66,7 @@
     background: transparent; cursor: pointer; position: relative; padding: 0; touch-action: manipulation;
   }
   .swatch span { width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
-  .swatch[aria-pressed="true"] span { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .swatch[aria-pressed="true"] span { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent-strong); }
   .swatch.custom span { background: conic-gradient(#e74c3c, #f1c40f, #2ecc71, #1abc9c, #3498db, #9b59b6, #e74c3c); }
   .swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .width { color: var(--text-2); }

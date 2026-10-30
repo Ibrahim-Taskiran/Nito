@@ -70,7 +70,7 @@
   .catch { position: fixed; inset: 0; z-index: 8; }
   .menu {
     position: fixed; z-index: 9; min-width: 220px; padding: 6px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 32px rgb(0 0 0 / 0.16);
+    border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-3);
   }
   button {
     display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--hit); padding: 0 10px;

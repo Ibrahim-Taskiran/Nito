@@ -370,12 +370,13 @@
         <ToolButton label="Önemli sayfalar ({importantCount})" title="Yalnız önemli sayfalar, küçük bir PDF olarak" pressed={showImportant}
           onclick={() => (showImportant = !showImportant)}><Star size={18} /></ToolButton>
       {/if}
-      <div class="group">
+      <div class="group seg">
         <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}><ZoomOut size={18} /></IconButton>
         <span class="zoom">{Math.round(scale * 100)}%</span>
         <IconButton label="Yakınlaştır" onclick={() => (scale = zoomIn(scale))}><ZoomIn size={18} /></IconButton>
         <IconButton label="Genişliğe sığdır" onclick={fitWidth}><MoveHorizontal size={18} /></IconButton>
       </div>
+      <div class="group panes">
       <ToolButton label="Sayfalar" title="Sayfalar ve içindekiler" pressed={showNav} onclick={() => (showNav = !showNav)}>
         <PanelLeft size={18} />
       </ToolButton>
@@ -387,6 +388,7 @@
         <ToolButton label="Defter" title="PDF'in yanında defter aç" pressed={notebookOpen} onclick={() => (notebookOpen = !notebookOpen)}>
           <NotebookPen size={18} /></ToolButton>
       {/if}
+      </div>
     </div>
     <div class="row tools" role="toolbar" aria-label="Kalem araçları">
       <PenMenu {reader} />
@@ -522,26 +524,38 @@
 <style>
   .reader { display: flex; flex-direction: column; height: 100%; }
   .toolbar { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 4px 12px; }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; padding: 6px 16px; }
   .row + .row { border-top: 1px solid var(--border); }
-  h1 { flex: 1 1 120px; min-width: 80px; margin: 0 8px; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row.tools {
+    border-top: 0; margin: 0 16px 8px; padding: 4px 6px; gap: 2px; background: var(--surface-2); border-radius: var(--radius);
+    justify-content: center;
+  }
+  h1 {
+    flex: 1 1 120px; min-width: 80px; margin: 0 8px; font-size: 17px; line-height: 24px; font-weight: 700; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .group { display: flex; align-items: center; }
-  .zoom { color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 48px; text-align: center; }
+  .seg { padding: 0 2px; border-radius: var(--radius-sm); background: var(--surface-2); }
+  /* Pane toggles show icons only until there is room for their labels (names stay for screen readers). */
+  @media (max-width: 1599px) {
+    .panes :global(.tool > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
+  .zoom { color: var(--text-2); font: 600 13px/1 var(--font-label); font-variant-numeric: tabular-nums; min-width: 48px; text-align: center; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .page-box { display: flex; align-items: center; gap: 4px; color: var(--text-2); font-variant-numeric: tabular-nums; margin: 0 4px; }
+  .page-box { display: flex; align-items: center; gap: 6px; color: var(--text-2); font: 600 13px/1 var(--font-label); font-variant-numeric: tabular-nums; margin: 0 4px; }
   .page-input {
-    width: 52px; height: var(--hit); text-align: center; font: inherit; color: var(--text); background: var(--bg);
+    width: 56px; height: var(--hit); text-align: center; font: 600 14px/1 var(--font-label); color: var(--text); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: var(--radius-sm);
   }
   .sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
   .search input {
-    flex: 1 1 200px; max-width: 420px; height: var(--hit); padding: 0 10px; font: inherit; color: var(--text); background: var(--bg);
+    flex: 1 1 200px; max-width: 420px; height: var(--hit); padding: 0 12px; font: inherit; color: var(--text); background: var(--surface-2);
     border: 1px solid var(--border); border-radius: var(--radius-sm);
   }
   .count { min-width: 80px; color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
   .notice { color: var(--danger); font-size: 13px; }
   .body { flex: 1; display: flex; min-height: 0; position: relative; }
-  .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
+  .scroller { flex: 1; overflow: auto; padding: 28px 24px; background: var(--bg); touch-action: pan-x pan-y; }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .blanks { font-size: 12px; }
   .drop-blank {
@@ -555,7 +569,7 @@
   .slot.side :global(.page) { margin: 0 0 16px; }
   .picker {
     position: fixed; transform: translateX(-50%); z-index: 20; display: flex; gap: 2px; padding: 4px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-3);
   }
   .picker button {
     min-height: var(--hit); padding: 0 10px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer;
@@ -563,7 +577,7 @@
   }
   .picker button:hover { background: var(--surface-2); }
   .chip { width: 12px; height: 12px; border-radius: 50%; }
-  @media (max-width: 1023px) { .row { padding: 4px 8px; } }
+  @media (max-width: 1023px) { .row { padding: 4px 8px; } .row.tools { margin: 0 8px 6px; } }
   /* Tablet portrait: tool labels are read out but not shown, so the tool row stays on one or two lines. */
   @media (max-width: 900px) {
     .tools > :global(.tool > span), .tools > :global(.menu > .tool > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

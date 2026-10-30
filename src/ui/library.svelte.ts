@@ -10,7 +10,7 @@ type Counts = Awaited<ReturnType<Repo["counts"]>>;
 export type ViewMode = "grid" | "list";
 
 /** Per-device view preference; storage may be missing or blocked. */
-function pref<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+export function pref<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
     const v = localStorage.getItem(key) as T | null;
     return v && allowed.includes(v) ? v : fallback;
@@ -18,7 +18,7 @@ function pref<T extends string>(key: string, allowed: readonly T[], fallback: T)
     return fallback;
   }
 }
-function savePref(key: string, value: string): void {
+export function savePref(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
   } catch {

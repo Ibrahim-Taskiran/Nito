@@ -28,13 +28,13 @@
 </div>
 
 <style>
-  .stats { display: grid; gap: 6px; min-width: 0; }
-  .bar { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
-  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
-  .bar.done i { opacity: 0.55; }
-  .line { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-2); min-height: 16px; }
-  .pct { margin-right: auto; font-variant-numeric: tabular-nums; }
-  .pct.done { color: var(--accent); }
-  .badge { display: inline-flex; align-items: center; gap: 3px; font-variant-numeric: tabular-nums; }
+  .stats { display: flex; flex-direction: column-reverse; gap: 8px; min-width: 0; }
+  .bar { height: 6px; border-radius: var(--pill); background: var(--surface-3); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent-strong); border-radius: inherit; }
+  .bar.done i { background: var(--emerald); }
+  .line { display: flex; align-items: center; gap: 10px; font: 600 12px/16px var(--font-label); color: var(--text-2); min-height: 16px; }
+  .pct { margin-right: auto; font-variant-numeric: tabular-nums; color: var(--text); }
+  .pct.done { color: var(--emerald); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 </style>

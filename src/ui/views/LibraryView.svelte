@@ -1,70 +1,68 @@
 <script lang="ts">
-  import { ArrowUpDown, LayoutGrid, List, Search, X } from "@lucide/svelte";
-  import type { Snippet } from "svelte";
+  import { ArrowUpDown, ChevronDown, FolderPlus, GraduationCap, LayoutGrid, List } from "@lucide/svelte";
+  import { SvelteSet } from "svelte/reactivity";
   import { SORT_NAMES, type SortKey } from "../../core/library/browse";
-  import type { Document } from "../../core/types";
+  import type { Document, LibraryFilter } from "../../core/types";
   import { groupByWeek, type WeekGroup } from "../../core/week";
+  import Button from "../components/Button.svelte";
   import type { Library } from "../library.svelte";
+  import { shell } from "../shell.svelte";
   import DetailPanel from "./DetailPanel.svelte";
   import DocumentList from "./DocumentList.svelte";
   import DocCard from "./library/DocCard.svelte";
   import DocDialogs from "./library/DocDialogs.svelte";
   import DocMenu, { type DocAction } from "./library/DocMenu.svelte";
 
-  /** Library main area: toolbar (search, course chips, sort, view), grid or list, detail panel. */
-  let { lib, addButtons }: { lib: Library; addButtons: Snippet } = $props();
-  let search: HTMLInputElement;
+  /** Library main area: title row (filters, sort, view), course chips, week groups, detail panel. Search lives in TopBar. */
+  let { lib, addFolder }: { lib: Library; addFolder: () => void } = $props();
   let menu = $state<{ doc: Document; x: number; y: number } | null>(null);
   let dialog = $state<{ kind: DocAction; doc: Document } | null>(null);
+  const folded = new SvelteSet<string>();
 
   const groups = $derived<WeekGroup<Document>[]>(
     lib.sort === "week" ? groupByWeek(lib.visible) : [{ week: null, label: "", items: lib.visible }],
   );
   const courseFilter = $derived(lib.filter.kind === "course" ? lib.filter.courseId : null);
+  const title = $derived(lib.courses.find((c) => c.id === courseFilter)?.name ?? "Kütüphane");
   const onmenu = (doc: Document, x: number, y: number) => (menu = { doc, x, y });
-
-  function onkeydown(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-      e.preventDefault();
-      search.focus();
-      search.select();
-    } else if (e.key === "Escape" && document.activeElement === search && lib.query) {
-      lib.query = "";
-    }
-  }
+  const pages = (items: Document[]) => items.reduce((s, d) => s + (d.pageCount ?? 0), 0);
+  const kinds: { f: LibraryFilter; name: string; n: () => number }[] = [
+    { f: { kind: "all" }, name: "Tümü", n: () => lib.counts.all },
+    { f: { kind: "unread" }, name: "Okunmamış", n: () => lib.counts.unread },
+    { f: { kind: "favorites" }, name: "Favoriler", n: () => lib.counts.favorites },
+  ];
+  const fold = (label: string) => (folded.has(label) ? folded.delete(label) : folded.add(label));
 </script>
 
-<svelte:window {onkeydown} />
-
 <main class="center">
-  <header class="toolbar">
-    <div class="top">
-      <label class="search">
-        <Search size={16} aria-hidden="true" />
-        <input bind:this={search} bind:value={lib.query} type="search" placeholder="Belge ya da ders ara…" aria-label="Ara" aria-keyshortcuts="Control+K" />
-        {#if lib.query}
-          <button class="clear" aria-label="Aramayı temizle" onclick={() => { lib.query = ""; search.focus(); }}><X size={14} /></button>
-        {:else}
-          <kbd>Ctrl K</kbd>
-        {/if}
-      </label>
-      <label class="sort" title="Sırala">
-        <ArrowUpDown size={15} aria-hidden="true" />
-        <select aria-label="Sırala" value={lib.sort} onchange={(e) => lib.setSort(e.currentTarget.value as SortKey)}>
-          {#each Object.entries(SORT_NAMES) as [k, name] (k)}<option value={k}>{name}</option>{/each}
-        </select>
-      </label>
-      <div class="seg" role="group" aria-label="Görünüm">
-        <button aria-label="Izgara görünümü" title="Izgara" aria-pressed={lib.view === "grid"} onclick={() => lib.setView("grid")}><LayoutGrid size={16} /></button>
-        <button aria-label="Liste görünümü" title="Liste" aria-pressed={lib.view === "list"} onclick={() => lib.setView("list")}><List size={16} /></button>
+  <header class="head">
+    <div class="titlerow">
+      <h1>{title}</h1>
+      <span class="n-badge">{lib.visible.length} belge</span>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="Durum filtresi">
+          {#each kinds as k (k.name)}
+            <button aria-pressed={lib.filter.kind === k.f.kind} onclick={() => lib.setFilter(k.f)}>{k.name}<span class="n">{k.n()}</span></button>
+          {/each}
+        </div>
+        <label class="sort" title="Sırala">
+          <ArrowUpDown size={16} aria-hidden="true" />
+          <select aria-label="Sırala" value={lib.sort} onchange={(e) => lib.setSort(e.currentTarget.value as SortKey)}>
+            {#each Object.entries(SORT_NAMES) as [k, name] (k)}<option value={k}>{name}</option>{/each}
+          </select>
+        </label>
+        <div class="seg icons" role="group" aria-label="Görünüm">
+          <button aria-label="Izgara görünümü" title="Izgara" aria-pressed={lib.view === "grid"} onclick={() => lib.setView("grid")}><LayoutGrid size={18} /></button>
+          <button aria-label="Liste görünümü" title="Liste" aria-pressed={lib.view === "list"} onclick={() => lib.setView("list")}><List size={18} /></button>
+        </div>
+        <Button onclick={addFolder}><FolderPlus size={18} aria-hidden="true" />Klasör ekle</Button>
       </div>
-      <div class="add">{@render addButtons()}</div>
     </div>
     {#if lib.courses.length}
       <div class="chips" role="group" aria-label="Ders filtresi">
-        <button class="chip" aria-pressed={courseFilter === null} onclick={() => lib.setFilter({ kind: "all" })}>Tüm dersler</button>
+        <button class="n-chip" aria-pressed={courseFilter === null} onclick={() => lib.setFilter({ kind: "all" })}>Tüm dersler<span class="n">{lib.counts.all}</span></button>
         {#each lib.courses as c (c.id)}
-          <button class="chip" aria-pressed={courseFilter === c.id} onclick={() => lib.setFilter({ kind: "course", courseId: c.id })}>
+          <button class="n-chip" aria-pressed={courseFilter === c.id} onclick={() => lib.setFilter({ kind: "course", courseId: c.id })}>
             {c.name}<span class="n">{lib.counts.byCourse[c.id] ?? 0}</span>
           </button>
         {/each}
@@ -74,26 +72,50 @@
 
   <div class="scroll">
     {#if !lib.visible.length}
-      <div class="none">
+      <div class="n-empty">
         {#if lib.query}
           <p><strong>“{lib.query}”</strong> ile eşleşen belge yok.</p>
           <button class="link" onclick={() => (lib.query = "")}>Aramayı temizle</button>
         {:else}
-          <p>Bu görünümde belge yok.</p>
-          <p class="muted">PDF ekleyebilir ya da dosyaları pencereye sürükleyebilirsin.</p>
+          <p><strong>Bu görünümde belge yok.</strong></p>
+          <p>PDF ekleyebilir ya da dosyaları pencereye sürükleyebilirsin.</p>
         {/if}
       </div>
-    {:else if lib.view === "list"}
-      <DocumentList {lib} {groups} {onmenu} />
     {:else}
       {#each groups as g (g.label)}
-        <section>
-          {#if g.label}<h3>{g.label}</h3>{/if}
-          <div class="grid">
-            {#each g.items as d (d.id)}<DocCard {lib} doc={d} {onmenu} />{/each}
-          </div>
+        {@const open = !folded.has(g.label)}
+        <section class="group">
+          {#if g.label}
+            <div class="whead">
+              <span class="n-dot" aria-hidden="true"></span>
+              <h3>{g.label}</h3>
+              <span class="n-badge">{g.items.length} belge{#if pages(g.items)} · {pages(g.items)} sayfa{/if}</span>
+              <button class="fold" aria-expanded={open} onclick={() => fold(g.label)}>
+                {open ? "Daralt" : "Genişlet"}<ChevronDown size={16} aria-hidden="true" />
+              </button>
+            </div>
+          {/if}
+          {#if open}
+            {#if lib.view === "list"}
+              <DocumentList {lib} items={g.items} {onmenu} />
+            {:else}
+              <div class="grid">
+                {#each g.items as d (d.id)}<DocCard {lib} doc={d} {onmenu} />{/each}
+              </div>
+            {/if}
+          {/if}
         </section>
       {/each}
+      {#if shell.due}
+        <section class="review">
+          <span class="n-icon-tile big"><GraduationCap size={26} /></span>
+          <div class="rtext">
+            <h2>Aralıklı tekrar kartları <span class="n-badge">{shell.due} bekleyen</span></h2>
+            <p>Tanım ve Soru vurgularından oluşan kartların bugün tekrar zamanı geldi.</p>
+          </div>
+          <Button variant="primary" onclick={() => (lib.section = "study")}>Tekrara başla</Button>
+        </section>
+      {/if}
     {/if}
   </div>
 </main>
@@ -108,50 +130,58 @@
 
 <style>
   .center { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .toolbar { display: grid; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .search {
-    flex: 1 1 220px; min-width: 0; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 0 10px;
-    min-height: var(--hit); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-2);
-  }
-  .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-  .search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
-  .search input::-webkit-search-cancel-button { display: none; }
-  kbd { font: 11px var(--font); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--text-2); white-space: nowrap; }
-  .clear { border: 0; background: transparent; color: var(--text-2); cursor: pointer; display: grid; place-items: center; width: 32px; height: 32px; margin-right: -6px; border-radius: 50%; }
-  .clear:hover { background: var(--surface-2); color: var(--text); }
+  .head { display: grid; gap: 14px; padding: 8px 28px 6px; }
+  .titlerow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
   .sort {
-    position: relative; display: flex; align-items: center; gap: 6px; padding-left: 10px; color: var(--text-2);
-    min-height: var(--hit); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+    display: flex; align-items: center; gap: 6px; padding-left: 12px; color: var(--text-2);
+    min-height: var(--hit); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--shadow-1);
   }
-  .sort select { border: 0; background: transparent; color: var(--text); font: inherit; min-height: calc(var(--hit) - 2px); padding: 0 8px 0 0; cursor: pointer; outline: none; }
+  .sort select {
+    border: 0; background: transparent; color: var(--text); font: 600 14px/1 var(--font-label); min-height: calc(var(--hit) - 2px);
+    padding: 0 10px 0 0; cursor: pointer; outline: none;
+  }
   .sort select option { background: var(--surface); color: var(--text); }
   .sort:focus-within { border-color: var(--accent); }
-  .seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-  .seg button { width: var(--hit); height: var(--hit); border: 0; background: var(--surface); color: var(--text-2); cursor: pointer; display: grid; place-items: center; }
-  .seg button + button { border-left: 1px solid var(--border); }
-  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-  .add { display: flex; gap: 8px; margin-left: auto; }
-  .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-  .chip {
-    flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: var(--hit); padding: 0 14px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; font-size: 13px;
+  .seg { display: flex; padding: 3px; gap: 2px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--shadow-1); }
+  .seg button {
+    min-height: calc(var(--hit) - 8px); padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--text-2);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font: 600 13px/1 var(--font-label);
   }
-  .chip:hover { color: var(--text); background: var(--surface-2); }
-  .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
-  .chip .n { font-size: 11px; opacity: 0.75; font-variant-numeric: tabular-nums; }
-  .scroll { flex: 1; overflow-y: auto; padding: 4px 20px 32px; }
-  h3 { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 18px 2px 10px; text-transform: none; letter-spacing: 0.01em; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; }
-  section:first-child h3 { margin-top: 14px; }
-  .grid:first-child { margin-top: 16px; }
-  .none { display: grid; justify-items: center; gap: 6px; padding: 64px 16px; text-align: center; color: var(--text); }
-  .none p { margin: 0; }
-  .muted { color: var(--text-2); }
+  .seg.icons button { width: calc(var(--hit) - 4px); padding: 0; justify-content: center; }
+  .seg button:hover { color: var(--text); }
+  .seg button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); }
+  .seg .n { font-size: 11px; opacity: 0.75; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 4px; }
+  .scroll { flex: 1; overflow-y: auto; padding: 4px 28px 40px; }
+  .group + .group { margin-top: 8px; }
+  .whead { display: flex; align-items: center; gap: 10px; margin: 18px 2px 12px; }
+  .whead .n-dot { background: var(--accent-strong); }
+  h3 { font-size: 24px; line-height: 30px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+  .fold {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: var(--hit); padding: 0 10px; border: 0;
+    border-radius: var(--radius-sm); background: transparent; color: var(--text-2); cursor: pointer; font: 600 13px/1 var(--font-label);
+  }
+  .fold:hover { background: var(--surface-2); color: var(--text); }
+  .fold[aria-expanded="false"] :global(svg) { transform: rotate(-90deg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+  .group:first-child .grid:first-child { margin-top: 16px; }
+  .review {
+    margin-top: 32px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 22px 24px;
+    border-radius: var(--radius-lg); background: var(--surface-3); border: 1px solid var(--border);
+  }
+  .n-icon-tile.big { width: 56px; height: 56px; background: var(--accent-strong); color: var(--on-accent); }
+  .rtext { flex: 1 1 260px; min-width: 0; }
+  .review h2 { margin: 0 0 4px; font-size: 20px; line-height: 28px; font-weight: 700; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .review p { margin: 0; color: var(--text-2); }
   .link { border: 0; background: transparent; color: var(--accent); cursor: pointer; min-height: var(--hit); text-decoration: underline; }
-  @media (max-width: 640px) {
-    .toolbar, .scroll { padding-left: 16px; padding-right: 16px; }
-    .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-    kbd { display: none; }
+  @media (max-width: 719px) {
+    .head { padding: 4px 16px 4px; }
+    .scroll { padding: 4px 16px 32px; }
+    h1 { font-size: 24px; line-height: 32px; }
+    .tools { margin-left: 0; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    h3 { font-size: 20px; }
   }
 </style>

@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const ALLOWED = new Set([
   "MIT", "MIT-0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "0BSD", "ISC", "Zlib",
-  "MPL-2.0", "Unlicense", "CC0-1.0", "BSL-1.0", "Unicode-3.0", "Unicode-DFS-2016",
+  "MPL-2.0", "OFL-1.1", "Unlicense", "CC0-1.0", "BSL-1.0", "Unicode-3.0", "Unicode-DFS-2016",
 ]);
 // Packages with no licence field, checked by hand.
 const KNOWN = { "nito": "own code", "nito_lib": "own code" };

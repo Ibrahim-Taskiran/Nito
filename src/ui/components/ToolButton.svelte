@@ -17,9 +17,10 @@
 
 <style>
   .tool {
-    min-height: var(--hit); min-width: var(--hit); padding: 0 10px; border: 0; border-radius: var(--radius-sm);
+    min-height: var(--hit); min-width: var(--hit); padding: 0 12px; border: 0; border-radius: var(--radius-sm);
     background: transparent; color: var(--text-2); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-    font: inherit; font-size: 13px; white-space: nowrap; flex: none; touch-action: manipulation;
+    font: 600 13px/1 var(--font-label); letter-spacing: 0.01em; white-space: nowrap; flex: none; touch-action: manipulation;
+    transition: background 0.12s, color 0.12s;
   }
   .tool:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
   .tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }

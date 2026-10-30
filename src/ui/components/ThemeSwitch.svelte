@@ -15,7 +15,11 @@
 </div>
 
 <style>
-  .switch { display: flex; padding: 3px; gap: 2px; background: var(--surface-2); border-radius: var(--radius-sm); }
-  button { flex: 1; min-height: 34px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; color: var(--text-2); font-size: 13px; }
-  button[aria-checked="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.1); }
+  .switch { display: flex; padding: 4px; gap: 2px; background: var(--surface-3); border-radius: var(--radius-sm); }
+  button {
+    flex: 1; min-height: 40px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; color: var(--text-2);
+    font: 600 12px/1 var(--font-label); letter-spacing: 0.02em; touch-action: manipulation;
+  }
+  button:hover { color: var(--text); }
+  button[aria-checked="true"] { background: var(--surface); color: var(--accent-strong); box-shadow: var(--shadow-1); }
 </style>

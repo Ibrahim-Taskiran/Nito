@@ -45,6 +45,19 @@ for (const scheme of ["light", "dark"]) {
   await page.getByRole("button", { name: "Aç" }).click();
   await page.locator(".hl").first().waitFor();
   console.log(scheme, "comment after reopen:", await page.getByPlaceholder("Yorum ekle…").inputValue());
+
+  // Home and Çalışma Merkezi on desktop, then the same screens on a phone (bottom tab bar).
+  await page.getByRole("button", { name: "← Kütüphane" }).click();
+  const tab = async (name, file) => {
+    await page.getByRole("navigation", { name: /gezinti/i }).getByRole("button", { name, exact: true }).click();
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `docs/screenshots/${file}-${scheme}.png` });
+  };
+  await tab("Bugün", "home");
+  await tab("Çalışma Merkezi", "study");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await tab("Bugün", "home-phone");
+  await tab("Kütüphane", "library-phone");
   await page.close();
 }
 await browser.close();

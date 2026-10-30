@@ -52,7 +52,7 @@
   }
   .opt:hover:not(:disabled) { background: var(--surface-2); }
   .opt:disabled { cursor: default; }
-  .opt.right { border-color: #7fa074; background: color-mix(in srgb, #7fa074 18%, var(--surface)); }
+  .opt.right { border-color: var(--emerald); background: color-mix(in srgb, var(--emerald) 16%, var(--surface)); }
   .opt.wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, var(--surface)); }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .spacer { flex: 1; }
