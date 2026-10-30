@@ -1,6 +1,6 @@
 // Data access for the Study Center. Reuses Repo for shared tables; owns card_review.
 import { draftToAnnotation, type DraftCard } from "../ai/cards";
-import type { SqlDb, SqlValue } from "../db/sql";
+import type { Row, SqlDb, SqlValue } from "../db/sql";
 import { Repo, toAnnotation, toDocument } from "../repo";
 import type { Annotation, Document, Id } from "../types";
 import { CARD_LABELS, NO_ANSWER, cardFace, newCardState, type Card, type CardState } from "./cards";
@@ -12,6 +12,8 @@ export interface CourseProgress {
   name: string;
   read: number;
   total: number;
+  /** Study time on the course's documents. */
+  studyMs: number;
 }
 
 export interface DocHighlight {
@@ -30,6 +32,8 @@ function parseWrong(json: string): string[] {
 
 const courseWhere = (courseId: Id | null, col = "d.course_id"): [string, SqlValue[]] =>
   courseId == null ? ["1", []] : [`${col} = ?`, [courseId]];
+
+const DOC_MS = "(SELECT SUM(t.ms) FROM study_time t WHERE t.document_id = d.id)";
 
 export class StudyRepo {
   readonly repo: Repo;
@@ -100,16 +104,35 @@ export class StudyRepo {
   /** Read/total per course; documents without a course appear as "Derssiz". */
   async courseProgress(): Promise<CourseProgress[]> {
     const rows = await this.db.all(
-      `SELECT c.id, c.name, COUNT(d.id) AS total, COALESCE(SUM(d.read_status = 'read'), 0) AS read
+      `SELECT c.id, c.name, COUNT(d.id) AS total, COALESCE(SUM(d.read_status = 'read'), 0) AS read,
+         COALESCE(SUM(${DOC_MS}), 0) AS ms
        FROM course c LEFT JOIN document d ON d.course_id = c.id
        GROUP BY c.id ORDER BY c.sort_order, c.name`,
     );
-    const out: CourseProgress[] = rows.map((r) => ({ courseId: Number(r.id), name: String(r.name), read: Number(r.read), total: Number(r.total) }));
+    const progress = (r: Row) => ({ read: Number(r.read), total: Number(r.total), studyMs: Number(r.ms) });
+    const out: CourseProgress[] = rows.map((r) => ({ courseId: Number(r.id), name: String(r.name), ...progress(r) }));
     const [loose] = await this.db.all(
-      "SELECT COUNT(*) AS total, COALESCE(SUM(read_status = 'read'), 0) AS read FROM document WHERE course_id IS NULL",
+      `SELECT COUNT(*) AS total, COALESCE(SUM(read_status = 'read'), 0) AS read, COALESCE(SUM(${DOC_MS}), 0) AS ms
+       FROM document d WHERE course_id IS NULL`,
     );
-    if (Number(loose?.total ?? 0) > 0) out.push({ courseId: null, name: "Derssiz", read: Number(loose.read), total: Number(loose.total) });
+    if (Number(loose?.total ?? 0) > 0) out.push({ courseId: null, name: "Derssiz", ...progress(loose) });
     return out;
+  }
+
+  /** Adds stopwatch time to a document's total for `day` (YYYY-MM-DD). */
+  async addStudyTime(documentId: Id, ms: number, day: string): Promise<void> {
+    if (ms <= 0) return;
+    await this.db.run(
+      `INSERT INTO study_time (document_id, day, ms) VALUES (?, ?, ?)
+       ON CONFLICT (document_id, day) DO UPDATE SET ms = ms + excluded.ms`,
+      [documentId, day, Math.round(ms)],
+    );
+  }
+
+  /** Total study time per document (only documents with time). */
+  async studyTimes(): Promise<Map<Id, number>> {
+    const rows = await this.db.all("SELECT document_id, SUM(ms) AS ms FROM study_time GROUP BY document_id");
+    return new Map(rows.map((r) => [Number(r.document_id), Number(r.ms)]));
   }
 
   async documents(courseId: Id | null): Promise<Document[]> {
