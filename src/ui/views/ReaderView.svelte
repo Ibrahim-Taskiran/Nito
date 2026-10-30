@@ -523,7 +523,7 @@
 
 <style>
   .reader { display: flex; flex-direction: column; height: 100%; }
-  .toolbar { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-1); position: relative; z-index: 2; }
+  .toolbar { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--surface); }
   .row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; padding: 6px 16px; }
   .row + .row { border-top: 1px solid var(--border); }
   .row.tools {

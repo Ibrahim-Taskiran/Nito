@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (13) — New look "Nito Study Canvas" (branch `worktree-agent-aa05a95fd3bc2ee8b`)
+- **Done:** design tokens (slate-indigo light + dark, radii, shadows, Manrope/Hanken Grotesk bundled via @fontsource-variable, OFL added to the licence allow list); shared Button/IconButton/ToolButton/MenuButton/Dialog/ProgressBar/ThemeSwitch + global `.n-*` blocks (card, chip, badge, eyebrow, kbd) and a `Ring` component. New shell: `Sidebar` (logo, ANA MENÜ with counts, DERSLERİM + klasör ekle, theme switch, collapsible rail; tablets <1100 px start as rail), `TopBar` (global Ctrl+K search → Kütüphane, Süre timer, PDF ekle), `BottomNav` + drawer under 720 px. Redesigned Bugün (resume cards, plan, Leitner boxes, weekly done-minutes chart, next "Sınav" plan countdown, son eklenenler), Kütüphane (title row, durum filter, week groups with collapse, floating detail card, review banner), Program, Notlar, Yapay zekâ, Çalışma Merkezi (card hero, 5 Leitner boxes, course rings with study time, exam chips), reader toolbar (tool dock, icon-only pane toggles <1600 px), Defter pane, timer panel.
+- **Skipped as fake (no backend):** Pomodoro, cloud sync, account/avatar, notifications, Stylus Modu, Cornell notebook, .apkg export, "Hafıza kalıcılığı" score, names in the greeting.
+- **Checks:** svelte-check 0, vitest 193 passed, licences ok, full `npm run e2e` (see commit below).
+- **Next step:** lead merges into main; owner looks at docs/screenshots (home/study/library, phone variants).
+- **Known limits:** in rail mode the theme switch is hidden (expand the sidebar); highlight label colours (core/labels.ts) unchanged.
+
 ## 2026-10-30 (12) — Phase 3.8 four branches merged; redesign still running
 - **Merged on main:** notebook (3fcc524), cross-page selection move, toolbar groups + note colours + "Sayfayı kaldır" (2222301), study time + Whisper accuracy (2b71a1a).
 - **Migration order (final):** m013 notebook, m014 note colour (renamed from 015), m015 study time (renamed from 014). Nobody ran the app between merges, so no real DB has the old numbers.
