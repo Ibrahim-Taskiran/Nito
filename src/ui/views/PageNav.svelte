@@ -33,21 +33,57 @@
     if (n) onjump(n);
   }
 
-  /** Renders a small page image the first time the thumbnail scrolls into view. */
+  /**
+   * Draws a small page image while the thumbnail is near the view and frees it when it scrolls away,
+   * so a 500-page PDF keeps only a screenful of thumbnail bitmaps. A thumbnail that only flies past is
+   * never drawn, and a draw still running when it leaves is cancelled.
+   */
   function thumb(canvas: HTMLCanvasElement, num: number) {
-    let done = false;
-    const io = new IntersectionObserver(async ([e]) => {
-      if (!e.isIntersecting || done) return;
-      done = true;
-      io.disconnect();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let task: { cancel(): void } | null = null;
+    let near = false;
+    const free = () => {
+      clearTimeout(timer);
+      task?.cancel();
+      task = null;
+      canvas.width = canvas.height = 0;
+      delete canvas.dataset.drawn;
+    };
+    const draw = async () => {
       const page = await pdf.getPage(num);
-      const vp = page.getViewport({ scale: (THUMB_W * (window.devicePixelRatio || 1)) / page.getViewport({ scale: 1 }).width });
-      canvas.width = Math.floor(vp.width);
-      canvas.height = Math.floor(vp.height);
-      await page.render({ canvas, viewport: vp }).promise.catch(() => {});
-    }, { root: list, rootMargin: "200px" });
+      if (!near) return;
+      const base = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: (THUMB_W * Math.min(2, window.devicePixelRatio || 1)) / base.width });
+      const off = document.createElement("canvas");
+      off.width = Math.floor(vp.width);
+      off.height = Math.floor(vp.height);
+      const t = page.render({ canvas: off, viewport: vp });
+      task = t;
+      try {
+        await t.promise;
+      } catch {
+        return; // cancelled
+      } finally {
+        if (task === t) task = null;
+      }
+      if (!near) return;
+      canvas.width = off.width;
+      canvas.height = off.height;
+      canvas.getContext("2d")!.drawImage(off, 0, 0);
+      off.width = off.height = 0;
+      canvas.dataset.drawn = "";
+    };
+    const io = new IntersectionObserver(([e]) => {
+      near = e.isIntersecting;
+      if (!near) return free();
+      if (canvas.dataset.drawn === undefined && !task) {
+        clearTimeout(timer);
+        timer = setTimeout(() => void draw().catch(() => {}), 80);
+      }
+    }, { root: list, rootMargin: "300px" });
+    canvas.width = canvas.height = 0;
     io.observe(canvas);
-    return { destroy: () => io.disconnect() };
+    return { destroy: () => { io.disconnect(); near = false; free(); } };
   }
 
   // Keep the current page's thumbnail in sight.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { labelInfo } from "../../core/labels";
-  import { normaliseRects } from "../../core/reader";
+  import { canvasRatio, normaliseRects } from "../../core/reader";
   import { foldQuery, matchesIn } from "../../core/search";
   import type { Annotation, Id, Rect } from "../../core/types";
   import { pdfjs, type PDFDocumentProxy } from "../pdf";
@@ -69,8 +69,11 @@
 
   $effect(() => {
     if (!active) {
+      // Free the bitmap and pdf.js's decoded images for this page (big scans hold tens of MB each).
       canvas.width = canvas.height = 0;
+      delete canvas.dataset.scale;
       textLayer.replaceChildren();
+      void pdf.getPage(num).then((p) => p.cleanup(), () => {});
       return;
     }
     const s = scale;
@@ -81,7 +84,8 @@
       const [lib, page] = await Promise.all([pdfjs(), pdf.getPage(num)]);
       if (cancelled) return;
       const vp = page.getViewport({ scale: s });
-      const dpr = window.devicePixelRatio || 1;
+      // Device pixels, capped so a huge page or 400% zoom never asks for a 100+ MP bitmap.
+      const dpr = canvasRatio(vp.width, vp.height, window.devicePixelRatio || 1);
       const off = document.createElement("canvas");
       off.width = Math.floor(vp.width * dpr);
       off.height = Math.floor(vp.height * dpr);
@@ -95,16 +99,23 @@
       try {
         await Promise.all([task.promise, text.render()]);
       } catch {
+        off.width = off.height = 0;
         return; // cancelled
       }
-      if (cancelled) return;
+      if (cancelled) {
+        off.width = off.height = 0;
+        return;
+      }
       // Swap in only when both are ready, so the page never flashes blank.
       canvas.width = off.width;
       canvas.height = off.height;
       canvas.getContext("2d")!.drawImage(off, 0, 0);
+      off.width = off.height = 0;
+      canvas.dataset.scale = String(s);
       textLayer.replaceChildren(...textBox.childNodes);
       textVersion++;
-    }, canvas.width ? 120 : 0);
+      // Zoom settles in 120 ms; a page that only flashes past during a fast scroll (60 ms) never starts.
+    }, canvas.width ? 120 : 60);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -126,7 +137,7 @@
     <div class="found" class:current={i === currentMark} style:left="{r.x * 100}%" style:top="{r.y * 100}%" style:width="{r.w * 100}%" style:height="{r.h * 100}%"></div>
   {/each}
   <div class="textLayer" bind:this={textLayer}></div>
-  {@render children?.()}
+  {#if active}{@render children?.()}{/if}
 </div>
 
 <style>

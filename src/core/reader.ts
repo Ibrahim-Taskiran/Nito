@@ -10,6 +10,22 @@ export function pagesToRender(visible: Iterable<number>, count: number, margin =
   return out;
 }
 
+/** Bitmap limits per page: big scans or 400% zoom on an A0 page must not need a 100+ MP canvas. */
+export const MAX_CANVAS_PIXELS = 16_000_000;
+export const MAX_CANVAS_SIDE = 8192;
+
+/**
+ * Bitmap pixels per CSS pixel for a page drawn `cssW` x `cssH` CSS pixels: the device pixel ratio,
+ * lowered so the bitmap stays within `maxPixels` and `maxSide` (CSS then stretches it a little).
+ */
+export function canvasRatio(cssW: number, cssH: number, dpr: number, maxPixels = MAX_CANVAS_PIXELS, maxSide = MAX_CANVAS_SIDE): number {
+  const want = dpr > 0 ? dpr : 1;
+  if (cssW <= 0 || cssH <= 0) return want;
+  const byArea = Math.sqrt(maxPixels / (cssW * cssH));
+  const bySide = maxSide / Math.max(cssW, cssH);
+  return Math.min(want, byArea, bySide);
+}
+
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 4;
 const ZOOM_STEP = 1.2;

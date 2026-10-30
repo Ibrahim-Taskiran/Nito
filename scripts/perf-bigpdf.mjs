@@ -93,7 +93,8 @@ async function snapshot(label) {
   const c = await page.evaluate(() => {
     let px = 0, pages = 0, thumbs = 0;
     for (const el of document.querySelectorAll("canvas")) {
-      if (!el.width) continue;
+      // 300x150 is the size of a canvas nothing was drawn on yet.
+      if (!el.width || (el.width === 300 && el.height === 150)) continue;
       px += el.width * el.height;
       if (el.closest("[data-page]")) pages++;
       else thumbs++;
@@ -198,7 +199,10 @@ await page.locator(".page-input").fill("251");
 await page.locator(".page-input").press("Enter");
 for (let i = 0; i < 8; i++) await page.getByRole("button", { name: "Yakınlaştır" }).click();
 await page.waitForTimeout(400);
+// Zoom keeps the scroll offset, so jump back to the huge page.
 const tZoom = Date.now();
+await page.locator(".page-input").fill("251");
+await page.locator(".page-input").press("Enter");
 const drawn = await page.waitForFunction(() => {
   const c = document.querySelector('[data-page="251"] canvas');
   if (!c?.width) return false;

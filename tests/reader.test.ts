@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ZOOM_MAX, ZOOM_MIN, normaliseRects, pagesToRender, zoomIn, zoomOut } from "../src/core/reader";
+import { MAX_CANVAS_PIXELS, ZOOM_MAX, ZOOM_MIN, canvasRatio, normaliseRects, pagesToRender, zoomIn, zoomOut } from "../src/core/reader";
 
 describe("reader", () => {
   it("renders visible pages plus one on each side", () => {
@@ -30,5 +30,14 @@ describe("reader", () => {
       { x: 0.1, y: 0.1, w: 0.35, h: 0.025 },
       { x: 0.1, y: 0.15, w: 0.25, h: 0.025 },
     ]);
+  });
+
+  it("caps the page bitmap for huge pages and zoom", () => {
+    expect(canvasRatio(1000, 1400, 2)).toBe(2); // 5.6 MP: device ratio kept
+    const r = canvasRatio(9536, 13480, 1); // A0 at 400%
+    expect(r).toBeLessThan(1);
+    expect(9536 * r * 13480 * r).toBeLessThanOrEqual(MAX_CANVAS_PIXELS + 1);
+    expect(canvasRatio(20000, 100, 1) * 20000).toBeLessThanOrEqual(8192); // very long strip: side cap
+    expect(canvasRatio(0, 0, 0)).toBe(1);
   });
 });
