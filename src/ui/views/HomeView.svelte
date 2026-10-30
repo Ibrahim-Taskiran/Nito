@@ -147,8 +147,8 @@
   .date { margin: 2px 0 0; color: var(--text-2); }
   h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
   h2 :global(svg) { color: var(--text-2); }
-  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .link { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 4px; font-size: 13px; }
+  .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .link { border: 0; background: transparent; color: var(--accent); cursor: pointer; min-height: var(--hit); padding: 0 8px; font-size: 13px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; min-width: 0; }
   .wide { grid-column: 1 / -1; }

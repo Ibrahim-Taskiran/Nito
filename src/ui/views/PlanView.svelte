@@ -20,7 +20,7 @@
   let narrow = $state(false);
   onMount(() => {
     void plan.refresh();
-    const mq = matchMedia("(max-width: 860px)");
+    const mq = matchMedia("(max-width: 1000px)");
     const set = () => (narrow = mq.matches);
     set();
     mq.addEventListener("change", set);
@@ -47,6 +47,12 @@
     if (!draft.title.trim()) return void (error = "Başlık yaz.");
     if (!draft.day) return void (error = "Gün seç.");
     await plan.save(draft, editing);
+    close();
+  };
+  /** Touch-friendly fallback for dragging: moves the occurrence the dialog was opened from. */
+  const moveTo = async (e: Event) => {
+    const to = (e.currentTarget as HTMLSelectElement).value;
+    if (editing && to) await plan.move(editing, to);
     close();
   };
   const remove = async () => {
@@ -79,7 +85,7 @@
     return days.find((d) => d !== from) ?? days[0] ?? null;
   };
   const onDown = (e: PointerEvent, o: Occurrence) => {
-    if (e.button !== 0 || (e.target as HTMLElement).closest("input, a, .open")) return;
+    if (e.button !== 0 || (e.target as HTMLElement).closest("input, label, a, .open")) return;
     drag = { o, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, moving: false, over: null };
   };
   const onMove = (e: PointerEvent) => {
@@ -122,7 +128,7 @@
     onpointercancel={() => (drag = null)}
     data-testid="plan-item"
   >
-    <input type="checkbox" checked={o.done} onchange={() => plan.toggle(o)} aria-label="{o.item.title} tamamlandı" />
+    <label class="tick"><input type="checkbox" checked={o.done} onchange={() => plan.toggle(o)} aria-label="{o.item.title} tamamlandı" /></label>
     <button class="body" onclick={() => onItemClick(o)} aria-label="{o.item.title} düzenle">
       <span class="title">{o.item.title}</span>
       <span class="meta">
@@ -157,25 +163,10 @@
       <IconButton label="Sonraki hafta" onclick={() => plan.goWeek(1)}><ChevronRight size={18} /></IconButton>
       <Button variant="ghost" disabled={plan.isThisWeek} onclick={() => plan.thisWeek()}>Bu hafta</Button>
     </div>
-    <Button variant="primary" onclick={() => openNew(narrow ? plan.day : plan.today)}><Plus size={16} aria-hidden={true} /> Plan ekle</Button>
+    <Button variant="primary" onclick={() => openNew(plan.today)}><Plus size={16} aria-hidden={true} /> Plan ekle</Button>
   </header>
 
-  {#if narrow}
-    <div class="tabs" role="tablist" aria-label="Günler">
-      {#each plan.days as day, i (day)}
-        <button role="tab" class="tab" class:today={day === plan.today} aria-selected={plan.day === day} onclick={() => (plan.day = day)}>
-          <span>{DAY_SHORT[i]}</span><strong>{Number(day.slice(8))}</strong>
-          {#if plan.on(day).length}<span class="pip" aria-hidden="true"></span>{/if}
-        </button>
-      {/each}
-    </div>
-    <section class="single" data-day={plan.day} aria-label={DAY_NAMES[weekdayIndex(plan.day)]}>
-      <h2>{DAY_NAMES[weekdayIndex(plan.day)]} <span class="muted">{shortDate(plan.day)}</span></h2>
-      {#if !plan.on(plan.day).length}<p class="muted empty">Bu gün boş.</p>{/if}
-      {@render dayList(plan.day)}
-    </section>
-  {:else}
-    <div class="week-grid">
+  <div class="week-grid" class:list={narrow}>
       {#each plan.days as day, i (day)}
         <section class="col" class:today={day === plan.today} class:over={drag?.moving && drag.over === day} data-day={day} aria-label={DAY_NAMES[i]}>
           <div class="colhead">
@@ -187,7 +178,6 @@
         </section>
       {/each}
     </div>
-  {/if}
 
   <section class="totals" aria-labelledby="totals-h">
     <h2 id="totals-h">Haftalık toplam</h2>
@@ -231,6 +221,14 @@
       <label>Saat <input type="time" bind:value={draft.time} /></label>
       <label>Süre (dk) <input type="number" min="5" step="5" bind:value={draft.durationMin} /></label>
       <label class="checkrow"><input type="checkbox" bind:checked={draft.repeatWeekly} /> Her hafta tekrarla</label>
+      {#if editing}
+        <label class="full">Başka güne taşı
+          <select value="" onchange={moveTo} data-testid="move-day">
+            <option value="" disabled>Gün seç</option>
+            {#each plan.days as d, i (d)}<option value={d} disabled={d === editing.day}>{DAY_NAMES[i]} · {shortDate(d)}</option>{/each}
+          </select>
+        </label>
+      {/if}
       {#if error}<p class="error full" role="alert">{error}</p>{/if}
       <div class="actions full">
         {#if editing}
@@ -275,34 +273,25 @@
     touch-action: none; user-select: none; cursor: grab;
   }
   .item.dragging { z-index: 5; cursor: grabbing; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); opacity: 0.95; }
-  .item input { margin: 2px 0 0; width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
-  .body { display: grid; gap: 1px; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; cursor: inherit; }
+  .tick { display: grid; place-items: center; width: 40px; height: 40px; margin: -10px -6px -10px -10px; cursor: pointer; }
+  .tick input { margin: 0; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .body { display: grid; gap: 1px; min-width: 0; min-height: 40px; align-content: start; padding: 0; border: 0; background: transparent; text-align: left; cursor: inherit; }
   .title { font-weight: 500; font-size: 13px; overflow-wrap: anywhere; }
   .item.done .title { text-decoration: line-through; color: var(--text-2); }
   .meta { color: var(--text-2); font-size: 12px; display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .open {
-    grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 12px;
+    grid-column: 2; justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 12px; font-size: 12px;
     border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--accent); cursor: pointer;
   }
   .add {
-    margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 32px;
+    margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: var(--hit);
     border: 1px dashed var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--text-2); cursor: pointer; font-size: 12px;
   }
   .add:hover { color: var(--accent); border-color: var(--accent); }
 
-  .tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .tab {
-    position: relative; display: grid; justify-items: center; gap: 0; padding: 6px 0; min-height: 52px; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; font-size: 12px; color: var(--text-2);
-  }
-  .tab strong { font-size: 16px; color: var(--text); }
-  .tab.today strong { color: var(--accent); }
-  .tab[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); }
-  .pip { position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
-  .single { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; }
-  .single .item { padding: 10px 10px 10px 12px; }
-  .single .add { min-height: var(--hit); }
-  .empty { margin: 0; }
+  .week-grid.list { grid-template-columns: 1fr; }
+  .week-grid.list .col { min-height: 0; }
+  .week-grid.list .items { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 
   .totals { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
   .totals ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); column-gap: 24px; }

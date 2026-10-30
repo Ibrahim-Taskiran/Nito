@@ -25,8 +25,6 @@ export class Plan {
   doneDays = $state.raw<ReadonlySet<string>>(new Set());
   /** Documents for the dialog's "Belge" select. */
   docs = $state.raw<Document[]>([]);
-  /** Narrow layout: the day tab shown. */
-  day = $state(isoDay(new Date()));
 
   days = $derived(weekDays(this.monday));
   occurrences = $derived(expandWeek(this.items, this.monday, this.doneDays));
@@ -49,13 +47,11 @@ export class Plan {
 
   async goWeek(delta: number): Promise<void> {
     this.monday = addDays(this.monday, 7 * delta);
-    this.day = addDays(this.day, 7 * delta);
     await this.refresh();
   }
 
   async thisWeek(): Promise<void> {
     this.monday = weekStart(this.today);
-    this.day = this.today;
     await this.refresh();
   }
 
