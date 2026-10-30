@@ -2,6 +2,12 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (9) — Phase 3.8 cross-page move (branch feat/selection-move-page)
+- **Done:** drag a lasso selection past the page edge onto another page (target page outlined, edge auto-scroll); "Sayfaya taşı" menu (page "2" or "2a"); "Kes" button + Ctrl+X (cut, then paste on any page). Strokes, pictures and notes change page; one undo step. No migration.
+- **Files:** `src/core/selection.ts` (PageMap, pageMap, paperPlace, mapPoints, mapBox), `inkRepo.ts` / `imageRepo.ts` / `pageToolsRepo.ts` (page in update), `ui/inkEdit.svelte.ts` (moveTo, cut, dropPage), `ui/reader.svelte.ts` (moveImage page), `ui/pageTools.svelte.ts`, `ui/views/SelectionLayer.svelte`, `ui/views/PenTools.svelte`, tests, `scripts/e2e-pen.mjs`.
+- **Checks:** check 0 errors, vitest 174 passed, e2e-pen phone + tablet ok.
+- **Next step:** merge into main with the other 3.8 branches. PenTools.svelte also touched by the toolbar branch.
+
 ## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
 - **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
 - **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
