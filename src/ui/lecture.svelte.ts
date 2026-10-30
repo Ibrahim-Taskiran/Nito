@@ -49,6 +49,10 @@ export class Lecture {
   denoise = $state(loadPref("denoise"));
   /** Noise and echo cancelling for new recordings. */
   micClean = $state(loadPref("mic"));
+  /** "Dökümü sayfanın yanında göster": every page with transcript paragraphs shows them beside or under it. */
+  transcriptBeside = $state(loadPref("transcriptBeside"));
+  /** Pages whose transcript was opened by hand (cue badge); on phones these blocks are expanded. */
+  openTranscripts = $state.raw(new Set<number>());
 
   /** recordingId -> page timeline. */
   readonly timelines = $derived.by(() => new Map(this.recordings.map((r) => [r.id, pageSegments(this.visits.get(r.id) ?? [], r.durationSeconds)])));
@@ -133,6 +137,23 @@ export class Lecture {
     if (!hit) return null;
     const paragraphs = (this.paragraphs.get(hit.rec.id) ?? []).filter((p) => p.pages.includes(page));
     return paragraphs.length ? { rec: hit.rec, paragraphs } : null;
+  }
+
+  /** True when any recording of this document has a transcript. */
+  get hasTranscripts(): boolean {
+    return this.notes.size > 0;
+  }
+
+  /** Whether the transcript block of `page` is on screen (beside the page, or under it on narrow screens). */
+  showsTranscript(page: number): boolean {
+    return (this.transcriptBeside || this.openTranscripts.has(page)) && !!this.pageSnippets(page);
+  }
+
+  toggleTranscript(page: number, open = !this.openTranscripts.has(page)): void {
+    const next = new Set(this.openTranscripts);
+    if (open) next.add(page);
+    else next.delete(page);
+    this.openTranscripts = next;
   }
 
   /** Note replay: true while a note made during the playing recording is still ahead of the playhead. */
@@ -226,6 +247,7 @@ export class Lecture {
     savePref(p, on);
     if (p === "replayNotes") this.replayNotes = on;
     else if (p === "mic") this.micClean = on;
+    else if (p === "transcriptBeside") this.transcriptBeside = on;
     else if (p === "skipSilence") {
       this.skipSilence = on;
       const rec = this.active;

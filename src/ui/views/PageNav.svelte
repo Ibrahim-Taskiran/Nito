@@ -2,20 +2,38 @@
   import { onMount } from "svelte";
   import { flattenOutline, type OutlineRow } from "../../core/reader";
   import { flagInfo } from "../../core/exam/flags";
+  import type { InsertWhere, PageSlot } from "../../core/pages";
   import type { Id } from "../../core/types";
   import type { Library } from "../library.svelte";
+  import { longPress } from "../longpress";
   import { PageFlags } from "../pageFlags.svelte";
   import type { PDFDocumentProxy } from "../pdf";
 
-  /** Left panel: page thumbnails and the PDF's table of contents. */
-  let { pdf, sizes, current, onjump, flags }: {
+  /**
+   * Left panel: page thumbnails (PDF pages and inserted blank pages, in reading order) and the PDF's table
+   * of contents. Long press or right click on a thumbnail: add a blank page before / after it, delete a blank one.
+   */
+  let { pdf, slots, sizeOf, current, onjump, flags, oninsert, onremove }: {
     pdf: PDFDocumentProxy;
-    sizes: { w: number; h: number }[];
+    slots: PageSlot[];
+    sizeOf: (key: number) => { w: number; h: number };
     current: number;
     onjump: (page: number) => void;
     /** Shows page flags on the thumbnails. */
     flags?: { lib: Library; documentId: Id };
+    oninsert?: (ref: number, where: InsertWhere) => void;
+    onremove?: (key: number) => void;
   } = $props();
+  let menu = $state<{ key: number; label: string; x: number; y: number } | null>(null);
+  const openMenu = (s: PageSlot, x: number, y: number) => {
+    if (oninsert) menu = { key: s.key, label: s.label, x: Math.min(x, window.innerWidth - 240), y: Math.min(y, window.innerHeight - 200) };
+  };
+  /** Runs a menu action for the page the menu was opened on, then closes the menu. */
+  function pick(fn: (key: number) => void) {
+    const key = menu?.key;
+    menu = null;
+    if (key != null) fn(key);
+  }
   const pageFlags = $derived(flags ? PageFlags.for(flags.lib, flags.documentId) : null);
 
   const THUMB_W = 112;
@@ -107,14 +125,21 @@
   </div>
   <div class="list" bind:this={list}>
     {#if tab === "pages"}
-      {#each sizes as s, i (i)}
-        <button class="thumb" data-thumb={i + 1} class:current={current === i + 1} aria-label="Sayfa {i + 1}"
-          aria-current={current === i + 1 ? "page" : undefined} onclick={() => onjump(i + 1)}>
-          <canvas use:thumb={i + 1} style:aspect-ratio="{s.w} / {s.h}"></canvas>
-          <span>{i + 1}</span>
-          {#if pageFlags?.on(i + 1).length}
-            <span class="flags" aria-label="İşaretler: {pageFlags.on(i + 1).map((k) => flagInfo(k).name).join(', ')}">
-              {#each pageFlags.on(i + 1) as k (k)}<i style:background={flagInfo(k).color} title={flagInfo(k).name}></i>{/each}
+      {#each slots as s (s.key)}
+        {@const size = sizeOf(s.key)}
+        <button class="thumb" data-thumb={s.key} class:current={current === s.key} aria-label={s.pdf ? `Sayfa ${s.label}` : `Boş sayfa ${s.label}`}
+          aria-current={current === s.key ? "page" : undefined} onclick={() => onjump(s.key)}
+          oncontextmenu={(e) => { if (oninsert) { e.preventDefault(); openMenu(s, e.clientX, e.clientY); } }}
+          {@attach longPress((x, y) => openMenu(s, x, y))}>
+          {#if s.pdf}
+            <canvas use:thumb={s.pdf} style:aspect-ratio="{size.w} / {size.h}"></canvas>
+          {:else}
+            <div class="blank" style:aspect-ratio="{size.w} / {size.h}"></div>
+          {/if}
+          <span>{s.label}</span>
+          {#if pageFlags?.on(s.key).length}
+            <span class="flags" aria-label="İşaretler: {pageFlags.on(s.key).map((k) => flagInfo(k).name).join(', ')}">
+              {#each pageFlags.on(s.key) as k (k)}<i style:background={flagInfo(k).color} title={flagInfo(k).name}></i>{/each}
             </span>
           {/if}
         </button>
@@ -130,6 +155,20 @@
     {/if}
   </div>
 </aside>
+
+<svelte:window onpointerdown={(e) => menu && !(e.target as Element).closest?.(".thumb-menu") && (menu = null)}
+  onkeydown={(e) => { if (menu && e.key === "Escape") { e.preventDefault(); menu = null; } }} />
+
+{#if menu && oninsert}
+  {@const m = menu}
+  <div class="thumb-menu" role="menu" aria-label="Sayfa {m.label}" style:left="{m.x}px" style:top="{m.y}px">
+    <button role="menuitem" onclick={() => pick((k) => oninsert(k, "before"))}>Önüne boş sayfa ekle</button>
+    <button role="menuitem" onclick={() => pick((k) => oninsert(k, "after"))}>Arkasına boş sayfa ekle</button>
+    {#if m.key < 0 && onremove}
+      <button role="menuitem" class="danger" onclick={() => pick(onremove)}>Bu boş sayfayı sil</button>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .nav { width: 172px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--border); background: var(--surface); min-height: 0; }
@@ -149,7 +188,18 @@
   .flags { position: absolute; top: 10px; right: 14px; display: flex; flex-direction: column; gap: 3px; }
   .flags i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
   .thumb canvas { width: 112px; background: #fff; box-shadow: 0 0 0 1px var(--border); border-radius: 2px; }
-  .thumb.current canvas { box-shadow: 0 0 0 2px var(--accent); }
+  .thumb.current canvas, .thumb.current .blank { box-shadow: 0 0 0 2px var(--accent); }
+  .blank { width: 112px; background: #fff; box-shadow: 0 0 0 1px var(--border); border-radius: 2px; }
+  .thumb-menu {
+    position: fixed; z-index: 40; min-width: 220px; padding: 4px; display: flex; flex-direction: column; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16);
+  }
+  .thumb-menu button {
+    min-height: var(--hit); padding: 0 12px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text);
+    font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+  }
+  .thumb-menu button:hover { background: var(--surface-2); }
+  .thumb-menu .danger { color: var(--danger); }
   .thumb.current span { color: var(--accent); font-weight: 600; }
   .row {
     display: block; width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer; color: var(--text);

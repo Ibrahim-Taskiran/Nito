@@ -7,9 +7,12 @@
   import { pdfjs, type PDFDocumentProxy } from "../pdf";
   import "../textLayer.css";
 
-  let { pdf, num, width, height, scale, active, annotations, focusedId, search = "", currentMark = -1, seek = 0, margin, children }: {
+  let { pdf, num, blank = false, width, height, scale, active, annotations, focusedId, search = "", currentMark = -1, seek = 0, margin, children }: {
     pdf: PDFDocumentProxy;
+    /** Page key: the PDF page number, or a negative key for an inserted blank page (see core/pages). */
     num: number;
+    /** Inserted blank page: a white sheet, nothing is drawn from the PDF. */
+    blank?: boolean;
     /** Page size in PDF points at scale 1. */
     width: number;
     height: number;
@@ -71,6 +74,7 @@
   });
 
   $effect(() => {
+    if (blank) return;
     if (!active) {
       // Free the bitmap and pdf.js's decoded images for this page (big scans hold tens of MB each).
       canvas.width = canvas.height = 0;
@@ -127,7 +131,7 @@
   });
 </script>
 
-<div class="page" class:grown={margin && (margin.right > 0 || margin.bottom > 0)} bind:this={pageEl} data-page={num}
+<div class="page" class:grown={margin && (margin.right > 0 || margin.bottom > 0)} bind:this={pageEl} data-page={num} data-blank={blank ? "" : undefined}
   style:width="{width * scale * (1 + (margin?.right ?? 0))}px" style:height="{height * scale * (1 + (margin?.bottom ?? 0))}px"
   style:--scale-factor={scale} style:--total-scale-factor={scale}>
   <!-- The PDF area; highlights and search marks are normalised to it, overlays to it but may go past it. -->

@@ -178,10 +178,12 @@ if (!listed.some((t) => /s\. 2 · .*“çok önemli”/.test(t))) await fail(`cu
 const paraText = await recs.locator(".transcript p").first().textContent();
 if (!/s\. 1, 2/.test(paraText)) await fail(`paragraph should show s. 1, 2: ${paraText}`);
 await badge.click();
-const pop = p2.getByRole("dialog", { name: "Sayfa 2 dökümü" });
-await pop.waitFor().catch(() => fail("cue popover did not open"));
+// The page's transcript (beside the page here, under it on phones) replaced the old popover.
+const pop = page.getByRole("region", { name: "Sayfa 2 dökümü" });
+await pop.waitFor().catch(() => fail("page 2 transcript did not open"));
+await pop.scrollIntoViewIfNeeded();
 await page.screenshot({ path: "docs/screenshots/reader-audio-light.png" });
-await pop.getByRole("button").first().click();
+await pop.getByRole("button", { name: /anından dinle/ }).first().click();
 await page.getByRole("button", { name: "Oynatmayı durdur" }).waitFor({ timeout: 5000 }).catch(() => fail("cue playback did not start"));
 console.log(`cues: badge on page 2 | list ${listed.length} | paragraph pages ok`);
 

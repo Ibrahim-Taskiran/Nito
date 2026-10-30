@@ -1,11 +1,11 @@
-// Page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı") and the exam list built from them
+// Page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı", "Önemli") and the exam list built from them
 // plus "Sınav" highlights. Pure except FlagRepo, which only talks to SqlDb.
 import type { SqlDb, SqlValue } from "../db/sql";
 import { toAnnotation, toDocument } from "../repo";
 import type { Annotation, Document, Id } from "../types";
 import { compareByWeek } from "../week";
 
-export type FlagKind = "stressed" | "candidate" | "unclear";
+export type FlagKind = "stressed" | "candidate" | "unclear" | "important";
 
 export interface FlagInfo {
   key: FlagKind;
@@ -18,6 +18,8 @@ export const FLAGS: readonly FlagInfo[] = [
   { key: "stressed", name: "Hoca vurguladı", color: "#c08a3e" },
   { key: "candidate", name: "Sınav adayı", color: "#c9776b" },
   { key: "unclear", name: "Anlaşılmadı", color: "#7d8fb0" },
+  // Migration 012. "Önemli sayfalar" in the reader shows these pages as a small PDF of their own.
+  { key: "important", name: "Önemli", color: "#6f9a6a" },
 ];
 
 const BY_KEY = new Map(FLAGS.map((f) => [f.key, f]));
@@ -105,7 +107,7 @@ export class FlagRepo {
     const params: SqlValue[] = courseId == null ? [] : [courseId];
     const rows = await this.db.all(
       `SELECT f.page AS f_page, f.kind AS f_kind, d.* FROM page_flag f JOIN document d ON d.id = f.document_id
-       ${courseId == null ? "" : "WHERE d.course_id = ?"} ORDER BY d.id, f.page`,
+       WHERE f.page > 0 ${courseId == null ? "" : "AND d.course_id = ?"} ORDER BY d.id, f.page`,
       params,
     );
     return rows.flatMap((r) => (isFlagKind(r.f_kind) ? [{ doc: toDocument(r), page: Number(r.f_page), kind: r.f_kind }] : []));

@@ -65,8 +65,9 @@ export async function createWebPlatform(): Promise<Platform> {
     },
     // The browser has no real folder paths, so watched folders never find files here.
     listFolder: async () => [],
-    async saveExport(name, text) {
-      const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+    async saveExport(name, data) {
+      const type = typeof data === "string" ? "text/markdown;charset=utf-8" : name.endsWith(".pdf") ? "application/pdf" : "application/octet-stream";
+      const url = URL.createObjectURL(new Blob([data as BlobPart], { type }));
       const a = Object.assign(document.createElement("a"), { href: url, download: name });
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);

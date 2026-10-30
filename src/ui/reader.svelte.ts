@@ -9,6 +9,7 @@ import { findHits, firstHitFrom, type SearchHit } from "../core/search";
 import type { Annotation, Document, Id, LabelKey, Rect } from "../core/types";
 import { Lecture } from "./lecture.svelte";
 import type { Library } from "./library.svelte";
+import { PageOrder } from "./pages.svelte";
 import { PageTools } from "./pageTools.svelte";
 import { openPdf, type PDFDocumentProxy } from "./pdf";
 import { Recorder } from "./recorder.svelte";
@@ -52,6 +53,8 @@ export class Reader {
   readonly lecture: Lecture;
   /** Tapes, text boxes, sticky notes, margins and layer visibility. */
   readonly tools: PageTools;
+  /** Inserted blank pages and the page list in reading order. */
+  readonly pages: PageOrder;
   /** Handwriting on this document. */
   ink = $state<InkStroke[]>([]);
   inkTool = $state<InkTool>("none");
@@ -78,6 +81,7 @@ export class Reader {
     this.inkRepo = new InkRepo(lib.repo.db);
     this.imageRepo = new ImageRepo(lib.repo.db);
     this.tools = new PageTools(lib.repo.db, doc.id);
+    this.pages = new PageOrder(lib.repo.db, doc.id);
     this.recorder = new Recorder(lib, doc.id, () => void this.reloadAnnotations().then(() => this.lecture.load()));
     this.lecture = new Lecture(this);
   }
@@ -91,7 +95,9 @@ export class Reader {
         this.reloadImages(),
         this.lecture.load(),
         this.tools.load(),
+        this.pages.load(),
       ]);
+      this.pages.numPages = pdf.numPages;
       this.pdf = pdf;
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e);
