@@ -35,7 +35,8 @@ const go = async (name) => {
 const map = { home: "Bugün", library: "Kütüphane", plan: "Program", study: w < 720 ? "Çalışma" : "Çalışma Merkezi", notes: "Notlar", ai: "Yapay zekâ" };
 for (const s of which) {
   if (s === "empty") continue;
-  if (s === "drawer") { await page.getByRole("button", { name: "Menü" }).click(); await page.waitForTimeout(400); }
+  if (s === "reader") { await go("Kütüphane"); await page.getByRole("button", { name: /Hafta 5: Protokoller/ }).click(); if (w >= 1024) await page.getByRole("button", { name: "Aç", exact: true }).click(); await page.locator(".textLayer span").first().waitFor(); if (process.env.NB) await page.getByRole("button", { name: "Defter" }).click(); await page.waitForTimeout(600); }
+  else if (s === "drawer") { await page.getByRole("button", { name: "Menü" }).click(); await page.waitForTimeout(400); }
   else if (s === "dialog") { await go("Program"); await page.getByRole("button", { name: "Plan ekle" }).click(); }
   else {
     try { await go(map[s]); } catch { console.log("skip", s); continue; }

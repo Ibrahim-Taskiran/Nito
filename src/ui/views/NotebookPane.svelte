@@ -134,19 +134,19 @@
 <style>
   .notebook {
     position: relative; flex: 0 0 auto; max-width: calc(100% - 200px); display: flex; flex-direction: column; min-height: 0;
-    border-left: 1px solid var(--border); background: var(--surface-2);
+    border-left: 1px solid var(--border); background: var(--bg);
   }
   .handle { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; z-index: 4; }
   .handle:hover, .handle:focus-visible { background: color-mix(in srgb, var(--accent) 30%, transparent); outline: 0; }
-  .bar { display: flex; align-items: center; gap: 4px; padding: 4px 8px 4px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
-  .title { font-weight: 600; font-size: 14px; }
-  .count { flex: 1; color: var(--text-2); font-size: 12px; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .title { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .count { flex: 1; color: var(--text-2); font: 600 12px/1 var(--font-label); }
   .item { display: flex; align-items: center; gap: 10px; }
   .swatch { width: 28px; height: 28px; flex: none; border-radius: 4px; background-color: #fff; box-shadow: 0 0 0 1px var(--border); }
   .scroller { flex: 1; overflow: auto; padding: 16px; touch-action: pan-x pan-y; }
   .msg { color: var(--danger); text-align: center; }
-  .page { position: relative; margin: 0 auto; background-color: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 0.14); border-radius: 2px; }
-  .foot { display: flex; align-items: center; gap: 2px; margin: 4px auto 16px; color: var(--text-2); font-size: 12px; }
+  .page { position: relative; margin: 0 auto; background-color: #fff; box-shadow: var(--shadow-2); border-radius: 4px; }
+  .foot { display: flex; align-items: center; gap: 2px; margin: 6px auto 18px; color: var(--text-2); font: 600 12px/1 var(--font-label); }
   .foot span { flex: 1; }
   .mini {
     width: var(--hit); height: var(--hit); display: grid; place-items: center; border: 0; border-radius: var(--radius-sm); padding: 0;

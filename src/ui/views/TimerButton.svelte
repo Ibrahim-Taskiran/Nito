@@ -77,34 +77,35 @@
   .timer { position: relative; flex: none; }
   .timer :global(.tool span) { font-variant-numeric: tabular-nums; }
   .panel {
-    position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; width: 300px; display: grid; gap: 12px; padding: 12px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; width: 320px; display: grid; gap: 14px; padding: 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
   }
   .head { display: flex; align-items: center; gap: 8px; }
-  .tabs { display: flex; flex: 1; background: var(--surface-2); border-radius: var(--radius-sm); padding: 2px; }
+  .tabs { display: flex; flex: 1; background: var(--surface-3); border-radius: var(--radius-sm); padding: 4px; }
   .tabs button {
-    flex: 1; min-height: 36px; border: 0; border-radius: 6px; background: transparent; color: var(--text-2); cursor: pointer;
+    flex: 1; min-height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer;
+    font: 600 13px/1 var(--font-label);
   }
-  .tabs button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.1); }
+  .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent-strong); box-shadow: var(--shadow-1); }
   .icon {
     width: var(--hit); height: var(--hit); flex: none; display: grid; place-items: center; border: 0; border-radius: 8px;
     background: transparent; color: var(--text-2); cursor: pointer;
   }
-  .big { font-size: 40px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .big { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; text-align: center; font-variant-numeric: tabular-nums; line-height: 1.2; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
   .main, .ghost, .chip {
     min-height: var(--hit); display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px;
-    border-radius: var(--radius-sm); cursor: pointer; font: inherit; touch-action: manipulation;
+    border-radius: var(--radius-sm); cursor: pointer; font: 600 14px/1 var(--font-label); touch-action: manipulation;
   }
-  .main { border: 0; background: var(--accent); color: #fff; }
+  .main { border: 0; background: var(--accent-strong); color: var(--on-accent); }
   .ghost, .chip { border: 1px solid var(--border); background: var(--surface); color: var(--text); }
   .main:disabled, .ghost:disabled { opacity: 0.45; cursor: default; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip { flex: 1 0 calc(33% - 8px); }
   input {
     min-height: var(--hit); min-width: 0; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--bg); color: var(--text); font: inherit;
+    background: var(--surface-2); color: var(--text); font: inherit;
   }
   .hint { margin: 0; color: var(--text-2); font-size: 13px; }
   @media (max-width: 600px) {

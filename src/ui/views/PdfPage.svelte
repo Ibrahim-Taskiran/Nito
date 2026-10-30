@@ -152,7 +152,7 @@
 </div>
 
 <style>
-  .page { position: relative; margin: 0 auto 16px; background: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 0.14); border-radius: 2px; }
+  .page { position: relative; margin: 0 auto 16px; background: #fff; box-shadow: var(--shadow-2); border-radius: 4px; }
   .sheet { position: absolute; left: 0; top: 0; }
   .grown .sheet { box-shadow: 1px 1px 0 var(--border); }
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
