@@ -68,7 +68,7 @@
 <AddProgress {lib} />
 
 <style>
-  .shell { display: flex; height: 100%; }
+  .shell { display: flex; height: 100%; overflow: hidden; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   .empty { height: 100%; display: grid; place-content: center; justify-items: center; text-align: center; padding: 16px; gap: 12px; }
   .empty h1 { font-size: 20px; font-weight: 600; margin: 0; }
