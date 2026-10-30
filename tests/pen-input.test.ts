@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  apply, applyBox, applyPoints, clampMove, pasteOffset, pointInPolygon, pointsBox, rectInLasso, scaleFromCorner, strokeInLasso, unionBox,
+  apply, applyBox, applyPoints, clampMove, mapBox, mapPoints, pageMap, paperPlace, pasteOffset, pointInPolygon, pointsBox, rectInLasso, scaleFromCorner, strokeInLasso, unionBox,
 } from "../src/core/selection";
 import { DEFAULT_PEN_INPUT, PEN_GRACE_MS, TouchGate, isAccidental, parsePenInput, touchThresholds } from "../src/core/touchInput";
 
@@ -110,5 +110,42 @@ describe("lasso selection geometry", () => {
     expect(b.y).toBeCloseTo(0);
     const p = applyBox(pasteOffset({ x: 0.95, y: 0.1, w: 0.05, h: 0.1 }, { w: 1, h: 1 }), { x: 0.95, y: 0.1, w: 0.05, h: 0.1 });
     expect(p.x + p.w).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("moving a selection to another page", () => {
+  const box = { x: 0.2, y: 0.8, w: 0.1, h: 0.1 };
+  const one = { w: 1, h: 1 };
+
+  it("keeps the screen spot and size when dropped on a page below", () => {
+    // Page 1 at y 0..800, page 2 at 816..1616 (600 px wide); the pen carried the box 400 px down.
+    const m = pageMap({ rect: { x: 0, y: 0, w: 600, h: 800 }, bounds: one }, { rect: { x: 0, y: 816, w: 600, h: 800 }, bounds: one }, box, { x: 0, y: 400 });
+    expect(m.sx).toBeCloseTo(1);
+    expect(m.sy).toBeCloseTo(1);
+    const b = mapBox(m, box);
+    expect(b.x).toBeCloseTo(0.2);
+    expect(b.y).toBeCloseTo((0.8 * 800 + 400 - 816) / 800);
+  });
+
+  it("pulls the moved box back onto the target page", () => {
+    const m = pageMap({ rect: { x: 0, y: 0, w: 600, h: 800 }, bounds: one }, { rect: { x: 0, y: 816, w: 600, h: 800 }, bounds: one }, box, { x: 500, y: 100 });
+    const b = mapBox(m, box);
+    expect(b.x + b.w).toBeCloseTo(1);
+    expect(b.y).toBeCloseTo(0);
+  });
+
+  it("keeps paper size on a page of another size and shape", () => {
+    // A4 portrait to A4 landscape: same spot in points, so a square stays square on paper.
+    const m = pageMap(paperPlace({ w: 595, h: 842 }, one), paperPlace({ w: 842, h: 595 }, one), { x: 0.1, y: 0.1, w: 0.1, h: 0.1 });
+    expect(m.sx).toBeCloseTo(595 / 842);
+    expect(m.sy).toBeCloseTo(842 / 595);
+    const b = mapBox(m, { x: 0.1, y: 0.1, w: 0.1, h: 0.1 });
+    expect(b.w * 842).toBeCloseTo(0.1 * 595);
+    expect(b.h * 595).toBeCloseTo(0.1 * 842);
+  });
+
+  it("is the identity between same-size pages and counts the added margin", () => {
+    const m = pageMap(paperPlace({ w: 600, h: 800 }, one), paperPlace({ w: 600, h: 800 }, { w: 1.25, h: 1 }), box);
+    expect(mapPoints(m, [{ x: 0.2, y: 0.8, p: 0.7 }])).toEqual([{ x: 0.2, y: 0.8, p: 0.7 }]);
   });
 });

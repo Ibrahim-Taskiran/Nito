@@ -58,13 +58,16 @@ export function unionBox(boxes: readonly Box[]): Box {
 
 export const apply = (t: Transform, p: Pt): Pt => ({ x: t.ox + (p.x - t.ox) * t.k + t.dx, y: t.oy + (p.y - t.oy) * t.k + t.dy });
 
-export function applyPoints(t: Transform, pts: readonly InkPoint[]): InkPoint[] {
+/** Moved points, rounded like stored ink; pressure stays. */
+function movePoints(pts: readonly InkPoint[], f: (p: Pt) => Pt): InkPoint[] {
   const r = (v: number) => Math.round(v * 1e4) / 1e4;
   return pts.map((q) => {
-    const a = apply(t, q);
+    const a = f(q);
     return { x: r(a.x), y: r(a.y), p: q.p };
   });
 }
+
+export const applyPoints = (t: Transform, pts: readonly InkPoint[]): InkPoint[] => movePoints(pts, (p) => apply(t, p));
 
 export function applyBox(t: Transform, b: Box): Box {
   const a = apply(t, b);
@@ -147,13 +150,7 @@ export const paperPlace = (size: { w: number; h: number }, bounds: { w: number; 
 
 export const mapPt = (m: PageMap, p: Pt): Pt => ({ x: p.x * m.sx + m.dx, y: p.y * m.sy + m.dy });
 
-export function mapPoints(m: PageMap, pts: readonly InkPoint[]): InkPoint[] {
-  const r = (v: number) => Math.round(v * 1e4) / 1e4;
-  return pts.map((q) => {
-    const a = mapPt(m, q);
-    return { x: r(a.x), y: r(a.y), p: q.p };
-  });
-}
+export const mapPoints = (m: PageMap, pts: readonly InkPoint[]): InkPoint[] => movePoints(pts, (p) => mapPt(m, p));
 
 export function mapBox(m: PageMap, b: Box): Box {
   const a = mapPt(m, b);
