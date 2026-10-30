@@ -270,13 +270,12 @@ async function run(vp, label) {
     await selBox.waitFor({ timeout: 3000 }).catch(() => fail(`${label}: tap did not select the stroke`));
   };
   await expectCounts([n0, 0], "before the move");
-  // Bring the end of page 1 and the top of page 2 into view.
-  await page.locator('[data-page="2"]').evaluate((el) => el.scrollIntoView({ block: "center" }));
+  // The stroke just below the top of the scroller, so the top of page 2 is in view too.
+  await strokes.last().evaluate((p) => {
+    const s = p.closest(".scroller");
+    s.scrollTop += p.getBoundingClientRect().top - s.getBoundingClientRect().top - 40;
+  });
   await page.waitForTimeout(200);
-  if (!(await strokes.last().evaluate((p) => p.getBoundingClientRect().top > 0))) {
-    await strokes.last().evaluate((p) => p.scrollIntoView({ block: "start" }));
-    await page.waitForTimeout(200);
-  }
   await selectLast();
   sb = await selBox.boundingBox();
   const p2 = await page.locator('[data-page="2"]').boundingBox();
