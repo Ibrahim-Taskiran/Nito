@@ -69,7 +69,7 @@
 
   <div class="heading n-eyebrow courses">
     <span>Derslerim</span>
-    <button class="plus" aria-label="Klasörden ders ekle" title="Klasörden ders ekle" onclick={addFolder}><FolderPlus size={18} /></button>
+    <button class="plus" aria-label="Klasör ekle" title="Klasör ekle: alt klasörler ders olur" onclick={addFolder}><FolderPlus size={18} /></button>
   </div>
   {#each lib.courses as c (c.id)}
     {@render row(Folder, c.name, courseActive(c.id), () => course(c.id), lib.counts.byCourse[c.id] ?? 0)}
