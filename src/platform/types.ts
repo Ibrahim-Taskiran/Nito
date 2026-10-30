@@ -44,6 +44,8 @@ export interface Platform {
   onDrop(cb: (files: SourceFile[]) => void): Promise<() => void>;
   /** PDFs of a known folder, without a dialog (watched folders). Web: always empty. */
   listFolder(path: string, recursive: boolean): Promise<SourceFile[]>;
+  /** Downloads a picture from a web link (size-limited, checked to be an image). Throws a message for the user. */
+  fetchImage(url: string): Promise<Uint8Array>;
   /** Saves a text export. Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
   saveExport(name: string, text: string): Promise<string | null>;
 }

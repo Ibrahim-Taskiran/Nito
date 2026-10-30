@@ -23,6 +23,9 @@
   import PageFlagMenu from "./PageFlagMenu.svelte";
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
+  import PenTools from "./PenTools.svelte";
+  import SelectionLayer from "./SelectionLayer.svelte";
+  import { imageDrop } from "../webImages";
   import RecordBar from "./RecordBar.svelte";
   import SplitPicker from "./SplitPicker.svelte";
   import TapeLayer from "./TapeLayer.svelte";
@@ -273,7 +276,8 @@
 
   /** Something on the page that Escape should close first (note, menu, picture). */
   const escapeTaken = () =>
-    reader.selectedImageId != null || reader.tools.selectedNoteId != null || !!root.querySelector(".menu .panel");
+    reader.selectedImageId != null || reader.tools.selectedNoteId != null || reader.edit.selection != null ||
+    !!root.querySelector(".menu .panel");
 
   function onKey(e: KeyboardEvent) {
     // In the split view only the pane holding the focus opens its search.
@@ -346,6 +350,8 @@
         <StickyNote size={18} />
       </ToolButton>
       <ToolButton label="Resim ekle" title="Bu sayfaya resim ekle" onclick={addImage}><ImagePlus size={18} /></ToolButton>
+      <PenTools {reader} {current} sizeOf={(p) => sizes[p - 1]} mine={() => !compact || root.contains(document.activeElement)}
+        onnotice={(m) => (notice = m)} />
       <MenuButton label="Katmanlar" title="Katmanları göster / gizle">
         {#snippet icon()}<Layers size={18} />{/snippet}
         {#snippet children()}
@@ -413,7 +419,8 @@
     {#if showNav && reader.pdf && sizes.length}<PageNav pdf={reader.pdf} {sizes} {current} onjump={goTo} flags={{ lib, documentId: doc.id }} />{/if}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
-      ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
+      ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}
+      {@attach imageDrop(reader, (p) => sizes[p - 1], (m) => (notice = m))}>
       {#if reader.error}
         <p class="msg">PDF açılamadı: {reader.error}</p>
       {:else if !reader.pdf || !sizes.length}
@@ -426,6 +433,7 @@
             search={reader.searchQuery} currentMark={hit?.page === i + 1 ? currentMark : -1} {seek}>
             <ImageLayer {reader} page={i + 1} />
             <InkLayer {reader} page={i + 1} />
+            <SelectionLayer {reader} page={i + 1} />
             <NoteLayer {reader} page={i + 1} />
             <TapeLayer {reader} page={i + 1} />
             <PageAudio {reader} page={i + 1} />

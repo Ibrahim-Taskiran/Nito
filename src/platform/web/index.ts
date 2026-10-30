@@ -7,6 +7,7 @@ import { sqljsDb } from "./sqljsDb";
 import { isMobileDevice } from "../device";
 import { webAi } from "./ai";
 import { webTranscriber } from "./transcriber";
+import { fetchImageWith, userMessage } from "../fetchImage";
 
 const toHex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -65,6 +66,13 @@ export async function createWebPlatform(): Promise<Platform> {
     },
     // The browser has no real folder paths, so watched folders never find files here.
     listFolder: async () => [],
+    async fetchImage(url) {
+      try {
+        return await fetchImageWith(fetch, url);
+      } catch (e) {
+        throw userMessage(e);
+      }
+    },
     async saveExport(name, text) {
       const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
       const a = Object.assign(document.createElement("a"), { href: url, download: name });

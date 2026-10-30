@@ -7,6 +7,7 @@ import { centeredRect, imageExt, imageMime, type ImageRect, type PageImage } fro
 import type { AnnotationMark } from "../core/repo";
 import { findHits, firstHitFrom, type SearchHit } from "../core/search";
 import type { Annotation, Document, Id, LabelKey, Rect } from "../core/types";
+import { InkEdit } from "./inkEdit.svelte";
 import { Lecture } from "./lecture.svelte";
 import type { Library } from "./library.svelte";
 import { PageTools } from "./pageTools.svelte";
@@ -14,7 +15,7 @@ import { openPdf, type PDFDocumentProxy } from "./pdf";
 import { Recorder } from "./recorder.svelte";
 
 /** "laser" draws a fading line that is never saved. "tape", "text" and "note" are the page tools. */
-export type InkTool = "none" | InkKind | "laser" | "eraser" | PageTool;
+export type InkTool = "none" | InkKind | "laser" | "eraser" | "select" | PageTool;
 export type PageTool = "tape" | "text" | "note";
 /** Tools that draw on the ink layer. */
 export const isInkTool = (t: InkTool): boolean => t !== "none" && t !== "tape" && t !== "text" && t !== "note";
@@ -59,12 +60,14 @@ export class Reader {
   inkKind = $state<InkKind>("pen");
   inkColors = $state<Record<InkKind, string>>(loadPrefs().colors);
   inkSizes = $state<Record<InkKind, InkSize>>(loadPrefs().sizes);
-  private inkRepo: InkRepo;
+  readonly inkRepo: InkRepo;
+  /** Shape correction, palm rejection prefs, undo, lasso selection. */
+  readonly edit: InkEdit = new InkEdit(this);
   /** Pictures placed on pages, and object URLs for their stored files. */
   images = $state<PageImage[]>([]);
   imageUrls = $state.raw(new Map<string, string>());
   selectedImageId = $state<Id | null>(null);
-  private imageRepo: ImageRepo;
+  readonly imageRepo: ImageRepo;
   /** Search across the PDF's text. */
   searchQuery = $state("");
   hits = $state.raw<SearchHit[]>([]);
@@ -128,7 +131,7 @@ export class Reader {
     await this.reloadAnnotations();
   }
 
-  private async reloadInk(): Promise<void> {
+  async reloadInk(): Promise<void> {
     this.ink = await this.inkRepo.list(this.doc.id);
   }
 
@@ -156,6 +159,7 @@ export class Reader {
     if ((t === "text" || t === "note") && !this.tools.layers.notes) this.tools.setLayer("notes", true);
     this.selectedImageId = null;
     this.tools.selectedNoteId = null;
+    this.edit.clear();
   }
 
   setInkColor(color: string): void {
@@ -175,14 +179,16 @@ export class Reader {
     } catch { /* storage off */ }
   }
 
-  async addStroke(page: number, points: InkPoint[]): Promise<void> {
-    const pts = simplify(points);
-    if (!pts.length) return;
+  /** Saves a stroke of the current pen. `clean`: points are final (a corrected shape), so no simplifying. */
+  async addStroke(page: number, points: InkPoint[], clean = false): Promise<Id | null> {
+    const pts = clean ? points : simplify(points);
+    if (!pts.length) return null;
     const stroke = { documentId: this.doc.id, page, color: this.inkColor, width: this.inkWidth, points: pts, kind: this.inkKind };
     const mark = this.recorder.mark();
     const id = await this.inkRepo.add(stroke);
     if (mark) await this.lecture.markStroke(id, mark.recordingId, mark.offsetSeconds);
     await this.reloadInk();
+    return id;
   }
 
   /** Deletes every stroke on `page` that passes near `at`. */
@@ -199,7 +205,7 @@ export class Reader {
     await this.reloadAnnotations();
   }
 
-  private async reloadImages(): Promise<void> {
+  async reloadImages(): Promise<void> {
     this.images = await this.imageRepo.list(this.doc.id);
     const missing = [...new Set(this.images.map((i) => i.filePath))].filter((p) => !this.imageUrls.has(p));
     if (!missing.length) return;
@@ -223,6 +229,20 @@ export class Reader {
     if (!ext) throw new Error("Bu dosya bir resim değil (PNG, JPG, WEBP, GIF).");
     const rel = `images/${await file.hash()}.${ext}`;
     await file.store(rel);
+    await this.placeImage(page, rel, pageSize);
+    return true;
+  }
+
+  /** Pasted, dropped or downloaded picture bytes (already checked as an image of type `ext`). */
+  async addImageBytes(page: number, bytes: Uint8Array, ext: string, pageSize: { w: number; h: number }, at?: { x: number; y: number }): Promise<Id> {
+    const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as BufferSource))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const rel = `images/${hex}.${ext}`;
+    await this.lib.platform.storage.write(rel, bytes);
+    return this.placeImage(page, rel, pageSize, at);
+  }
+
+  /** Puts a stored picture on `page`: centred, or centred on `at` (page fractions) when given. */
+  private async placeImage(page: number, rel: string, pageSize: { w: number; h: number }, at?: { x: number; y: number }): Promise<Id> {
     const blob = new Blob([(await this.lib.platform.storage.read(rel)) as BlobPart], { type: imageMime(rel) });
     let dims = { width: 1, height: 1 };
     try {
@@ -231,11 +251,16 @@ export class Reader {
       bmp.close();
     } catch { /* size unknown: placed as a square */ }
     const rect = centeredRect(dims.width, dims.height, pageSize.w, pageSize.h);
+    if (at) {
+      const b = this.tools.bounds(page);
+      rect.x = Math.min(b.w - rect.w, Math.max(0, at.x - rect.w / 2));
+      rect.y = Math.min(b.h - rect.h, Math.max(0, at.y - rect.h / 2));
+    }
     const id = await this.imageRepo.add({ documentId: this.doc.id, page, filePath: rel, ...rect });
     this.inkTool = "none";
     await this.reloadImages();
     this.selectedImageId = id;
-    return true;
+    return id;
   }
 
   async moveImage(id: Id, rect: ImageRect): Promise<void> {
