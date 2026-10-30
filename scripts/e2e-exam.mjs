@@ -161,6 +161,7 @@ const listed = async () => (await exam.locator(".item").allInnerTexts()).map((t)
 if ((await listed()) !== "1,3,5") await fail(`exam list should be pages 1,3,5, got ${await listed()}`);
 if (!(await item(3).innerText()).includes("Hoca vurguladı")) await fail("page 3 should show Hoca vurguladı");
 if (!(await item(1).innerText()).includes("(metinsiz vurgu)") && !(await item(1).innerText()).includes("Yonlendirme")) await fail("page 1 should show the Sınav highlight text");
+await exam.scrollIntoViewIfNeeded(); // previews draw lazily when they scroll into view
 await exam.locator("canvas[data-drawn]").first().waitFor({ timeout: 10_000 }).catch(() => fail("page previews not drawn"));
 await minHeight(exam.locator(".chip, .item, select"), "exam view");
 await exam.getByRole("button", { name: /^Sınav adayı/ }).click();
