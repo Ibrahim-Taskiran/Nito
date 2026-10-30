@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (8b) — Study time per PDF + Whisper accuracy (branch `feat/study-time-whisper`)
+- **Study time:** `core/study/studyTime.ts` (pure `advance`: stopwatch time goes to the PDF open in the reader at that moment; switching PDFs splits, closed reader or split view credits nothing; `formatStudyTime` → "1 sa 25 dk"). `ui/studyTime.svelte.ts` tracks from App, flushes every 30 s, on pause/switch/close and when the page hides. Migration `014_study_time.ts` (study_time: document_id, day, ms), registered after m012 (lead re-orders to m013, m014, m015). Çalışma Merkezi: new "Çalışma süresi" card per PDF, course total in "Ders ilerlemesi".
+- **Whisper:** new model `large-v3-turbo-q5_0` (574 MB, suggested; base = "Hızlı"; full turbo kept), sha256 checked for every model and the Silero VAD v5.1.2 (MIT, 885 KB, downloaded in setup). whisper-cli gets `-bs 5 -bo 5 -mc 128 --suppress-nst --prompt … --vad -vm …`; an old binary that says "unknown argument" is retried with the basic flags. Prompt = course + title + PDF key terms + a punctuated Turkish seed (`core/transcribe/prompt.ts`). WAV is DC-centred and raised to 0.9 peak (gain ≤ 8). `dropHallucinations` removes subtitle credits, thanks lines, the prompt read back, repeated segments and repetition loops.
+- **Checked:** svelte-check 0; vitest 183 passed; cargo check ok, cargo test --lib 14 passed; real whisper-cli 1.9.5 run with all new flags + VAD (base model, English TTS sample) ok; e2e-timer (now checks Çalışma Merkezi), e2e-study, e2e-transcribe ok.
+- **Not verified:** the q5_0 model was not downloaded or run here; no real Turkish lecture compared before/after.
+- **Next step:** lead merges, fixes migration order, owner reinstalls Whisper with the suggested model (setup also fetches the VAD file).
+
 ## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
 - **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
 - **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
