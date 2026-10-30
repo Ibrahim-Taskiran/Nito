@@ -1,4 +1,6 @@
 // Prompt builders and citation parsing for the local model. Pure.
+import { formatTimestamp } from "../recording";
+import { parseTimestamp } from "../transcribe/transcript";
 import type { Hit } from "./bm25";
 import { fitPages, type Chunk } from "./text";
 
@@ -24,7 +26,8 @@ export function summaryPrompt(title: string, pages: string[], budget = SUMMARY_B
 }
 
 const sourceLabel = (c: Chunk): string =>
-  c.page != null ? `${c.title}, s. ${c.page}` : `${c.title} (${c.source === "note" ? "not" : "vurgu"})`;
+  c.source === "transcript" ? `${c.title}, ders kaydı [kayıt ${formatTimestamp(c.at ?? 0)}]`
+  : c.page != null ? `${c.title}, s. ${c.page}` : `${c.title} (${c.source === "note" ? "not" : "vurgu"})`;
 
 /** "Chat with notes": retrieved chunks first, then the question. */
 export function chatPrompt(question: string, hits: Hit[], history: ChatMessage[] = []): ChatMessage[] {
@@ -37,6 +40,7 @@ export function chatPrompt(question: string, hits: Hit[], history: ChatMessage[]
       content:
         "Sen bir üniversite öğrencisinin ders asistanısın. Soruyu yalnız aşağıdaki kaynaklara dayanarak Türkçe ve kısa yanıtla. " +
         "Her bilginin sonuna geldiği sayfayı [s. N] biçiminde yaz (N sayfa numarası). " +
+        "Bilgi bir ders kaydından geldiyse kaynağın yanındaki zamanı [kayıt dd:ss] biçiminde yaz. " +
         "Kaynaklarda yanıt yoksa bunu açıkça söyle, tahmin etme.\n\nKaynaklar:\n" + context,
     },
     ...history.slice(-4),
@@ -44,7 +48,7 @@ export function chatPrompt(question: string, hits: Hit[], history: ChatMessage[]
   ];
 }
 
-export type Segment = { text: string } | { page: number; label: string; title?: string };
+export type Segment = { text: string } | { page: number; label: string; title?: string } | { at: number; label: string };
 
 /**
  * Splits an answer into plain text and [s. N] citations. Also takes "[s.N]", "[S. 3, 4]"
@@ -52,10 +56,16 @@ export type Segment = { text: string } | { page: number; label: string; title?: 
  */
 export function parseCitations(answer: string): Segment[] {
   const out: Segment[] = [];
-  const re = /\[(?:([^[\]\n]{1,80}?),\s*)?s\.?\s*(\d+(?:\s*[,–-]\s*\d+)*)\s*\]/giu;
+  const re = /\[(?:([^[\]\n]{1,80}?),\s*)?s\.?\s*(\d+(?:\s*[,–-]\s*\d+)*)\s*\]|\[\s*kay[ıi]t\s*((?:\d+:)?\d{1,2}:\d{2})\s*\]/giu;
   let last = 0;
   for (const m of answer.matchAll(re)) {
     if (m.index > last) out.push({ text: answer.slice(last, m.index) });
+    if (m[3]) {
+      // "[kayıt 12:05]": a moment in a lecture recording.
+      out.push({ at: parseTimestamp(m[3]), label: `kayıt ${m[3]}` });
+      last = m.index + m[0].length;
+      continue;
+    }
     const title = m[1]?.trim();
     for (const n of m[2].split(/\s*[,–-]\s*/)) out.push({ page: Number(n), label: `s. ${n}`, ...(title ? { title } : {}) });
     last = m.index + m[0].length;
@@ -75,6 +85,17 @@ export function resolveCitation(page: number, hits: Hit[], title?: string): Chun
   const docs = new Set(hits.filter((h) => h.chunk.documentId != null).map((h) => h.chunk.documentId));
   const only = hits.find((h) => h.chunk.documentId != null)?.chunk;
   return docs.size === 1 && only ? { ...only, page } : null;
+}
+
+/**
+ * The transcript chunk a "[kayıt mm:ss]" citation points to: the retrieved paragraph that starts at or
+ * just before that moment (models round), else the nearest one. Null when no transcript was retrieved.
+ */
+export function resolveTranscript(at: number, hits: Hit[]): Chunk | null {
+  const tr = hits.map((h) => h.chunk).filter((c) => c.source === "transcript" && c.at != null);
+  if (!tr.length) return null;
+  const before = tr.filter((c) => c.at! <= at + 1).sort((a, b) => b.at! - a.at!)[0];
+  return before ?? [...tr].sort((a, b) => Math.abs(a.at! - at) - Math.abs(b.at! - at))[0];
 }
 
 /** Light Markdown for display: headings and **bold** become strong runs; everything else stays text. */

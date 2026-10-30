@@ -31,8 +31,12 @@ export interface Chunk {
   title: string;
   /** 1-based PDF page; null for notes. */
   page: number | null;
-  source: "pdf" | "note" | "highlight";
+  source: "pdf" | "note" | "highlight" | "transcript";
   text: string;
+  /** Transcript chunks: seconds into the recording where the paragraph starts. */
+  at?: number;
+  /** Transcript chunks: the recording to play (null when the note lost its recording). */
+  recordingId?: number | null;
 }
 
 /** Collapses whitespace so chunk sizes count real characters. */

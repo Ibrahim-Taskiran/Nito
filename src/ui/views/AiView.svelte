@@ -5,6 +5,7 @@
   import { BUILTIN_MODELS, formatGb, modelName, type BuiltinModel } from "../../core/ai/builtin";
   import { cleanAnswer, emphasis, parseCitations } from "../../core/ai/prompts";
   import Button from "../components/Button.svelte";
+  import AiCardsPanel from "./AiCardsPanel.svelte";
   import { Ai } from "../ai.svelte";
   import type { Library } from "../library.svelte";
 
@@ -14,6 +15,7 @@
   const ai = Ai.for(lib);
   let question = $state("");
   let missing = $state<number | null>(null);
+  let missingRec = $state<string | null>(null);
   let log: HTMLDivElement | undefined = $state();
   let settings = $state(false);
   let deleting = $state<BuiltinModel | null>(null);
@@ -50,11 +52,17 @@
   async function cite(page: number, hits?: Hit[], title?: string) {
     missing = (await ai.openCitation(page, hits, title)) ? null : page;
   }
+
+  async function play(at: number, label: string, hits?: Hit[]) {
+    missingRec = (await ai.playTranscript(at, hits)) ? null : label;
+  }
 </script>
 
-{#snippet answer(text: string, oncite: (page: number, title?: string) => void)}
+{#snippet answer(text: string, oncite: (page: number, title?: string) => void, onplay?: (at: number, label: string) => void)}
   {#each parseCitations(cleanAnswer(text)) as seg, i (i)}
-    {#if "page" in seg}
+    {#if "at" in seg}
+      {#if onplay}<button class="cite" title="Kaydı buradan dinle" onclick={() => onplay(seg.at, seg.label)}>[{seg.label}]</button>{:else}[{seg.label}]{/if}
+    {:else if "page" in seg}
       <button class="cite" title="Sayfayı aç" onclick={() => oncite(seg.page, seg.title)}>[{seg.label}]</button>
     {:else}{#each emphasis(seg.text) as r, j (j)}{#if r.strong}<strong>{r.text}</strong>{:else}{r.text}{/if}{/each}{/if}
   {/each}
@@ -231,7 +239,7 @@
           {#each ai.turns as t, i (i)}
             <div class="turn {t.role}">
               {#if t.role === "assistant"}
-                {#if t.content}{@render answer(t.content, (p, title) => cite(p, t.hits, title))}{:else}<span class="phase">{ai.phase || "…"}</span>{/if}
+                {#if t.content}{@render answer(t.content, (p, title) => cite(p, t.hits, title), (at, label) => play(at, label, t.hits))}{:else}<span class="phase">{ai.phase || "…"}</span>{/if}
                 {#if t.hits?.length && t.content}
                   <details class="sources"><summary>Kaynaklar ({t.hits.length})</summary>
                     <ul>{#each t.hits as h, j (j)}<li>{h.chunk.title}{h.chunk.page != null ? `, s. ${h.chunk.page}` : ""}</li>{/each}</ul>
@@ -242,10 +250,17 @@
               {:else}{t.content}{/if}
             </div>
           {:else}
-            <p class="msg">Dersin PDF'leri, vurguların ve notların üzerinden soru sor. Yanıtlar [s. N] ile kaynağı gösterir; tıklayınca sayfa açılır.</p>
+            <p class="msg">Dersin PDF'leri, vurguların, notların ve ders kayıtlarının yazıya dökümü üzerinden soru sor. Yanıtlar [s. N] ya da [kayıt dd:ss] ile kaynağı gösterir; dokununca sayfa açılır ya da kayıt o andan çalar.</p>
           {/each}
           {#if missing != null}<p class="phase">s. {missing} verilen kaynaklarda yok; model uydurmuş olabilir.</p>{/if}
+          {#if missingRec != null}<p class="phase">{missingRec}: bu ana ait ses kaydı bulunamadı.</p>{/if}
         </div>
+        {#if ai.playing}
+          <div class="playing" role="status">
+            <span>Dinleniyor: {ai.playing.title} · {ai.playing.label}</span>
+            <Button onclick={() => ai.stopPlaying()}>Durdur</Button>
+          </div>
+        {/if}
         <form class="ask" onsubmit={send}>
           <input bind:value={question} placeholder="Sorunu yaz…" aria-label="Soru" disabled={!!ai.busy} />
           {#if ai.busy === "chat"}
@@ -256,6 +271,7 @@
         </form>
       </section>
     </div>
+    <AiCardsPanel {ai} onstudy={() => (lib.section = "study")} />
   {/if}
 </main>
 
@@ -294,6 +310,7 @@
   .sources summary { cursor: pointer; min-height: 28px; }
   .sources ul { margin: 4px 0 0; padding-left: 18px; }
   .ask { display: flex; gap: 8px; margin-top: 12px; }
+  .playing { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; padding: 0 0 0 12px; border-radius: var(--radius-sm); background: var(--accent-soft); font-size: 13px; }
   .ask input { flex: 1; }
   .send {
     min-height: var(--hit); padding: 0 16px; border-radius: var(--radius-sm); border: 1px solid var(--accent);
