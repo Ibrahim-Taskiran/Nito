@@ -3,6 +3,7 @@
   import Button from "../components/Button.svelte";
   import type { Library } from "../library.svelte";
   import { shell } from "../shell.svelte";
+  import TimerButton from "./TimerButton.svelte";
 
   /** Global search (title + course, results in Kütüphane) and the add action. Ctrl+K focuses the search. */
   let { lib, addPdfs }: { lib: Library; addPdfs: () => void } = $props();
@@ -37,6 +38,7 @@
     {/if}
   </label>
   <div class="actions">
+    <div class="timer"><TimerButton /></div>
     <Button variant="primary" onclick={addPdfs}><FilePlus size={18} aria-hidden="true" /><span class="lbl">PDF ekle</span></Button>
   </div>
 </header>
@@ -58,7 +60,8 @@
   .search input::-webkit-search-cancel-button { display: none; }
   .clear { border: 0; background: transparent; color: var(--text-2); cursor: pointer; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; }
   .clear:hover { background: var(--surface-3); color: var(--text); }
-  .actions { margin-left: auto; display: flex; gap: 8px; }
+  .actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .timer { border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); }
   @media (max-width: 719px) {
     .topbar { padding: 10px 12px; gap: 6px; }
     .menu { display: grid; }
