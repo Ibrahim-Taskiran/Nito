@@ -3,6 +3,7 @@
   import { readingProgress } from "../../core/library/browse";
   import { READ_STATUS_NAMES } from "../../core/labels";
   import Button from "../components/Button.svelte";
+  import Ring from "../components/Ring.svelte";
   import type { Library } from "../library.svelte";
   let { lib }: { lib: Library } = $props();
   const d = $derived(lib.selected);
@@ -29,11 +30,7 @@
     <p class="sub">{[course?.name ?? "Derssiz", d.week != null ? `Hafta ${d.week}` : null].filter(Boolean).join(" · ")}</p>
 
     <div class="progress">
-      <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
-        <circle cx="18" cy="18" r="15.5" class="track" />
-        {#if p.ratio > 0}<circle cx="18" cy="18" r="15.5" class="val" stroke-dasharray="{p.ratio * 97.4} 97.4" />{/if}
-      </svg>
-      <span class="pct">%{Math.round(p.ratio * 100)}</span>
+      <Ring ratio={p.ratio} size={76} />
       <div class="ptext">
         <span class="n-label">{p.label}</span>
         <span class="muted"><BookOpenText size={15} aria-hidden="true" />{#if d.lastPage && d.pageCount}Sayfa {d.lastPage} / {d.pageCount}{:else}{d.pageCount ?? "—"} sayfa{/if}</span>
@@ -74,14 +71,9 @@
   h2 { font-size: 22px; line-height: 30px; font-weight: 700; margin: 6px 0 4px; overflow-wrap: anywhere; letter-spacing: -0.01em; }
   .sub { margin: 0 0 16px; color: var(--text-2); font-size: 13px; }
   .progress {
-    position: relative; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius);
+    display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius);
     background: var(--surface-2);
   }
-  .ring { width: 76px; height: 76px; flex: none; transform: rotate(-90deg); }
-  .ring circle { fill: none; stroke-width: 3.2; }
-  .ring .track { stroke: var(--surface-3); }
-  .ring .val { stroke: var(--accent-strong); stroke-linecap: round; }
-  .pct { position: absolute; left: 16px; width: 76px; text-align: center; font: 700 15px/1 var(--font-label); }
   .ptext { display: grid; gap: 6px; min-width: 0; }
   .muted { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
   .actions { display: grid; gap: 8px; margin: 16px 0; }

@@ -130,27 +130,29 @@
 {/if}
 
 <style>
-  h2 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+  h2 { font-size: 18px; line-height: 26px; font-weight: 700; margin: 0 0 4px; }
   .muted { color: var(--text-2); font-size: 13px; }
   p.muted { margin: 0 0 12px; }
   .filters { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 12px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
-    min-height: var(--hit); padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface);
-    color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 13px;
+    min-height: var(--hit); padding: 0 14px; border: 1px solid var(--border); border-radius: var(--pill); background: var(--surface-2);
+    color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--font-label);
     touch-action: manipulation;
   }
-  .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-  .n { color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .chip:hover { background: var(--surface-3); }
+  .chip[aria-pressed="true"] { border-color: transparent; background: var(--accent-strong); color: var(--on-accent); }
+  .n { color: var(--text-2); font-variant-numeric: tabular-nums; padding: 2px 7px; border-radius: var(--pill); background: var(--surface); font-size: 11px; }
+  .chip[aria-pressed="true"] .n { background: rgb(255 255 255 / 0.18); color: inherit; }
   .week { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
   select {
     min-height: var(--hit); padding: 0 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
     background: var(--surface); color: var(--text); font: inherit;
   }
-  .pages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+  .pages { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
   .item {
-    width: 100%; display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 8px; min-height: var(--hit);
-    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+    width: 100%; display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 12px; min-height: var(--hit);
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text);
     cursor: pointer; font: inherit; touch-action: manipulation;
   }
   .item:hover { background: var(--surface-2); }
