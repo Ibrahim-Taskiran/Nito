@@ -73,7 +73,7 @@ Her şey cihazında, internetsiz çalışır.
 - Belge özeti ve belgeyle sohbet; cevaplar sayfa numarasıyla kaynak gösterir: [s. 4].
 - **Kurulum gerekmez.** "Yapay zekâyı kur" düğmesi motoru ve modeli indirir:
   - Hızlı: Qwen3-4B, 2,3 GB
-  - Kaliteli: Qwen2.5-7B, 4,4 GB
+  - Kaliteli: Qwen3-8B, 4,7 GB
 - Her şey bilgisayarda çalışır, belgeler hiçbir sunucuya gitmez.
 - Mobilde yapay zekâ bölümü yoktur.
 
