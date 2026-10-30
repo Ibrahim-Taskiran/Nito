@@ -8,11 +8,15 @@ import type { AnnotationMark } from "../core/repo";
 import { findHits, firstHitFrom, type SearchHit } from "../core/search";
 import type { Annotation, Document, Id, LabelKey, Rect } from "../core/types";
 import type { Library } from "./library.svelte";
+import { PageTools } from "./pageTools.svelte";
 import { openPdf, type PDFDocumentProxy } from "./pdf";
 import { Recorder } from "./recorder.svelte";
 
-/** "laser" draws a fading line that is never saved. */
-export type InkTool = "none" | InkKind | "laser" | "eraser";
+/** "laser" draws a fading line that is never saved. "tape", "text" and "note" are the page tools. */
+export type InkTool = "none" | InkKind | "laser" | "eraser" | PageTool;
+export type PageTool = "tape" | "text" | "note";
+/** Tools that draw on the ink layer. */
+export const isInkTool = (t: InkTool): boolean => t !== "none" && t !== "tape" && t !== "text" && t !== "note";
 export type InkSize = 0 | 1 | 2;
 
 const PREFS_KEY = "nito.inkPrefs";
@@ -43,6 +47,8 @@ export class Reader {
   /** Annotation whose recording is playing. */
   playingId = $state<Id | null>(null);
   readonly recorder: Recorder;
+  /** Tapes, text boxes, sticky notes, margins and layer visibility. */
+  readonly tools: PageTools;
   /** Handwriting on this document. */
   ink = $state<InkStroke[]>([]);
   inkTool = $state<InkTool>("none");
@@ -68,6 +74,7 @@ export class Reader {
   constructor(readonly lib: Library, readonly doc: Document) {
     this.inkRepo = new InkRepo(lib.repo.db);
     this.imageRepo = new ImageRepo(lib.repo.db);
+    this.tools = new PageTools(lib.repo.db, doc.id);
     this.recorder = new Recorder(lib, doc.id, () => void this.reloadAnnotations());
   }
 
@@ -78,6 +85,7 @@ export class Reader {
         this.reloadAnnotations(),
         this.reloadInk(),
         this.reloadImages(),
+        this.tools.load(),
       ]);
       this.pdf = pdf;
     } catch (e) {
@@ -135,7 +143,13 @@ export class Reader {
     }
     this.inkTool = t;
     if (t === "pen" || t === "pencil" || t === "highlighter") this.inkKind = t;
+    // Drawing on a hidden layer would look like nothing happens.
+    if (t === "highlighter" && !this.tools.layers.highlights) this.tools.setLayer("highlights", true);
+    if ((t === "pen" || t === "pencil") && !this.tools.layers.ink) this.tools.setLayer("ink", true);
+    if (t === "tape" && !this.tools.layers.tape) this.tools.setLayer("tape", true);
+    if ((t === "text" || t === "note") && !this.tools.layers.notes) this.tools.setLayer("notes", true);
     this.selectedImageId = null;
+    this.tools.selectedNoteId = null;
   }
 
   setInkColor(color: string): void {

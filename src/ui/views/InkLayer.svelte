@@ -1,6 +1,6 @@
 <script lang="ts">
   import { INK_KINDS, strokePath, strokeWidth, type InkPoint } from "../../core/ink";
-  import type { Reader } from "../reader.svelte";
+  import { isInkTool, type Reader } from "../reader.svelte";
 
   let { reader, page }: { reader: Reader; page: number } = $props();
 
@@ -11,7 +11,11 @@
   let svg: SVGSVGElement;
   let w = $state(0);
   let h = $state(0);
-  let live = $state<InkPoint[] | null>(null);
+  /** Points of the line being drawn. Plain array (pushed per event); `liveVer` tells Svelte it changed. */
+  let live: InkPoint[] | null = null;
+  /** Where the pen is predicted to be next: drawn as a short tail, never saved. */
+  let predicted: InkPoint[] = [];
+  let liveVer = $state(0);
   /** Laser lines that are fading out. Never saved. */
   let fading = $state<{ id: number; points: InkPoint[] }[]>([]);
   let fadeId = 0;
@@ -19,16 +23,27 @@
   let penSeen = false;
 
   const strokes = $derived(reader.ink.filter((s) => s.page === page));
-  const marker = $derived(strokes.filter((s) => s.kind === "highlighter"));
-  const lines = $derived(strokes.filter((s) => s.kind !== "highlighter"));
-  const drawing = $derived(reader.inkTool !== "none");
+  const layers = $derived(reader.tools.layers);
+  const marker = $derived(layers.highlights ? strokes.filter((s) => s.kind === "highlighter") : []);
+  const lines = $derived(layers.ink ? strokes.filter((s) => s.kind !== "highlighter") : []);
+  const drawing = $derived(isInkTool(reader.inkTool));
   const tool = $derived(reader.inkTool);
+  /** The svg covers the page and its added margin; points stay normalised to the PDF page. */
+  const bounds = $derived(reader.tools.bounds(page));
+  const pw = $derived(w / bounds.w);
+  const ph = $derived(h / bounds.h);
 
   function at(e: PointerEvent): InkPoint {
     const r = svg.getBoundingClientRect();
     const p = e.pointerType === "pen" && e.pressure > 0 ? e.pressure : 0.5;
-    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, p };
+    return { x: ((e.clientX - r.left) / r.width) * bounds.w, y: ((e.clientY - r.top) / r.height) * bounds.h, p };
   }
+
+  /** Live line: drawn points plus the predicted tail. */
+  const livePts = $derived.by(() => {
+    void liveVer;
+    return live ? live.concat(predicted) : null; // a new array each time, so the path redraws
+  });
 
   let scrollFrom: { x: number; y: number } | null = null;
 
@@ -42,7 +57,11 @@
       return;
     }
     if (tool === "eraser") void reader.eraseAt(page, at(e));
-    else live = [at(e)];
+    else {
+      live = [at(e)];
+      predicted = [];
+      liveVer++;
+    }
   }
 
   function move(e: PointerEvent) {
@@ -53,13 +72,21 @@
     }
     if (!svg.hasPointerCapture(e.pointerId)) return;
     if (tool === "eraser") void reader.eraseAt(page, at(e));
-    else if (live) live = [...live, ...(e.getCoalescedEvents?.() ?? [e]).map(at)];
+    else if (live) {
+      // Coalesced events: every sample the pen sent since the last frame, not only the last one.
+      const coalesced = e.getCoalescedEvents?.() ?? [];
+      for (const c of coalesced.length ? coalesced : [e]) live.push(at(c));
+      predicted = (e.getPredictedEvents?.() ?? []).slice(-2).map(at);
+      liveVer++;
+    }
   }
 
   function up() {
     scrollFrom = null;
     const pts = live;
     live = null;
+    predicted = [];
+    liveVer++;
     if (!pts) return;
     if (tool === "laser") {
       const id = ++fadeId;
@@ -71,18 +98,18 @@
   }
 
   const liveKind = $derived(tool === "pen" || tool === "pencil" || tool === "highlighter" ? tool : null);
-  const laserW = $derived(Math.max(2, LASER_WIDTH * w));
+  const laserW = $derived(Math.max(2, LASER_WIDTH * pw));
 </script>
 
 <!-- Highlighter: below the text look, multiplied with the page so black text stays black. -->
 <svg class="ink under" viewBox="0 0 {w || 1} {h || 1}" aria-hidden="true">
   {#each marker as s (s.id)}
-    <path class="hl" d={strokePath(s.points, w, h)} stroke={s.color} stroke-opacity={INK_KINDS.highlighter.opacity}
-      stroke-width={strokeWidth(s, w)} />
+    <path class="hl" d={strokePath(s.points, pw, ph)} stroke={s.color} stroke-opacity={INK_KINDS.highlighter.opacity}
+      stroke-width={strokeWidth(s, pw)} />
   {/each}
-  {#if live && liveKind === "highlighter"}
-    <path class="hl" d={strokePath(live, w, h)} stroke={reader.inkColor} stroke-opacity={INK_KINDS.highlighter.opacity}
-      stroke-width={strokeWidth({ kind: "highlighter", width: reader.inkWidth, points: live }, w)} />
+  {#if livePts && liveKind === "highlighter"}
+    <path class="hl" d={strokePath(livePts, pw, ph)} stroke={reader.inkColor} stroke-opacity={INK_KINDS.highlighter.opacity}
+      stroke-width={strokeWidth({ kind: "highlighter", width: reader.inkWidth, points: livePts }, pw)} />
   {/if}
 </svg>
 
@@ -98,20 +125,20 @@
     </filter>
   </defs>
   {#each lines as s (s.id)}
-    <path d={strokePath(s.points, w, h)} stroke={s.color} stroke-opacity={INK_KINDS[s.kind].opacity}
-      stroke-width={strokeWidth(s, w)} data-kind={s.kind} filter={s.kind === "pencil" ? "url(#pencil-grain)" : undefined} />
+    <path d={strokePath(s.points, pw, ph)} stroke={s.color} stroke-opacity={INK_KINDS[s.kind].opacity}
+      stroke-width={strokeWidth(s, pw)} data-kind={s.kind} filter={s.kind === "pencil" ? "url(#pencil-grain)" : undefined} />
   {/each}
-  {#if live && (liveKind === "pen" || liveKind === "pencil")}
-    <path d={strokePath(live, w, h)} stroke={reader.inkColor} stroke-opacity={INK_KINDS[liveKind].opacity}
-      stroke-width={strokeWidth({ width: reader.inkWidth, points: live }, w)}
+  {#if livePts && (liveKind === "pen" || liveKind === "pencil")}
+    <path d={strokePath(livePts, pw, ph)} stroke={reader.inkColor} stroke-opacity={INK_KINDS[liveKind].opacity}
+      stroke-width={strokeWidth({ width: reader.inkWidth, points: livePts }, pw)}
       filter={liveKind === "pencil" ? "url(#pencil-grain)" : undefined} />
   {/if}
-  {#if live && tool === "laser"}
-    <g class="laser"><path d={strokePath(live, w, h)} stroke-width={laserW} /><path class="core" d={strokePath(live, w, h)} stroke-width={laserW / 3} /></g>
+  {#if livePts && tool === "laser"}
+    <g class="laser"><path d={strokePath(livePts, pw, ph)} stroke-width={laserW} /><path class="core" d={strokePath(livePts, pw, ph)} stroke-width={laserW / 3} /></g>
   {/if}
   {#each fading as f (f.id)}
     <g class="laser fade" style:animation-duration="{LASER_MS}ms">
-      <path d={strokePath(f.points, w, h)} stroke-width={laserW} /><path class="core" d={strokePath(f.points, w, h)} stroke-width={laserW / 3} />
+      <path d={strokePath(f.points, pw, ph)} stroke-width={laserW} /><path class="core" d={strokePath(f.points, pw, ph)} stroke-width={laserW / 3} />
     </g>
   {/each}
 </svg>
