@@ -37,6 +37,8 @@
   import TimerButton from "./TimerButton.svelte";
   import SplitPicker from "./SplitPicker.svelte";
   import TapeLayer from "./TapeLayer.svelte";
+  import NotebookPane from "./NotebookPane.svelte";
+  import { NotebookPen } from "@lucide/svelte";
 
   /** `compact`: one half of the split view; `onclose` replaces "back to library". */
   let { lib, doc, compact = false, onclose }: { lib: Library; doc: Document; compact?: boolean; onclose?: () => void } = $props();
@@ -57,6 +59,8 @@
   // svelte-ignore state_referenced_locally
   let showNav = $state(!compact && window.innerWidth >= 1200);
   let picking = $state(false);
+  /** Notebook ("Defter") beside the PDF. */
+  let notebookOpen = $state(false);
   /** Search bar (Ctrl+F or the toolbar button). */
   let searchOpen = $state(false);
   let searchInput = $state<HTMLInputElement>();
@@ -382,6 +386,8 @@
       </ToolButton>
       {#if !compact}
         <ToolButton label="Yan yana" onclick={() => (picking = true)}><Columns2 size={18} /></ToolButton>
+        <ToolButton label="Defter" title="PDF'in yanında defter aç" pressed={notebookOpen} onclick={() => (notebookOpen = !notebookOpen)}>
+          <NotebookPen size={18} /></ToolButton>
       {/if}
     </div>
     <div class="row tools" role="toolbar" aria-label="Kalem araçları">
@@ -505,6 +511,7 @@
         {/each}
       {/if}
     </div>
+    {#if notebookOpen}<NotebookPane {reader} onclose={() => (notebookOpen = false)} />{/if}
     {#if showImportant}<ImportantPages {reader} {sizeOf} onjump={goTo} onclose={() => (showImportant = false)} />{/if}
     {#if showPanel}<AnnotationPanel {reader} onjump={goTo} />{/if}
   </div>
@@ -564,7 +571,7 @@
   }
   .count { min-width: 80px; color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
   .notice { color: var(--danger); font-size: 13px; }
-  .body { flex: 1; display: flex; min-height: 0; }
+  .body { flex: 1; display: flex; min-height: 0; position: relative; }
   .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .blanks { font-size: 12px; }
