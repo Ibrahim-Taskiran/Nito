@@ -28,6 +28,8 @@ export interface Card extends CardFace, CardState {
   page: number;
   /** False for a question without a comment; such cards stay out of quizzes. */
   hasAnswer: boolean;
+  /** Wrong options saved with an AI multiple-choice question; the quiz prefers them. */
+  wrong?: string[];
 }
 
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
