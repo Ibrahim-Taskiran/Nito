@@ -7,7 +7,7 @@ import { FlagRepo } from "../src/core/exam/flags";
 import { buildPdf, hexToRgb, pdfFileName } from "../src/core/exportPdf";
 import { InkRepo } from "../src/core/inkRepo";
 import {
-  PageRepo, blankKey, insertSpot, keyForInput, letters, pageSlots, pdfPageOf, stepSlot, type InsertedPage,
+  PageRepo, blankKey, firstInOrder, insertSpot, keysToRender, keyForInput, letters, pageSlots, pdfPageOf, stepSlot, type InsertedPage,
 } from "../src/core/pages";
 import { sqljsDb } from "../src/platform/web/sqljsDb";
 import { freshRepo } from "./helpers";
@@ -51,6 +51,14 @@ describe("page order", () => {
     expect(stepSlot(slots, 2, 1)).toBe(-3);
     expect(stepSlot(slots, -3, 1)).toBe(3);
     expect(stepSlot(slots, 1, -1)).toBe(1);
+  });
+
+  it("renders visible pages and their neighbours in reading order", () => {
+    const slots = pageSlots(4, [blank(3, 2)]);
+    expect([...keysToRender(slots, [-3])].sort()).toEqual([-3, 2, 3].sort());
+    expect([...keysToRender(slots, [1])].sort()).toEqual([1, 2]);
+    expect(firstInOrder(slots, [3, -3])).toBe(-3);
+    expect(firstInOrder(slots, [])).toBeNull();
   });
 });
 

@@ -140,3 +140,21 @@ export class PageRepo {
     for (const t of PAGE_TABLES) await this.db.run(`DELETE FROM ${t} WHERE document_id = ? AND page = ?`, [documentId, key]);
   }
 }
+
+/** Keys to render: the visible pages plus `margin` neighbours in reading order (blank pages count as pages). */
+export function keysToRender(slots: readonly PageSlot[], visible: Iterable<number>, margin = 1): Set<number> {
+  const index = new Map(slots.map((s, i) => [s.key, i]));
+  const out = new Set<number>();
+  for (const k of visible) {
+    const i = index.get(k);
+    if (i === undefined) continue;
+    for (let j = Math.max(0, i - margin); j <= Math.min(slots.length - 1, i + margin); j++) out.add(slots[j].key);
+  }
+  return out;
+}
+
+/** The first of `keys` in reading order (the page at the top of the view). */
+export function firstInOrder(slots: readonly PageSlot[], keys: Iterable<number>): number | null {
+  const set = new Set(keys);
+  return slots.find((s) => set.has(s.key))?.key ?? null;
+}

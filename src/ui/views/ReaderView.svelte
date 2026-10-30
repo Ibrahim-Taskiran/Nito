@@ -2,20 +2,27 @@
   import { onMount, tick } from "svelte";
   import {
     Bandage, ChevronDown, ChevronUp, Columns2, Eraser, Eye, EyeOff, Highlighter, ImagePlus, Layers, MessageSquareText,
-    MoveHorizontal, PanelLeft, Pen, Pencil, Search, SquareDashed, StickyNote, Type, WandSparkles, X, ZoomIn, ZoomOut,
+    MoveHorizontal, PanelLeft, Pen, Pencil, Search, SquareDashed, Star, StickyNote, Type, WandSparkles, X, ZoomIn, ZoomOut,
   } from "@lucide/svelte";
   import { LABELS } from "../../core/labels";
   import { INK_KINDS } from "../../core/ink";
   import { LAYERS, MARGIN_MAX, type MarginSide } from "../../core/pageTools";
-  import { hitOnPage, normaliseRects, pagesToRender, parsePageInput, zoomIn, zoomOut, clampZoom } from "../../core/reader";
+  import { firstInOrder, keyForInput, keysToRender, pdfPageOf, stepSlot, type InsertWhere } from "../../core/pages";
+  import { hitOnPage, normaliseRects, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
   import Button from "../components/Button.svelte";
   import IconButton from "../components/IconButton.svelte";
   import MenuButton from "../components/MenuButton.svelte";
   import ToolButton from "../components/ToolButton.svelte";
   import type { Library } from "../library.svelte";
+  import { PageFlags } from "../pageFlags.svelte";
+  import { removeBlankPage } from "../pages.svelte";
   import { Reader, type InkSize } from "../reader.svelte";
+  import Dialog from "../components/Dialog.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
+  import ImportantPages from "./ImportantPages.svelte";
+  import PageMenu from "./PageMenu.svelte";
+  import PageTranscript from "./PageTranscript.svelte";
   import ImageLayer from "./ImageLayer.svelte";
   import InkLayer from "./InkLayer.svelte";
   import PageAudio from "./PageAudio.svelte";
@@ -55,8 +62,26 @@
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
   /** Short message, e.g. a failed image insert. */
   let notice = $state<string | null>(null);
+  /** "Önemli sayfalar" mini reader. */
+  let showImportant = $state(false);
+  /** Blank page waiting for the delete confirmation. */
+  let confirmRemove = $state<number | null>(null);
+  let scrollerW = $state(0);
 
-  const active = $derived(pagesToRender(visible, sizes.length));
+  /** Pages in reading order: PDF pages (key = page number) and inserted blank pages (negative keys). */
+  const slots = $derived(sizes.length ? reader.pages.slots : []);
+  const currentSlot = $derived(slots.find((s) => s.key === current));
+  const currentLabel = $derived(currentSlot?.label ?? String(current));
+  const blankCount = $derived(reader.pages.inserts.length);
+  const active = $derived(keysToRender(slots, visible));
+  const pageFlags = $derived(PageFlags.for(lib, doc.id));
+  const importantCount = $derived(slots.filter((s) => pageFlags.on(s.key).includes("important")).length);
+  /** Transcript beside the page when there is room for a 300 px column; otherwise under it. */
+  const sideTranscript = $derived(scrollerW >= 900);
+  const transcriptColumn = $derived(sideTranscript && reader.lecture.hasTranscripts && reader.lecture.transcriptBeside);
+  /** Size in PDF points of a PDF page or a blank page. */
+  const sizeOf = (key: number): { w: number; h: number } =>
+    (key > 0 ? sizes[key - 1] : reader.pages.blankSize(key)) ?? sizes[0] ?? { w: 595, h: 842 };
   const penOn = $derived(reader.inkTool === "pen" || reader.inkTool === "pencil" || reader.inkTool === "highlighter");
   const kindInfo = $derived(INK_KINDS[reader.inkKind]);
   const hit = $derived(reader.hits[reader.hitIndex]);
@@ -97,9 +122,9 @@
     };
   });
 
-  // Track which pages intersect the viewport.
+  // Track which pages intersect the viewport (again when a blank page comes or goes).
   $effect(() => {
-    if (!sizes.length) return;
+    if (!slots.length) return;
     const seen = new Set<number>();
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) {
@@ -109,7 +134,7 @@
       }
       if (seen.size) {
         visible = new Set(seen);
-        current = Math.min(...seen);
+        current = firstInOrder(slots, seen) ?? current;
       }
     }, { root: scroller });
     for (const el of scroller.querySelectorAll("[data-page]")) io.observe(el);
@@ -121,7 +146,7 @@
 
   // Remember the reading position (debounced in Library) for progress and "continue".
   $effect(() => {
-    if (sizes.length) lib.savePosition(doc.id, current, sizes.length);
+    if (sizes.length) lib.savePosition(doc.id, pdfPageOf(currentSlot), sizes.length);
   });
 
   function onPointerUp() {
@@ -149,8 +174,9 @@
 
   /** Zoom so the current page fills the width (minus the scroller padding). */
   function fitWidth() {
-    const w = sizes[current - 1]?.w ?? sizes[0]?.w;
-    if (w) scale = clampZoom((scroller.clientWidth - 48) / (w * (1 + reader.tools.margin(current).right)));
+    const w = sizes.length ? sizeOf(current).w : 0;
+    const column = transcriptColumn ? 316 : 0;
+    if (w) scale = clampZoom((scroller.clientWidth - 48 - column) / (w * (1 + reader.tools.margin(current).right)));
   }
 
   function goTo(page: number) {
@@ -192,14 +218,15 @@
     const dy = e.changedTouches[0].clientY - s.y;
     const sideways = scroller.scrollWidth > scroller.clientWidth + 1;
     if (!sideways && Math.abs(dx) > 80 && Math.abs(dx) > 2 * Math.abs(dy) && e.timeStamp - s.t < 500) {
-      goTo(Math.min(sizes.length, Math.max(1, current + (dx < 0 ? 1 : -1))));
+      const next = stepSlot(slots, current, dx < 0 ? 1 : -1);
+      if (next != null) goTo(next);
     }
   }
 
   function jumpBox(e: Event & { currentTarget: HTMLInputElement }) {
-    const n = parsePageInput(e.currentTarget.value, sizes.length);
-    e.currentTarget.value = String(n ?? current);
-    if (n) goTo(n);
+    const n = keyForInput(slots, e.currentTarget.value, sizes.length);
+    e.currentTarget.value = n == null ? currentLabel : (slots.find((s) => s.key === n)?.label ?? String(n));
+    if (n != null) goTo(n);
   }
 
   async function openSearch() {
@@ -219,7 +246,7 @@
   async function runSearch() {
     clearTimeout(searchTimer);
     const q = searchText;
-    await reader.search(q, current);
+    await reader.search(q, pdfPageOf(currentSlot));
     if (reader.searchQuery !== q || !reader.hits.length) return;
     goTo(reader.hits[reader.hitIndex].page);
     seek++;
@@ -250,8 +277,8 @@
 
   async function addImage() {
     notice = null;
-    const size = sizes[current - 1];
-    if (!size) return;
+    if (!sizes.length) return;
+    const size = sizeOf(current);
     try {
       await reader.insertImage(current, size);
     } catch (e) {
@@ -269,6 +296,24 @@
     notice = null;
     const all = await reader.tools.clearMargin(current, side, reader.ink, reader.images);
     if (!all) notice = "Kenar boşluğunda yazı ya da not var; o kısım kaldı. Önce onları silin ya da taşıyın.";
+  }
+
+  /** "Boş sayfa ekle": a blank page the size of `ref`, right before or after it; then it is shown. */
+  async function insertBlank(ref: number, where: InsertWhere) {
+    const key = await reader.pages.insert(ref, where, sizeOf(ref));
+    await tick();
+    goTo(key);
+  }
+
+  async function removeBlank() {
+    const key = confirmRemove;
+    confirmRemove = null;
+    if (key == null) return;
+    const after = stepSlot(slots, key, 1);
+    const next = after === key ? stepSlot(slots, key, -1) : after;
+    await removeBlankPage(reader, key);
+    await tick();
+    if (next != null) goTo(next);
   }
 
   /** Something on the page that Escape should close first (note, menu, picture). */
@@ -306,12 +351,17 @@
       </ToolButton>
       <div class="page-box" title="Sayfaya git">
         <!-- Plain "N / M" text for tests and tools; the input below is what people see. -->
-        <span class="pages sr" aria-hidden="true">{current} / {sizes.length || "–"}</span>
-        <input class="page-input" type="text" inputmode="numeric" enterkeyhint="go" aria-label="Sayfa numarası" value={current}
+        <span class="pages sr" aria-hidden="true">{currentLabel} / {sizes.length || "–"}</span>
+        <input class="page-input" type="text" inputmode="numeric" enterkeyhint="go" aria-label="Sayfa numarası" value={currentLabel}
           onchange={jumpBox} onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()} onfocus={(e) => e.currentTarget.select()} />
-        <span class="total">/ {sizes.length || "–"}</span>
+        <span class="total">/ {sizes.length || "–"}{#if blankCount}<span class="blanks"> + {blankCount} boş</span>{/if}</span>
       </div>
       <PageFlagMenu {lib} {doc} page={current} />
+      <PageMenu {reader} page={current} label={currentLabel} oninsert={(w) => insertBlank(current, w)} onremove={() => (confirmRemove = current)} />
+      {#if importantCount || showImportant}
+        <ToolButton label="Önemli sayfalar ({importantCount})" title="Yalnız önemli sayfalar, küçük bir PDF olarak" pressed={showImportant}
+          onclick={() => (showImportant = !showImportant)}><Star size={18} /></ToolButton>
+      {/if}
       <div class="group">
         <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}><ZoomOut size={18} /></IconButton>
         <span class="zoom">{Math.round(scale * 100)}%</span>
@@ -410,35 +460,58 @@
     {/if}
   </header>
   <div class="body">
-    {#if showNav && reader.pdf && sizes.length}<PageNav pdf={reader.pdf} {sizes} {current} onjump={goTo} flags={{ lib, documentId: doc.id }} />{/if}
+    {#if showNav && reader.pdf && sizes.length}
+      <PageNav pdf={reader.pdf} {slots} {sizeOf} {current} onjump={goTo} flags={{ lib, documentId: doc.id }}
+        oninsert={insertBlank} onremove={(k) => (confirmRemove = k)} />
+    {/if}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
+    <div class="scroller" bind:this={scroller} bind:clientWidth={scrollerW} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
       ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
       {#if reader.error}
         <p class="msg">PDF açılamadı: {reader.error}</p>
       {:else if !reader.pdf || !sizes.length}
         <p class="msg">Yükleniyor…</p>
       {:else}
-        {#each sizes as size, i (i)}
-          <PdfPage pdf={reader.pdf} num={i + 1} width={size.w} height={size.h} {scale} active={active.has(i + 1)}
-            annotations={reader.tools.layers.highlights ? reader.annotations.filter((a) => a.page === i + 1 && !reader.lecture.hidesAnnotation(a.id)) : []}
-            focusedId={reader.focusedId} margin={reader.tools.margins.get(i + 1)}
-            search={reader.searchQuery} currentMark={hit?.page === i + 1 ? currentMark : -1} {seek}>
-            <ImageLayer {reader} page={i + 1} />
-            <InkLayer {reader} page={i + 1} />
-            <NoteLayer {reader} page={i + 1} />
-            <TapeLayer {reader} page={i + 1} />
-            <PageAudio {reader} page={i + 1} />
-          </PdfPage>
+        {#each slots as slot (slot.key)}
+          {@const key = slot.key}
+          {@const size = sizeOf(key)}
+          {@const margin = reader.tools.margins.get(key)}
+          <div class="slot" class:side={transcriptColumn}>
+            <PdfPage pdf={reader.pdf} num={key} blank={slot.pdf == null} width={size.w} height={size.h} {scale} active={active.has(key)}
+              annotations={reader.tools.layers.highlights ? reader.annotations.filter((a) => a.page === key && !reader.lecture.hidesAnnotation(a.id)) : []}
+              focusedId={reader.focusedId} {margin}
+              search={slot.pdf == null ? "" : reader.searchQuery} currentMark={hit?.page === key ? currentMark : -1} {seek}>
+              <ImageLayer {reader} page={key} />
+              <InkLayer {reader} page={key} />
+              <NoteLayer {reader} page={key} />
+              <TapeLayer {reader} page={key} />
+              <PageAudio {reader} page={key} />
+            </PdfPage>
+            {#if transcriptColumn || reader.lecture.showsTranscript(key)}
+              <PageTranscript {reader} page={key} label={slot.label} side={sideTranscript}
+                height={size.h * scale * (1 + (margin?.bottom ?? 0))} />
+            {/if}
+          </div>
         {/each}
       {/if}
     </div>
+    {#if showImportant}<ImportantPages {reader} {sizeOf} onjump={goTo} onclose={() => (showImportant = false)} />{/if}
     {#if showPanel}<AnnotationPanel {reader} onjump={goTo} />{/if}
   </div>
 </div>
 
 {#if picking}
   <SplitPicker {lib} {doc} onclose={() => (picking = false)} />
+{/if}
+
+{#if confirmRemove != null}
+  <Dialog title="Boş sayfayı sil">
+    <p>Sayfa {slots.find((s) => s.key === confirmRemove)?.label}: üzerindeki yazı, not, bant ve resimlerle birlikte silinsin mi? Bu geri alınamaz.</p>
+    {#snippet actions()}
+      <Button variant="ghost" onclick={() => (confirmRemove = null)}>Vazgeç</Button>
+      <Button variant="danger" onclick={removeBlank}>Sil</Button>
+    {/snippet}
+  </Dialog>
 {/if}
 
 {#if pick}
@@ -484,6 +557,10 @@
   .body { flex: 1; display: flex; min-height: 0; }
   .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
+  .blanks { font-size: 12px; }
+  /* Transcript column beside each page; pages without one keep an empty column so they line up. */
+  .slot.side { display: flex; justify-content: center; align-items: flex-start; gap: 16px; }
+  .slot.side :global(.page) { margin: 0 0 16px; }
   .picker {
     position: fixed; transform: translateX(-50%); z-index: 20; display: flex; gap: 2px; padding: 4px;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16);
