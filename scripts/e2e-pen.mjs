@@ -225,6 +225,32 @@ async function run(vp, label) {
   const dx = after.x - before.x;
   if (!(Math.abs(after.w / before.w - 2) < 0.15)) fail(`${label}: scale ${(after.w / before.w).toFixed(2)}× instead of 2×`);
   if (!(dx > 20 && dx < 40)) fail(`${label}: moved by ${dx.toFixed(1)} px instead of ~30`);
+
+  // Tap a stroke to select it; copy / paste, recolour, delete, each undoable.
+  await tool("Seç");
+  const onPath = await strokes.last().evaluate((p) => {
+    const q = p.getPointAtLength(p.getTotalLength() / 2).matrixTransform(p.getScreenCTM());
+    return [q.x, q.y];
+  });
+  await penStroke([onPath, onPath]);
+  await selBox.waitFor({ timeout: 3000 }).catch(() => fail(`${label}: tap did not select the stroke`));
+  await page.getByRole("button", { name: "Kopyala", exact: true }).click();
+  await page.getByRole("button", { name: "Yapıştır", exact: true }).click();
+  await page.waitForTimeout(300);
+  if ((await count()) !== n0 + 1) fail(`${label}: paste did not add the copy`);
+  await page.keyboard.press("Control+z");
+  await page.waitForTimeout(300);
+  if ((await count()) !== n0) fail(`${label}: undo did not remove the pasted copy`);
+  await penStroke([onPath, onPath]);
+  await page.getByRole("button", { name: "Seçim rengi: Kırmızı" }).click();
+  await page.waitForTimeout(300);
+  if ((await strokes.last().getAttribute("stroke")) !== "#c0392b") fail(`${label}: recolour failed`);
+  await page.getByRole("button", { name: "Seçimi sil" }).click();
+  await page.waitForTimeout(300);
+  if ((await count()) !== n0 - 1) fail(`${label}: delete failed`);
+  await page.keyboard.press("Control+z");
+  await page.waitForTimeout(300);
+  if ((await count()) !== n0) fail(`${label}: undo did not bring the deleted stroke back`);
   await page.screenshot({ path: `tests/.out/pen-${label}.png` });
   await page.close();
   return `${label}: line+circle+undo ok, palm ok, 3 images ok, lasso move ${dx.toFixed(0)}px scale ${(after.w / before.w).toFixed(2)}×`;
