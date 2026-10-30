@@ -23,8 +23,13 @@
     return () => void off.then((f) => f());
   });
 
-  const addPdfs = async () => lib.add(await lib.platform.pickers.pickPdfs());
-  const addFolder = async () => lib.add(await lib.platform.pickers.pickFolder(recursive));
+  /** New files show up in the library, so leave Bugün/Program for it. */
+  const addFiles = async (files: SourceFile[]) => {
+    if (files.length && lib.section !== "library") lib.section = "library";
+    await lib.add(files);
+  };
+  const addPdfs = async () => addFiles(await lib.platform.pickers.pickPdfs());
+  const addFolder = async () => addFiles(await lib.platform.pickers.pickFolder(recursive));
 </script>
 
 {#snippet addButtons()}

@@ -1,4 +1,4 @@
-// v7: reading position and last-opened time per document (Kaldığın yerden devam et).
+// v7 (library): reading position per document, for progress bars and "continue where you left off".
 export default /* sql */ `
 ALTER TABLE document ADD COLUMN last_page INTEGER;
 ALTER TABLE document ADD COLUMN page_count INTEGER;
