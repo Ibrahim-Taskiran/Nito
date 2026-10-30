@@ -48,7 +48,17 @@ export async function createWebPlatform(): Promise<Platform> {
       write: async (rel, data) => void files.set(rel, data.slice()),
       remove: async (rel) => void files.delete(rel),
     },
-    pickers: { pickPdfs: () => pick(false), pickFolder: (recursive) => pick(true, recursive) },
+    pickers: {
+      pickPdfs: () => pick(false),
+      pickFolder: (recursive) => pick(true, recursive),
+      pickImage: () =>
+        new Promise<SourceFile | null>((resolve) => {
+          const input = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
+          input.onchange = () => resolve(input.files?.[0] ? source(input.files[0], null) : null);
+          input.oncancel = () => resolve(null);
+          input.click();
+        }),
+    },
     // The browser has no real folder paths, so watched folders never find files here.
     listFolder: async () => [],
     async saveExport(name, text) {
