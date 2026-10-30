@@ -29,6 +29,7 @@
   };
   const addPdfs = async () => addFiles(await lib.platform.pickers.pickPdfs());
   const addFolder = async () => addFiles(await lib.platform.pickers.pickFolder(recursive));
+  import TimerAlert from "./ui/views/TimerAlert.svelte";
 </script>
 
 {#snippet addButtons()}
@@ -66,6 +67,8 @@
   </div>
 {/if}
 <AddProgress {lib} />
+
+<TimerAlert />
 
 <style>
   .shell { display: flex; height: 100%; overflow: hidden; }

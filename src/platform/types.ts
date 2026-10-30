@@ -46,6 +46,6 @@ export interface Platform {
   listFolder(path: string, recursive: boolean): Promise<SourceFile[]>;
   /** Downloads a picture from a web link (size-limited, checked to be an image). Throws a message for the user. */
   fetchImage(url: string): Promise<Uint8Array>;
-  /** Saves a text export. Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
-  saveExport(name: string, text: string): Promise<string | null>;
+  /** Saves an export (text, or bytes such as a PDF). Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
+  saveExport(name: string, data: string | Uint8Array): Promise<string | null>;
 }

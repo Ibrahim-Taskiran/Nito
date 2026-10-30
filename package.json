@@ -14,7 +14,7 @@
     "screenshots": "node scripts/screenshots.mjs",
     "smoke:tauri": "node scripts/smoke-tauri.mjs",
     "smoke:tauri-ai": "node scripts/smoke-tauri-ai.mjs",
-    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs && node scripts/e2e-transcribe.mjs && node scripts/e2e-ai.mjs && node scripts/e2e-touch.mjs && node scripts/e2e-library.mjs && node scripts/e2e-home.mjs && node scripts/e2e-reader.mjs && node scripts/e2e-audio.mjs && node scripts/e2e-pagetools.mjs && node scripts/e2e-exam.mjs && node scripts/e2e-pen.mjs",
+    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs && node scripts/e2e-transcribe.mjs && node scripts/e2e-ai.mjs && node scripts/e2e-touch.mjs && node scripts/e2e-library.mjs && node scripts/e2e-home.mjs && node scripts/e2e-reader.mjs && node scripts/e2e-audio.mjs && node scripts/e2e-pagetools.mjs && node scripts/e2e-exam.mjs && node scripts/e2e-timer.mjs && node scripts/e2e-pages.mjs && node scripts/e2e-pen.mjs",
     "perf:bigpdf": "node scripts/perf-bigpdf.mjs",
     "licenses": "node scripts/check-licenses.mjs",
     "tauri": "tauri"
@@ -27,6 +27,7 @@
     "fflate": "^0.8.3",
     "highlight.js": "^11.12.0",
     "katex": "^0.19.1",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
     "sql.js": "^1.15.2"
   },

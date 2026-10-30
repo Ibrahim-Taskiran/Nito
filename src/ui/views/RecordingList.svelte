@@ -15,6 +15,8 @@
   const t = new Transcripts(reader);
   // svelte-ignore state_referenced_locally
   const L = reader.lecture;
+  /** Page label: "12", or "12a" for an inserted blank page. */
+  const pg = (key: number) => reader.pages.label(key);
   // Reload whenever the recorder goes back to idle (a recording was just saved).
   $effect(() => {
     if (reader.recorder.state === "idle") void t.load();
@@ -51,8 +53,8 @@
             <div class="timeline" role="group" aria-label="Sayfa zaman çizelgesi">
               {#each seg as s (s.start)}
                 <button class="seg" class:now={L.position >= s.start && L.position < s.end} style:flex-grow={Math.max(0.01, s.end - s.start)}
-                  aria-label="Sayfa {s.page}, {formatTimestamp(s.start)}" title="s. {s.page} · {formatTimestamp(s.start)}"
-                  onclick={() => { void L.play(r, s.start); onjump?.(s.page); }}><span>s. {s.page}</span></button>
+                  aria-label="Sayfa {pg(s.page)}, {formatTimestamp(s.start)}" title="s. {pg(s.page)} · {formatTimestamp(s.start)}"
+                  onclick={() => { void L.play(r, s.start); onjump?.(s.page); }}><span>s. {pg(s.page)}</span></button>
               {/each}
               {#each cues as c, i (i)}<span class="tick" style:left="{Math.min(100, (c.at / total) * 100)}%" aria-hidden="true"></span>{/each}
             </div>
@@ -105,7 +107,7 @@
           <span class="meta"><BadgeAlert size={14} /> Sınav ipuçları · {cues.length}</span>
           {#each cues as c, i (i)}
             <button class="cue" onclick={() => { void L.play(r, Math.max(0, c.at - 2)); if (c.page) onjump?.(c.page); }}>
-              <span class="meta">{c.page ? `s. ${c.page} · ` : ""}{formatTimestamp(c.at)} · “{c.phrase}”</span>
+              <span class="meta">{c.page ? `s. ${pg(c.page)} · ` : ""}{formatTimestamp(c.at)} · “{c.phrase}”</span>
               <span class="snip">{c.snippet}</span>
             </button>
           {/each}
@@ -116,7 +118,7 @@
         <div class="transcript" data-note={note.id} aria-label="Yazıya döküm">
           {#each L.paragraphs.get(r.id) ?? [] as p, i (i)}
             <p><button class="ts" onclick={() => L.play(r, p.start)}>{formatTimestamp(p.start)}</button>
-              {#if p.pages.length}<button class="pg" title="Sayfaya git" onclick={() => onjump?.(p.pages[0])}>s. {p.pages.join(", ")}</button>{/if}
+              {#if p.pages.length}<button class="pg" title="Sayfaya git" onclick={() => onjump?.(p.pages[0])}>s. {p.pages.map(pg).join(", ")}</button>{/if}
               {p.text}</p>
           {:else}
             <p class="hint">Kayıtta konuşma bulunamadı.</p>

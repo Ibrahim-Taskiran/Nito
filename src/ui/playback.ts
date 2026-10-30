@@ -20,8 +20,9 @@ export function saveRate(r: number): void {
 }
 
 /** On/off audio switches. `mic` (noise and echo cancelling while recording) is on unless turned off. */
-export type AudioPref = "mic" | "skipSilence" | "replayNotes" | "denoise";
-const DEFAULTS: Record<AudioPref, boolean> = { mic: true, skipSilence: false, replayNotes: false, denoise: false };
+/** `transcriptBeside`: transcript paragraphs shown next to (or under) the page they belong to. */
+export type AudioPref = "mic" | "skipSilence" | "replayNotes" | "denoise" | "transcriptBeside";
+const DEFAULTS: Record<AudioPref, boolean> = { mic: true, skipSilence: false, replayNotes: false, denoise: false, transcriptBeside: true };
 
 export function loadPref(p: AudioPref): boolean {
   try {
