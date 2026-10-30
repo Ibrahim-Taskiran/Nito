@@ -1,12 +1,16 @@
 // E2E: record, then "Yazıya dök". Without whisper the web build says "Whisper kurulu değil" (no setup button);
-// with window.__NITO_FAKE_WHISPER__ (canned whisper JSON) the real WAV conversion runs and a transcript note appears.
+// with window.__NITO_FAKE_WHISPER__ (canned whisper JSON) the real WAV conversion runs, the lecture prompt carries
+// the document title, and a transcript note appears.
 import { chromium } from "@playwright/test";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
 const fixtures = readdirSync("tests/fixtures").filter((f) => f.endsWith(".pdf")).map((f) => resolve("tests/fixtures", f));
-const canned = readFileSync("tests/fixtures/whisper-sample.json", "utf8");
+// The sample audio repeats one passage; number the repeats so the duplicate filter keeps them.
+const sample = JSON.parse(readFileSync("tests/fixtures/whisper-sample.json", "utf8"));
+sample.transcription.forEach((s, i) => (s.text += ` (${i + 1})`));
+const canned = JSON.stringify(sample);
 const browser = await chromium.launch({
   channel: process.env.NITO_BROWSER ?? "msedge",
   args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", "--autoplay-policy=no-user-gesture-required"],
@@ -58,6 +62,8 @@ for (const colorScheme of ["light", "dark"]) {
   await page.getByRole("button", { name: "Dökümü gizle" }).waitFor({ timeout: 10_000 }).catch(() => fail("no transcript after run"));
   const t = page.locator(".transcript");
   if ((await t.getAttribute("data-note")) == null) fail("transcript not linked to a note");
+  const prompt = await page.evaluate(() => window.__NITO_WHISPER_PROMPT__ ?? "");
+  if (!prompt.includes("Hafta 2") || !prompt.endsWith("adım adım anlatıyoruz.")) fail(`whisper prompt: ${prompt}`);
   const text = await t.textContent();
   if (!/^\s*00:00/.test(text) || !text.includes("Normalization removes repeated data.")) fail(`unexpected transcript: ${text.slice(0, 120)}`);
   const stamps = await t.locator(".ts").count();
