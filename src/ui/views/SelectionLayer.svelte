@@ -2,7 +2,7 @@
   import { IDENTITY, applyBox, scaleFromCorner, type Box, type Transform } from "../../core/selection";
   import type { Reader } from "../reader.svelte";
 
-  /** Box around the lasso selection on one page: drag inside to move, corner handles to scale. */
+  /** Box around the lasso selection on one page: drag inside to move (also onto another page), corner handles to scale. */
   let { reader, page }: { reader: Reader; page: number } = $props();
 
   let layer: HTMLDivElement;
@@ -21,7 +21,32 @@
   const px = (r: Box) => ({ left: (r.x / b.w) * w, top: (r.y / b.h) * h, width: (r.w / b.w) * w, height: (r.h / b.h) * h });
   const rect = $derived(box ? px(box) : null);
 
-  let drag: { id: number; mode: "move" | 0 | 1 | 2 | 3; x0: number; y0: number; from: Box } | null = null;
+  /** `px` is the press point in screen pixels from the page corner, for a drop on another page. */
+  let drag: { id: number; mode: "move" | 0 | 1 | 2 | 3; x0: number; y0: number; from: Box; px: { x: number; y: number } } | null = null;
+
+  const rectOf = (el: Element): Box => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left, y: r.top, w: r.width, h: r.height };
+  };
+
+  /** The other page of this reader under a screen point, if any. */
+  function pageAt(x: number, y: number): { key: number; el: Element } | null {
+    const all = (layer.closest(".scroller") ?? document).querySelectorAll(".sel-layer[data-sel-page]");
+    for (const el of all) {
+      const r = el.getBoundingClientRect();
+      if (el !== layer && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { key: Number((el as HTMLElement).dataset.selPage), el };
+    }
+    return null;
+  }
+
+  /** Near the top or bottom edge while carrying a selection: scroll, so a far page can be reached. */
+  function edgeScroll(y: number) {
+    const s = layer.closest(".scroller");
+    if (!s) return;
+    const r = s.getBoundingClientRect();
+    if (y > r.bottom - 48) s.scrollTop += 16;
+    else if (y < r.top + 48) s.scrollTop -= 16;
+  }
 
   /** Page units of a screen point. */
   function pt(e: PointerEvent) {
@@ -38,21 +63,34 @@
     e.stopPropagation();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const p = pt(e);
-    drag = { id: e.pointerId, mode, x0: p.x, y0: p.y, from: base };
+    const r = layer.getBoundingClientRect();
+    drag = { id: e.pointerId, mode, x0: p.x, y0: p.y, from: base, px: { x: e.clientX - r.left, y: e.clientY - r.top } };
   }
 
   function move(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.id) return;
     const p = pt(e);
-    const t: Transform = drag.mode === "move" ? { ...IDENTITY, dx: p.x - drag.x0, dy: p.y - drag.y0 } : scaleFromCorner(drag.from, drag.mode, p);
-    edit.setPreview(t);
+    if (drag.mode !== "move") return edit.setPreview(scaleFromCorner(drag.from, drag.mode, p));
+    const t: Transform = { ...IDENTITY, dx: p.x - drag.x0, dy: p.y - drag.y0 };
+    const other = pageAt(e.clientX, e.clientY);
+    edit.dropPage = other?.key ?? null;
+    // Over another page the box follows the pen freely; it lands there on release.
+    if (other) edit.preview = t;
+    else edit.setPreview(t);
+    edgeScroll(e.clientY);
   }
 
   function end(e: PointerEvent) {
     if (!drag || e.pointerId !== drag.id) return;
     edit.gate.up(e.pointerId, e.pointerType, e.timeStamp);
+    const d = drag;
     drag = null;
-    void edit.commit();
+    edit.dropPage = null;
+    const other = d.mode === "move" && e.type === "pointerup" ? pageAt(e.clientX, e.clientY) : null;
+    if (!other) return void edit.commit();
+    const from = rectOf(layer);
+    const shift = { x: e.clientX - from.x - d.px.x, y: e.clientY - from.y - d.px.y };
+    void edit.moveTo(other.key, { rect: from, bounds: b }, { rect: rectOf(other.el), bounds: reader.tools.bounds(other.key) }, shift);
   }
 
   const CORNERS = [
@@ -63,7 +101,7 @@
   ] as const;
 </script>
 
-<div class="sel-layer" bind:this={layer} bind:clientWidth={w} bind:clientHeight={h}>
+<div class="sel-layer" class:drop={edit.dropPage === page} data-sel-page={page} bind:this={layer} bind:clientWidth={w} bind:clientHeight={h}>
   {#if rect}
     <div class="box" role="group" aria-label="Seçim" style:left="{rect.left}px" style:top="{rect.top}px"
       style:width="{rect.width}px" style:height="{rect.height}px">
@@ -79,6 +117,7 @@
 
 <style>
   .sel-layer { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+  .drop { outline: 2px dashed var(--accent); outline-offset: -2px; background: color-mix(in srgb, var(--accent) 5%, transparent); }
   .box { position: absolute; outline: 1.5px dashed var(--accent); outline-offset: 2px; }
   .body {
     position: absolute; inset: 0; pointer-events: auto; border: 0; padding: 0; background: color-mix(in srgb, var(--accent) 6%, transparent);

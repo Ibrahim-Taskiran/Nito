@@ -2,6 +2,11 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (10) — Phase 3.8 cross-page move (branch feat/selection-move-page)
+- **Done:** drag a lasso selection past the page edge onto another page (target page outlined, edge auto-scroll); "Sayfaya taşı" menu (page "2" or "2a"); "Kes" button + Ctrl+X (cut, then paste on any page). Strokes, pictures and notes change page; one undo step. No migration.
+- **Files:** `src/core/selection.ts` (PageMap, pageMap, paperPlace, mapPoints, mapBox), `inkRepo.ts` / `imageRepo.ts` / `pageToolsRepo.ts` (page in update), `ui/inkEdit.svelte.ts` (moveTo, cut, dropPage), `ui/reader.svelte.ts` (moveImage page), `ui/pageTools.svelte.ts`, `ui/views/SelectionLayer.svelte`, `ui/views/PenTools.svelte`, tests, `scripts/e2e-pen.mjs`.
+- **Checks:** check 0 errors, vitest 174 passed, e2e-pen phone + tablet ok.
+- **Next step:** merge into main with the other 3.8 branches. PenTools.svelte also touched by the toolbar branch.
 ## 2026-10-30 (9) — Phase 3.8 notebook ("Defter") on branch feat/notebook
 - **Done:** "Defter" toolbar button opens a notebook beside the PDF (resizable column on wide screens, covers the reader body under 760 px). Starts with one Düz page; add Düz/Kareli/Çizgili/Noktalı (CSS backgrounds), move up/down, delete with confirm (last page stays). Same pen, eraser, lasso, text and sticky notes as PDF pages: notebook pages use page keys -(1e9 + notebook_page.id) in the existing layer tables.
 - **Files:** `src/core/notebook.ts`, `src/core/db/migrations/013_notebook.ts`, `migrate.ts`, `src/ui/notebook.svelte.ts`, `src/ui/views/NotebookPane.svelte`, `ReaderView.svelte` (button, mount, `.body` relative), `tests/notebook.test.ts`, `scripts/e2e-notebook.mjs`, `package.json` e2e chain.
