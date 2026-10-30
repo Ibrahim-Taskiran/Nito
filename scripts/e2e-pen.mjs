@@ -1,6 +1,7 @@
 // E2E for the pen, round 2, on a phone (390×844) and a tablet (820×1180), with CDP pen and touch input:
 // hold-to-correct shapes (line saved straight after reopen, circle), undo back to the raw stroke, palm rejection
-// (large contact, "Yalnız kalemle çiz"), pictures from paste / drop / link, lasso select → move → scale 2× → reopen.
+// (large contact, "Yalnız kalemle çiz"), pictures from paste / drop / link, lasso select → move → scale 2× → reopen,
+// moving a selection to page 2 (drag, undo, "Sayfaya taşı", reopen).
 // Needs `npm run dev`.
 import { chromium } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -251,9 +252,50 @@ async function run(vp, label) {
   await page.keyboard.press("Control+z");
   await page.waitForTimeout(300);
   if ((await count()) !== n0) fail(`${label}: undo did not bring the deleted stroke back`);
+
+  // ---- Move across pages: drag the selection onto page 2, undo, then "Sayfaya taşı", reopen ----
+  const strokes2 = page.locator('[data-page="2"] svg.ink:not(.under) path[data-id]');
+  const counts = async () => [await count(), await strokes2.count()];
+  const expectCounts = async (want, what) => {
+    await page.waitForTimeout(300);
+    const got = await counts();
+    if (got[0] !== want[0] || got[1] !== want[1]) fail(`${label}: ${what}: pages hold ${got} strokes, expected ${want}`);
+  };
+  const selectLast = async () => {
+    const at = await strokes.last().evaluate((p) => {
+      const q = p.getPointAtLength(p.getTotalLength() / 2).matrixTransform(p.getScreenCTM());
+      return [q.x, q.y];
+    });
+    await penStroke([at, at]);
+    await selBox.waitFor({ timeout: 3000 }).catch(() => fail(`${label}: tap did not select the stroke`));
+  };
+  await expectCounts([n0, 0], "before the move");
+  // Bring the end of page 1 and the top of page 2 into view.
+  await page.locator('[data-page="2"]').evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(200);
+  if (!(await strokes.last().evaluate((p) => p.getBoundingClientRect().top > 0))) {
+    await strokes.last().evaluate((p) => p.scrollIntoView({ block: "start" }));
+    await page.waitForTimeout(200);
+  }
+  await selectLast();
+  sb = await selBox.boundingBox();
+  const p2 = await page.locator('[data-page="2"]').boundingBox();
+  const cx = sb.x + sb.width / 2, cy = sb.y + sb.height / 2;
+  const ty = Math.min(p2.y + 80, (vp.height + p2.y) / 2);
+  await penStroke(Array.from({ length: 13 }, (_, i) => [cx, cy + ((ty - cy) * i) / 12]));
+  await expectCounts([n0 - 1, 1], "drag to page 2");
+  await page.keyboard.press("Control+z");
+  await expectCounts([n0, 0], "undo of the drag");
+  await selectLast();
+  await page.getByRole("button", { name: "Sayfaya taşı" }).click();
+  await page.getByRole("textbox", { name: "Hedef sayfa" }).fill("2");
+  await page.getByRole("button", { name: "Taşı", exact: true }).click();
+  await expectCounts([n0 - 1, 1], "Sayfaya taşı");
+  await reopen();
+  await expectCounts([n0 - 1, 1], "reopen after the move");
   await page.screenshot({ path: `tests/.out/pen-${label}.png` });
   await page.close();
-  return `${label}: line+circle+undo ok, palm ok, 3 images ok, lasso move ${dx.toFixed(0)}px scale ${(after.w / before.w).toFixed(2)}×`;
+  return `${label}: line+circle+undo ok, palm ok, 3 images ok, lasso move ${dx.toFixed(0)}px scale ${(after.w / before.w).toFixed(2)}×, page move ok`;
 }
 
 const out = [];

@@ -31,10 +31,10 @@
 
   /** The other page of this reader under a screen point, if any. */
   function pageAt(x: number, y: number): { key: number; el: Element } | null {
-    const all = (layer.closest(".scroller") ?? document).querySelectorAll(".sel-layer[data-page]");
+    const all = (layer.closest(".scroller") ?? document).querySelectorAll(".sel-layer[data-sel-page]");
     for (const el of all) {
       const r = el.getBoundingClientRect();
-      if (el !== layer && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { key: Number((el as HTMLElement).dataset.page), el };
+      if (el !== layer && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { key: Number((el as HTMLElement).dataset.selPage), el };
     }
     return null;
   }
@@ -101,7 +101,7 @@
   ] as const;
 </script>
 
-<div class="sel-layer" class:drop={edit.dropPage === page} data-page={page} bind:this={layer} bind:clientWidth={w} bind:clientHeight={h}>
+<div class="sel-layer" class:drop={edit.dropPage === page} data-sel-page={page} bind:this={layer} bind:clientWidth={w} bind:clientHeight={h}>
   {#if rect}
     <div class="box" role="group" aria-label="Seçim" style:left="{rect.left}px" style:top="{rect.top}px"
       style:width="{rect.width}px" style:height="{rect.height}px">
