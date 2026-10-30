@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { skippedSeconds } from "../../core/lecture";
   import { formatTimestamp } from "../../core/recording";
-  import { transcriptParagraphs } from "../../core/transcribe/transcript";
   import { WHISPER_MODELS } from "../../platform/transcriber";
-  import { RotateCcw, RotateCw, Trash2 } from "@lucide/svelte";
+  import { AudioWaveform, BadgeAlert, ChevronsRight, Layers, RotateCcw, RotateCw, Trash2 } from "@lucide/svelte";
   import { RATES } from "../playback";
   import Button from "../components/Button.svelte";
   import Dialog from "../components/Dialog.svelte";
   import ProgressBar from "../components/ProgressBar.svelte";
   import type { Reader } from "../reader.svelte";
   import { Transcripts, type Job } from "../transcripts.svelte";
-  let { reader }: { reader: Reader } = $props();
+  let { reader, onjump }: { reader: Reader; onjump?: (page: number) => void } = $props();
 
   // svelte-ignore state_referenced_locally
   const t = new Transcripts(reader);
+  // svelte-ignore state_referenced_locally
+  const L = reader.lecture;
   // Reload whenever the recorder goes back to idle (a recording was just saved).
   $effect(() => {
     if (reader.recorder.state === "idle") void t.load();
   });
-  onDestroy(() => t.dispose());
 
   const when = (iso: string) =>
     new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -32,27 +32,57 @@
   {#each t.recordings as r (r.id)}
     {@const job = t.jobs[r.id]}
     {@const note = t.notes.get(r.id)}
+    {@const seg = L.timelines.get(r.id) ?? []}
+    {@const cues = L.cues.get(r.id) ?? []}
+    {@const total = L.duration || r.durationSeconds || 1}
     <article class="rec">
       <div class="row">
-        <button class="play" aria-pressed={t.playingId === r.id} aria-label={t.playingId === r.id ? "Oynatmayı durdur" : "Kaydı oynat"}
-          onclick={() => t.play(r)}>{t.playingId === r.id ? "❚❚" : "▶"}</button>
+        <button class="play" aria-pressed={L.playingId === r.id} aria-label={L.playingId === r.id ? "Oynatmayı durdur" : "Kaydı oynat"}
+          onclick={() => L.play(r)}>{L.playingId === r.id ? "❚❚" : "▶"}</button>
         <span class="meta">{when(r.startedAt)} · {formatTimestamp(r.durationSeconds)}</span>
         <button class="icon del" aria-label="Kaydı sil" title="Kaydı sil" disabled={!!job} onclick={() => (t.deleting = r)}>
           <Trash2 size={16} />
         </button>
       </div>
-      {#if t.activeId === r.id}
+      {#if L.activeId === r.id}
+        {@const spans = L.silences.get(r.id)}
         <div class="player" aria-label="Oynatıcı">
-          <input class="seek" type="range" min="0" max={t.duration || r.durationSeconds || 1} step="0.1" value={t.position}
-            aria-label="Konum" oninput={(e) => t.seek(Number(e.currentTarget.value))} />
+          {#if seg.length}
+            <div class="timeline" role="group" aria-label="Sayfa zaman çizelgesi">
+              {#each seg as s (s.start)}
+                <button class="seg" class:now={L.position >= s.start && L.position < s.end} style:flex-grow={Math.max(0.01, s.end - s.start)}
+                  aria-label="Sayfa {s.page}, {formatTimestamp(s.start)}" title="s. {s.page} · {formatTimestamp(s.start)}"
+                  onclick={() => { void L.play(r, s.start); onjump?.(s.page); }}><span>s. {s.page}</span></button>
+              {/each}
+              {#each cues as c, i (i)}<span class="tick" style:left="{Math.min(100, (c.at / total) * 100)}%" aria-hidden="true"></span>{/each}
+            </div>
+          {/if}
+          <input class="seek" type="range" min="0" max={total} step="0.1" value={L.position}
+            aria-label="Konum" oninput={(e) => L.seek(Number(e.currentTarget.value))} />
           <div class="row">
-            <button class="icon" aria-label="10 saniye geri" onclick={() => t.skip(-10)}><RotateCcw size={16} /><span>10</span></button>
-            <span class="meta time">{formatTimestamp(t.position)} / {formatTimestamp(t.duration || r.durationSeconds)}</span>
-            <button class="icon" aria-label="10 saniye ileri" onclick={() => t.skip(10)}><RotateCw size={16} /><span>10</span></button>
-            <select class="rate" aria-label="Oynatma hızı" value={t.rate} onchange={(e) => t.setRate(Number(e.currentTarget.value))}>
+            <button class="icon" aria-label="10 saniye geri" onclick={() => L.skip(-10)}><RotateCcw size={16} /><span>10</span></button>
+            <span class="meta time">{formatTimestamp(L.position)} / {formatTimestamp(total)}</span>
+            <button class="icon" aria-label="10 saniye ileri" onclick={() => L.skip(10)}><RotateCw size={16} /><span>10</span></button>
+            <select class="rate" aria-label="Oynatma hızı" value={L.rate} onchange={(e) => L.setRate(Number(e.currentTarget.value))}>
               {#each RATES as v (v)}<option value={v}>{v.toLocaleString("tr-TR")}×</option>{/each}
             </select>
           </div>
+          <div class="toggles">
+            <button class="tog" aria-pressed={L.skipSilence} onclick={() => L.setPref("skipSilence", !L.skipSilence)}>
+              <ChevronsRight size={16} />Sessizliği atla
+            </button>
+            <button class="tog" aria-pressed={L.replayNotes} onclick={() => L.setPref("replayNotes", !L.replayNotes)}>
+              <Layers size={16} />Notları sesle birlikte göster
+            </button>
+            <button class="tog" aria-pressed={L.denoise} onclick={() => L.setPref("denoise", !L.denoise)}>
+              <AudioWaveform size={16} />Gürültü azalt
+            </button>
+          </div>
+          {#if L.skipSilence}
+            <span class="meta" aria-live="polite">
+              {L.analysing === r.id ? "Sessizlik aranıyor…" : spans ? (spans.length ? `${spans.length} sessizlik atlanır (${Math.round(skippedSeconds(spans))} sn)` : "Atlanacak sessizlik yok") : ""}
+            </span>
+          {/if}
         </div>
       {/if}
       {#if job}
@@ -70,11 +100,24 @@
       {:else}
         <Button onclick={() => t.transcribe(r)}>Yazıya dök</Button>
       {/if}
+      {#if cues.length}
+        <div class="cues" role="group" aria-label="Sınav ipuçları">
+          <span class="meta"><BadgeAlert size={14} /> Sınav ipuçları · {cues.length}</span>
+          {#each cues as c, i (i)}
+            <button class="cue" onclick={() => { void L.play(r, Math.max(0, c.at - 2)); if (c.page) onjump?.(c.page); }}>
+              <span class="meta">{c.page ? `s. ${c.page} · ` : ""}{formatTimestamp(c.at)} · “{c.phrase}”</span>
+              <span class="snip">{c.snippet}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
       {#if t.errors[r.id]}<p class="error" role="alert">{t.errors[r.id]}</p>{/if}
       {#if note && t.expandedId === r.id}
         <div class="transcript" data-note={note.id} aria-label="Yazıya döküm">
-          {#each transcriptParagraphs(note.body) as p, i (i)}
-            <p><button class="ts" onclick={() => t.play(r, p.start)}>{formatTimestamp(p.start)}</button> {p.text}</p>
+          {#each L.paragraphs.get(r.id) ?? [] as p, i (i)}
+            <p><button class="ts" onclick={() => L.play(r, p.start)}>{formatTimestamp(p.start)}</button>
+              {#if p.pages.length}<button class="pg" title="Sayfaya git" onclick={() => onjump?.(p.pages[0])}>s. {p.pages.join(", ")}</button>{/if}
+              {p.text}</p>
           {:else}
             <p class="hint">Kayıtta konuşma bulunamadı.</p>
           {/each}
@@ -84,6 +127,11 @@
   {:else}
     <p class="hint">Kayıt yok. Üstteki “Ses kaydı” ile dersi kaydedebilirsiniz.</p>
   {/each}
+
+  <label class="mic">
+    <input type="checkbox" checked={L.micClean} onchange={(e) => L.setPref("mic", e.currentTarget.checked)} />
+    Kayıtta gürültü ve yankı engelleme
+  </label>
 
   {#if t.missing}
     <div class="missing" role="status">
@@ -155,6 +203,26 @@
   .seek { width: 100%; height: 28px; accent-color: var(--accent); margin: 0; }
   .time { flex: 1; text-align: center; }
   .rate { height: var(--hit); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 0 6px; font: inherit; font-size: 12px; }
+  .timeline { position: relative; display: flex; height: var(--hit); border-radius: 6px; overflow: hidden; background: var(--surface-2); }
+  .seg { flex: 1 1 0; min-width: 0; border: 0; border-right: 1px solid var(--surface); background: transparent; color: var(--text-2);
+    font: inherit; font-size: 11px; cursor: pointer; padding: 0 2px; touch-action: manipulation; }
+  .seg span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .seg.now { background: var(--accent-soft); color: var(--accent); }
+  .seg:hover { color: var(--text); }
+  .tick { position: absolute; bottom: 0; width: 2px; height: 8px; margin-left: -1px; background: var(--danger); pointer-events: none; }
+  .toggles { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tog { min-height: var(--hit); display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--border);
+    border-radius: 999px; background: var(--surface); color: var(--text-2); font: inherit; font-size: 12px; cursor: pointer; touch-action: manipulation; }
+  .tog[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .cues { display: grid; gap: 4px; }
+  .cues > .meta { display: inline-flex; align-items: center; gap: 4px; }
+  .cue { display: grid; gap: 2px; text-align: left; min-height: var(--hit); padding: 6px 8px; border: 0; border-left: 3px solid var(--danger);
+    border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
+  .cue:hover { background: var(--surface-2); }
+  .snip { color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pg { border: 0; background: var(--surface-2); color: var(--text-2); border-radius: 4px; padding: 0 4px; cursor: pointer; font: inherit; font-size: 12px; }
+  .mic { display: flex; align-items: center; gap: 8px; min-height: var(--hit); padding: 0 4px; color: var(--text-2); font-size: 12px; cursor: pointer; }
+  .mic input { width: 18px; height: 18px; accent-color: var(--accent); }
   .job { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
   .link { min-height: 32px; border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 0 6px; border-radius: 6px; }
   .link:hover { background: var(--surface-2); }

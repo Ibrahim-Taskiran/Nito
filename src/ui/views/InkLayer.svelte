@@ -18,7 +18,7 @@
   /** After a stylus is seen, fingers scroll instead of drawing (palm and finger stay free). */
   let penSeen = false;
 
-  const strokes = $derived(reader.ink.filter((s) => s.page === page));
+  const strokes = $derived(reader.ink.filter((s) => s.page === page && !reader.lecture.hidesStroke(s.id)));
   const marker = $derived(strokes.filter((s) => s.kind === "highlighter"));
   const lines = $derived(strokes.filter((s) => s.kind !== "highlighter"));
   const drawing = $derived(reader.inkTool !== "none");
