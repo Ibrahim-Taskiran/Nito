@@ -1,15 +1,22 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { flattenOutline, type OutlineRow } from "../../core/reader";
+  import { flagInfo } from "../../core/exam/flags";
+  import type { Id } from "../../core/types";
+  import type { Library } from "../library.svelte";
+  import { PageFlags } from "../pageFlags.svelte";
   import type { PDFDocumentProxy } from "../pdf";
 
   /** Left panel: page thumbnails and the PDF's table of contents. */
-  let { pdf, sizes, current, onjump }: {
+  let { pdf, sizes, current, onjump, flags }: {
     pdf: PDFDocumentProxy;
     sizes: { w: number; h: number }[];
     current: number;
     onjump: (page: number) => void;
+    /** Shows page flags on the thumbnails. */
+    flags?: { lib: Library; documentId: Id };
   } = $props();
+  const pageFlags = $derived(flags ? PageFlags.for(flags.lib, flags.documentId) : null);
 
   const THUMB_W = 112;
   let tab = $state<"pages" | "outline">("pages");
@@ -105,6 +112,11 @@
           aria-current={current === i + 1 ? "page" : undefined} onclick={() => onjump(i + 1)}>
           <canvas use:thumb={i + 1} style:aspect-ratio="{s.w} / {s.h}"></canvas>
           <span>{i + 1}</span>
+          {#if pageFlags?.on(i + 1).length}
+            <span class="flags" aria-label="İşaretler: {pageFlags.on(i + 1).map((k) => flagInfo(k).name).join(', ')}">
+              {#each pageFlags.on(i + 1) as k (k)}<i style:background={flagInfo(k).color} title={flagInfo(k).name}></i>{/each}
+            </span>
+          {/if}
         </button>
       {/each}
     {:else if outline === null}
@@ -133,6 +145,9 @@
     border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; color: var(--text-2); font-size: 12px;
   }
   .thumb:hover { background: var(--surface-2); }
+  .thumb { position: relative; }
+  .flags { position: absolute; top: 10px; right: 14px; display: flex; flex-direction: column; gap: 3px; }
+  .flags i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
   .thumb canvas { width: 112px; background: #fff; box-shadow: 0 0 0 1px var(--border); border-radius: 2px; }
   .thumb.current canvas { box-shadow: 0 0 0 2px var(--accent); }
   .thumb.current span { color: var(--accent); font-weight: 600; }

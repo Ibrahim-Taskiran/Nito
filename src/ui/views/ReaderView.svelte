@@ -20,6 +20,7 @@
   import InkLayer from "./InkLayer.svelte";
   import PageAudio from "./PageAudio.svelte";
   import NoteLayer from "./NoteLayer.svelte";
+  import PageFlagMenu from "./PageFlagMenu.svelte";
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
@@ -310,6 +311,7 @@
           onchange={jumpBox} onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()} onfocus={(e) => e.currentTarget.select()} />
         <span class="total">/ {sizes.length || "–"}</span>
       </div>
+      <PageFlagMenu {lib} {doc} page={current} />
       <div class="group">
         <IconButton label="Uzaklaştır" onclick={() => (scale = zoomOut(scale))}><ZoomOut size={18} /></IconButton>
         <span class="zoom">{Math.round(scale * 100)}%</span>
@@ -408,7 +410,7 @@
     {/if}
   </header>
   <div class="body">
-    {#if showNav && reader.pdf && sizes.length}<PageNav pdf={reader.pdf} {sizes} {current} onjump={goTo} />{/if}
+    {#if showNav && reader.pdf && sizes.length}<PageNav pdf={reader.pdf} {sizes} {current} onjump={goTo} flags={{ lib, documentId: doc.id }} />{/if}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="scroller" bind:this={scroller} onpointerup={onPointerUp} onwheel={onWheel} onscroll={() => (pick = null)}
       ontouchstart={onTouchStart} ontouchmove={onTouchMove} ontouchend={onTouchEnd}>
