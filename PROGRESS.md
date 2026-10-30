@@ -2,6 +2,11 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 3.5 Library (branch worktree-agent-a0b6e32675cf7d6c2: e74dda8, 30a1a90, c3dc845, 04a1a62)
+- **Done:** migration 007 (`last_page`, `page_count`, `last_opened_at`), repo rename/move/week/delete, `core/library/browse.ts` (Turkish-folding search, sort, progress, parseWeek). `LibraryView`: search box (Ctrl+K), sort select, grid/list toggle (saved per device), course chips, cover cards (first page via `ui/thumbs.ts`, cached `thumbs/<hash>.png`), progress bar + badges, detail panel with "Kaldığın yerden devam et". Reader saves the position (debounced 1 s). Menu (⋯ button, right click, 500 ms long press via `ui/longpress.ts`): open, rename, move to course (or new course), week, read/unread, favourite, delete with confirm. Tablet: ⋯ always visible, 40px targets, tap opens the doc when the detail panel is hidden (<1024px).
+- **Checks:** svelte-check 0, vitest 70, all e2e scripts incl. new `scripts/e2e-library.mjs` passed.
+- **Next:** merge into main (watch `migrate.ts` list, `package.json` e2e chain, App.svelte, ReaderView `$effect` for savePosition).
+
 ## 2026-10-30 — Android set up (APK blocked), backup/restore, real Tauri smoke test
 - **Android (975fbf8):** cmdline-tools + NDK 27.2.12479018 installed, Rust Android targets added, user env vars ANDROID_HOME / NDK_HOME / JAVA_HOME set. `tauri android init` done (`src-tauri/gen/android`), RECORD_AUDIO + MODIFY_AUDIO_SETTINGS in the manifest. Whisper Rust module and its crates are desktop-only (`#[cfg(desktop)]`, target-specific deps). See `docs/android.md`.
   - **Blocked:** `tauri android build` fails with "Creation symbolic link is not allowed for this system". The owner must turn on Windows Developer Mode (Settings > System > For developers). Then: `npx tauri android build --apk --debug --target x86_64` (emulator image android-37 x86_64 is installed) or `--target aarch64` for a device.
