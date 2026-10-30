@@ -2,6 +2,11 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (5) — AI merged, README, Phase 3.6 running
+- **Merged:** built-in AI engine (fad4b04, then the Kaliteli switch to Qwen3-8B). README.md written (Turkish, screenshots). Recording delete, speed, seek and laser 3.6 s (e26de01). Desktop shortcut `Nito.lnk` runs `scripts/launch.ps1` (rebuilds when HEAD changes, backs up the DB first).
+- **Running:** Phase 3.6 agents (Audio 009, Page tools 010, Exam/perf/AI 011) in `.claude/worktrees/agent-a09f…`, `agent-a6fc…`, `agent-a611…`. They hit the 5-hour limit; their work was saved as wip commits 639bafe, 5a4e6b9, c677a60 (branches pushed), then resumed.
+- **Next step:** merge Audio, Page tools, Exam; migrate.ts `[… m008, m009, m010, m011]`; e2e chain gets e2e-audio, e2e-pagetools, e2e-exam; full checks; update README features and ROADMAP 3.6 icons; push.
+
 ## 2026-10-30 (4) — Built-in AI engine, no Ollama needed; no AI on mobile (branch worktree-agent-a1e058a9e021599cc)
 - **Why:** Nito is sold; buyers will not install Ollama.
 - **Engine:** llama.cpp `llama-server` (MIT), pinned release b11849 (2026-10-24) `llama-b11849-bin-win-cpu-x64.zip`, 24 MB, sha256 checked. Rust `src-tauri/src/ai.rs` (desktop only): `ai_status`, `ai_setup(model)` (download + progress channel + cancel + free-disk check + sha256), `ai_cancel_setup`, `ai_start(model)` → `{url, key}` (127.0.0.1, free port, random `--api-key`, `-c 8192 -np 1 --no-webui`, waits for /health), `ai_stop`, `ai_delete(model)`. Files in `<app data>/ai/{bin,models}`, log `ai/server.log`. Server killed on `RunEvent::Exit` and by a Windows job object (KILL_ON_JOB_CLOSE) after a crash. Download code shared with Whisper in `fetch.rs` (Turkish network errors).
