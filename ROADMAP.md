@@ -32,7 +32,7 @@ Every agent working on this project must follow [CLAUDE.md](CLAUDE.md) and recor
   - Virtualise long lists.
   - Render only the visible PDF pages ± 1.
   - Keep the JS bundle small.
-- **Touch first:** hit targets at least 40 px, pointer events, layouts from 768 px upwards.
+- **Phone and tablet first (owner rule 2026-10-30):** the main target is tablets and phones, desktop is second. Design for 390 px phones and tablets first: pen and touch, hit targets at least 40 px, pointer events, nothing hover-only, long press next to right click, side panels become sheets or tabs on narrow screens. Every e2e checks phone and tablet viewports.
 
 ## Library content (decided 2026-10-29)
 
@@ -158,6 +158,10 @@ Chosen from the owner's product list. Three parallel agents:
 - ✅ **Page tools:** tape mode (cover an area, tap to reveal), layer show/hide (highlights, pen, images, text), text boxes and sticky notes with LaTeX (KaTeX) and code blocks (highlight.js), margin expansion, lower pen latency (coalesced/predicted pointer events). Migration 010.
 - ✅ **Exam + performance:** page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı") and an exam view that lists only flagged pages, 300–500 page PDF test and fixes, AI flashcards and questions from slides (desktop), AI chat that also cites lecture transcripts. Migration 011.
 - Postponed: OCR, vector search on images and handwriting, Moodle/Canvas/Drive import, cloud sync.
+
+### Phase 3.7: Pen and page tools, round 2 (owner request 2026-10-30) ⬜
+- ⬜ **Pages:** transcript shown beside the PDF part it belongs to (side column on wide screens, under the page on phones); "Önemli" pages as a separate mini PDF beside the main one (read only the important pages, export them as a real PDF); insert blank pages anywhere. Migration 012.
+- ⬜ **Pen:** shape correction (hold at the end of a stroke: wobbly line → straight line, also circle, rectangle, arrow); palm and accidental touch rejection (contact size, pen-only mode, touch sensitivity setting, ignore touches while the pen is down); images from the web browser (drag and drop, paste, image link).
 
 ### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.
