@@ -285,7 +285,7 @@
     min-height: var(--hit); padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--surface); color: var(--text); min-width: 0;
   }
-  .cols { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; min-height: 0; }
+  .cols { flex: 1 0 460px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; min-height: 0; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; min-height: 0; }
   .state { max-width: 560px; gap: 4px; align-items: flex-start; }
   .state a { color: var(--accent); }
