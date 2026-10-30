@@ -44,14 +44,18 @@ export function centeredRect(imgW: number, imgH: number, pageW: number, pageH: n
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** Moves by (dx, dy) page fractions and keeps the picture on the page. */
-export function moveRect(r: ImageRect, dx: number, dy: number): ImageRect {
-  return { ...r, x: clamp(r.x + dx, 0, 1 - r.w), y: clamp(r.y + dy, 0, 1 - r.h) };
+/** Writable area in page units; wider than 1 when the page has an added margin. */
+type Bounds = { w: number; h: number };
+const PAGE: Bounds = { w: 1, h: 1 };
+
+/** Moves by (dx, dy) page fractions and keeps the picture on the page (and its margin). */
+export function moveRect(r: ImageRect, dx: number, dy: number, b: Bounds = PAGE): ImageRect {
+  return { ...r, x: clamp(r.x + dx, 0, b.w - r.w), y: clamp(r.y + dy, 0, b.h - r.h) };
 }
 
 /** Bottom-right corner drag by dx (page fraction); height follows so the aspect stays the same. */
-export function resizeRect(r: ImageRect, dx: number): ImageRect {
-  const maxW = Math.min(1 - r.x, ((1 - r.y) * r.w) / r.h);
+export function resizeRect(r: ImageRect, dx: number, b: Bounds = PAGE): ImageRect {
+  const maxW = Math.min(b.w - r.x, ((b.h - r.y) * r.w) / r.h);
   const w = clamp(r.w + dx, Math.min(MIN_W, maxW), maxW);
   return { ...r, w, h: (r.h * w) / r.w };
 }
