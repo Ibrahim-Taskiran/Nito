@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ClipboardPaste, Copy, Globe, Hand, Lasso, Trash2, Undo2 } from "@lucide/svelte";
+  import { ClipboardPaste, Copy, FolderOpen, Hand, ImagePlus, Lasso, Trash2, Undo2 } from "@lucide/svelte";
   import { INK_KINDS } from "../../core/ink";
   import { parseImageUrl } from "../../core/webImage";
   import type { FingerMode } from "../../core/touchInput";
@@ -8,14 +8,16 @@
   import type { Reader } from "../reader.svelte";
   import { clipboardImage, imageFrom, placeBytes } from "../webImages";
 
-  /** Toolbar part for the pen round 2: select tool, undo, pen and touch settings, pictures from the web. */
-  let { reader, current, sizeOf, mine, onnotice }: {
+  /** Toolbar part for the pen round 2: select tool, undo, pen and touch settings, the "Resim" menu (file, clipboard, link). */
+  let { reader, current, sizeOf, mine, onnotice, onaddimage }: {
     reader: Reader;
     current: number;
     sizeOf: (page: number) => { w: number; h: number } | undefined;
     /** True when this reader has the focus (split view: only one pane takes keys and pastes). */
     mine: () => boolean;
     onnotice: (msg: string | null) => void;
+    /** Picture from a file on this device. */
+    onaddimage: () => void;
   } = $props();
 
   const edit = $derived(reader.edit);
@@ -142,9 +144,10 @@
       <span>Otomatik düzelt<small>Çok düzgün şekiller tutmadan düzelir</small></span></label>
   {/snippet}
 </MenuButton>
-<MenuButton label="Web resmi" title="Panodan ya da bağlantıdan resim ekle">
-  {#snippet icon()}<Globe size={18} />{/snippet}
+<MenuButton label="Resim" title="Bu sayfaya resim ekle: dosyadan, panodan ya da bağlantıdan">
+  {#snippet icon()}<ImagePlus size={18} />{/snippet}
   {#snippet children(close)}
+    <button class="item" disabled={busy} onclick={() => { close(); onaddimage(); }}><FolderOpen size={16} />Dosyadan resim ekle</button>
     <button class="item" disabled={busy} onclick={() => { close(); void pasteHere(); }}><ClipboardPaste size={16} />Panodan yapıştır</button>
     <p class="hint">Tarayıcıdan bir resmi sayfaya sürükleyebilir ya da Ctrl+V ile yapıştırabilirsiniz.</p>
     <form class="link" onsubmit={(e) => { e.preventDefault(); void fromLink(close); }}>

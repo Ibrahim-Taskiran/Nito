@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import {
-    Bandage, ChevronDown, ChevronUp, Columns2, Eraser, Eye, EyeOff, Highlighter, ImagePlus, Layers, MessageSquareText,
-    MoveHorizontal, PanelLeft, Pen, Pencil, Search, SquareDashed, Star, StickyNote, Type, WandSparkles, X, ZoomIn, ZoomOut,
+    Bandage, ChevronDown, ChevronUp, Columns2, Eraser, Eye, EyeOff, Layers, MessageSquareText,
+    MoveHorizontal, PanelLeft, Search, SquareDashed, Star, StickyNote, Trash2, Type, WandSparkles, X, ZoomIn, ZoomOut,
   } from "@lucide/svelte";
   import { LABELS } from "../../core/labels";
-  import { INK_KINDS } from "../../core/ink";
   import { LAYERS, MARGIN_MAX, type MarginSide } from "../../core/pageTools";
   import { firstInOrder, keyForInput, keysToRender, pdfPageOf, stepSlot, type InsertWhere } from "../../core/pages";
   import { hitOnPage, normaliseRects, zoomIn, zoomOut, clampZoom } from "../../core/reader";
@@ -17,7 +16,7 @@
   import type { Library } from "../library.svelte";
   import { PageFlags } from "../pageFlags.svelte";
   import { removeBlankPage } from "../pages.svelte";
-  import { Reader, type InkSize } from "../reader.svelte";
+  import { Reader } from "../reader.svelte";
   import Dialog from "../components/Dialog.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
   import ImportantPages from "./ImportantPages.svelte";
@@ -30,6 +29,7 @@
   import PageFlagMenu from "./PageFlagMenu.svelte";
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
+  import PenMenu from "./PenMenu.svelte";
   import PenTools from "./PenTools.svelte";
   import SelectionLayer from "./SelectionLayer.svelte";
   import { imageDrop } from "../webImages";
@@ -86,8 +86,6 @@
   /** Size in PDF points of a PDF page or a blank page. */
   const sizeOf = (key: number): { w: number; h: number } =>
     (key > 0 ? sizes[key - 1] : reader.pages.blankSize(key)) ?? sizes[0] ?? { w: 595, h: 842 };
-  const penOn = $derived(reader.inkTool === "pen" || reader.inkTool === "pencil" || reader.inkTool === "highlighter");
-  const kindInfo = $derived(INK_KINDS[reader.inkKind]);
   const hit = $derived(reader.hits[reader.hitIndex]);
   const currentMark = $derived(hit ? hitOnPage(reader.hits, reader.hitIndex) : -1);
 
@@ -385,9 +383,7 @@
       {/if}
     </div>
     <div class="row tools" role="toolbar" aria-label="Kalem araçları">
-      <ToolButton label="Tükenmez" pressed={reader.inkTool === "pen"} onclick={() => reader.setTool("pen")}><Pen size={18} /></ToolButton>
-      <ToolButton label="Kurşun kalem" pressed={reader.inkTool === "pencil"} onclick={() => reader.setTool("pencil")}><Pencil size={18} /></ToolButton>
-      <ToolButton label="Fosforlu" pressed={reader.inkTool === "highlighter"} onclick={() => reader.setTool("highlighter")}><Highlighter size={18} /></ToolButton>
+      <PenMenu {reader} />
       <ToolButton label="Lazer" title="Lazer (kaydedilmez, 1-2 saniyede söner)" pressed={reader.inkTool === "laser"} onclick={() => reader.setTool("laser")}>
         <WandSparkles size={18} />
       </ToolButton>
@@ -401,9 +397,8 @@
       <ToolButton label="Not" title="Yapışkan not ekle" pressed={reader.inkTool === "note"} onclick={() => reader.setTool("note")}>
         <StickyNote size={18} />
       </ToolButton>
-      <ToolButton label="Resim ekle" title="Bu sayfaya resim ekle" onclick={addImage}><ImagePlus size={18} /></ToolButton>
       <PenTools {reader} {current} {sizeOf} mine={() => !compact || root.contains(document.activeElement)}
-        onnotice={(m) => (notice = m)} />
+        onnotice={(m) => (notice = m)} onaddimage={addImage} />
       <MenuButton label="Katmanlar" title="Katmanları göster / gizle">
         {#snippet icon()}<Layers size={18} />{/snippet}
         {#snippet children()}
@@ -427,24 +422,6 @@
         <span class="sep" aria-hidden="true"></span>
         <ToolButton label="Tümünü aç" title="Bu belgedeki bütün bantları aç" onclick={() => reader.tools.revealAll(true)}><Eye size={18} /></ToolButton>
         <ToolButton label="Tümünü kapat" title="Bu belgedeki bütün bantları kapat" onclick={() => reader.tools.revealAll(false)}><EyeOff size={18} /></ToolButton>
-      {/if}
-      {#if penOn}
-        <span class="sep" aria-hidden="true"></span>
-        <div class="swatches" role="group" aria-label="{kindInfo.name} rengi">
-          {#each kindInfo.colors as c (c.color)}
-            <button class="swatch" aria-label="Renk: {c.name}" title={c.name} aria-pressed={reader.inkColor === c.color}
-              onclick={() => reader.setInkColor(c.color)}><span style:background={c.color}></span></button>
-          {/each}
-          <label class="swatch custom" title="Özel renk">
-            <span></span>
-            <input type="color" aria-label="Özel renk" value={reader.inkColor} oninput={(e) => reader.setInkColor(e.currentTarget.value)} />
-          </label>
-        </div>
-        <label class="width">
-          <span>Kalınlık</span>
-          <input type="range" min="0" max="2" step="1" aria-label="Kalınlık" value={reader.inkSizes[reader.inkKind]}
-            oninput={(e) => reader.setInkSize(Number(e.currentTarget.value) as InkSize)} />
-        </label>
       {/if}
     </div>
     {#if searchOpen}
@@ -496,6 +473,9 @@
               <NoteLayer {reader} page={key} />
               <TapeLayer {reader} page={key} />
               <PageAudio {reader} page={key} />
+              {#if slot.pdf == null && reader.inkTool === "none"}
+                <button class="drop-blank" onclick={() => (confirmRemove = key)}><Trash2 size={16} />Sayfayı kaldır</button>
+              {/if}
             </PdfPage>
             {#if transcriptColumn || reader.lecture.showsTranscript(key)}
               <PageTranscript {reader} page={key} label={slot.label} side={sideTranscript}
@@ -547,17 +527,6 @@
     border: 1px solid var(--border); border-radius: var(--radius-sm);
   }
   .sep { width: 1px; height: 24px; background: var(--border); margin: 0 6px; }
-  .swatches { display: flex; flex-wrap: wrap; align-items: center; }
-  .swatch {
-    width: var(--hit); height: var(--hit); display: grid; place-items: center; border: 0; border-radius: 50%;
-    background: transparent; cursor: pointer; position: relative; padding: 0; touch-action: manipulation;
-  }
-  .swatch span { width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
-  .swatch[aria-pressed="true"] span { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
-  .swatch.custom span { background: conic-gradient(#e74c3c, #f1c40f, #2ecc71, #1abc9c, #3498db, #9b59b6, #e74c3c); }
-  .swatch.custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .width { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 13px; min-height: var(--hit); margin-left: 6px; }
-  .width input { width: 110px; height: var(--hit); accent-color: var(--accent); }
   .search input {
     flex: 1 1 200px; max-width: 420px; height: var(--hit); padding: 0 10px; font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -568,6 +537,12 @@
   .scroller { flex: 1; overflow: auto; padding: 24px; background: var(--surface-2); touch-action: pan-x pan-y; }
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .blanks { font-size: 12px; }
+  .drop-blank {
+    position: absolute; top: 6px; left: 6px; z-index: 5; min-height: var(--hit); padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-2);
+    font: inherit; font-size: 13px; cursor: pointer; touch-action: manipulation;
+  }
+  .drop-blank:hover { color: var(--danger); border-color: var(--danger); }
   /* Transcript column beside each page; pages without one keep an empty column so they line up. */
   .slot.side { display: flex; justify-content: safe center; align-items: flex-start; gap: 16px; }
   .slot.side :global(.page) { margin: 0 0 16px; }
@@ -584,7 +559,7 @@
   @media (max-width: 1023px) { .row { padding: 4px 8px; } }
   /* Tablet portrait: tool labels are read out but not shown, so the tool row stays on one or two lines. */
   @media (max-width: 900px) {
-    .tools :global(.tool > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .tools > :global(.tool > span), .tools > :global(.menu > .tool > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .tools :global(.tool) { padding: 0 8px; }
   }
 </style>

@@ -52,7 +52,7 @@ export const NOTE_COLORS = [
   { color: "#ebedf0", name: "Gri" },
 ] as const;
 
-export const DEFAULT_NOTE_COLOR = NOTE_COLORS[0].color;
+export const DEFAULT_NOTE_COLOR: string = NOTE_COLORS[0].color;
 
 /** A stored note colour; anything not in NOTE_COLORS becomes the default. */
 export const asNoteColor = (v: unknown): string =>
