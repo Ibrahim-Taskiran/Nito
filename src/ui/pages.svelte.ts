@@ -24,6 +24,11 @@ export class PageOrder {
     return this.slots.find((s) => s.key === key);
   }
 
+  /** Label shown for a page key: "12", or "12a" for a blank page. */
+  label(key: number): string {
+    return this.slot(key)?.label ?? String(key);
+  }
+
   /** Size of a blank page in PDF points. */
   blankSize(key: number): { w: number; h: number } | undefined {
     const b = this.inserts.find((i) => -i.id === key);
