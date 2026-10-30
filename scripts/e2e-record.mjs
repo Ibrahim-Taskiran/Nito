@@ -52,5 +52,21 @@ if (!/00:0[3-4]/.test(label)) fail(`mark offset should be 3-4 s, got "${label}"`
 await play.click();
 await page.getByRole("button", { name: /❚❚ 00:0/ }).waitFor({ timeout: 5000 }).catch(() => fail("playback did not start"));
 console.log("mark:", label, "| recording elapsed ok | playback started");
+
+// Recording list: play, speed, skip, delete with confirm.
+const recs = page.getByRole("region", { name: "Kayıtlar" });
+await recs.getByRole("button", { name: "Kaydı oynat" }).click();
+const rate = recs.getByRole("combobox", { name: "Oynatma hızı" });
+await rate.waitFor({ timeout: 5000 }).catch(() => fail("no player controls"));
+await rate.selectOption("1.5");
+const speed = await page.evaluate(() => [...document.querySelectorAll("audio")].map((a) => a.playbackRate));
+const stored = await page.evaluate(() => localStorage.getItem("nito.playbackRate"));
+if (stored !== "1.5") fail(`speed not saved: ${stored} ${speed}`);
+await recs.getByRole("button", { name: "10 saniye ileri" }).click();
+await recs.getByRole("button", { name: "Kaydı sil" }).click();
+await page.getByRole("dialog", { name: "Kaydı sil" }).getByRole("button", { name: "Sil", exact: true }).click();
+await recs.getByText("Kayıt yok.").waitFor({ timeout: 5000 }).catch(() => fail("recording not deleted"));
+if ((await page.getByRole("button", { name: /▶ 00:0\d/ }).count()) !== 0) fail("mark still shown after delete");
+console.log("list: speed 1.5× saved | skip ok | delete ok, mark gone");
 if (errors.length) fail("console errors");
 await browser.close();

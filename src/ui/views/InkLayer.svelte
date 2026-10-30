@@ -5,7 +5,7 @@
   let { reader, page }: { reader: Reader; page: number } = $props();
 
   /** The laser stays this long after the pen lifts, fading out (CSS animation of the same length). */
-  const LASER_MS = 1800;
+  const LASER_MS = 3600;
   const LASER_WIDTH = 0.0035;
 
   let svg: SVGSVGElement;

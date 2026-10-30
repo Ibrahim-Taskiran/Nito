@@ -3,6 +3,8 @@
   import { formatTimestamp } from "../../core/recording";
   import { transcriptParagraphs } from "../../core/transcribe/transcript";
   import { WHISPER_MODELS } from "../../platform/transcriber";
+  import { RotateCcw, RotateCw, Trash2 } from "@lucide/svelte";
+  import { RATES } from "../playback";
   import Button from "../components/Button.svelte";
   import Dialog from "../components/Dialog.svelte";
   import ProgressBar from "../components/ProgressBar.svelte";
@@ -35,7 +37,24 @@
         <button class="play" aria-pressed={t.playingId === r.id} aria-label={t.playingId === r.id ? "Oynatmayı durdur" : "Kaydı oynat"}
           onclick={() => t.play(r)}>{t.playingId === r.id ? "❚❚" : "▶"}</button>
         <span class="meta">{when(r.startedAt)} · {formatTimestamp(r.durationSeconds)}</span>
+        <button class="icon del" aria-label="Kaydı sil" title="Kaydı sil" disabled={!!job} onclick={() => (t.deleting = r)}>
+          <Trash2 size={16} />
+        </button>
       </div>
+      {#if t.activeId === r.id}
+        <div class="player" aria-label="Oynatıcı">
+          <input class="seek" type="range" min="0" max={t.duration || r.durationSeconds || 1} step="0.1" value={t.position}
+            aria-label="Konum" oninput={(e) => t.seek(Number(e.currentTarget.value))} />
+          <div class="row">
+            <button class="icon" aria-label="10 saniye geri" onclick={() => t.skip(-10)}><RotateCcw size={16} /><span>10</span></button>
+            <span class="meta time">{formatTimestamp(t.position)} / {formatTimestamp(t.duration || r.durationSeconds)}</span>
+            <button class="icon" aria-label="10 saniye ileri" onclick={() => t.skip(10)}><RotateCw size={16} /><span>10</span></button>
+            <select class="rate" aria-label="Oynatma hızı" value={t.rate} onchange={(e) => t.setRate(Number(e.currentTarget.value))}>
+              {#each RATES as v (v)}<option value={v}>{v.toLocaleString("tr-TR")}×</option>{/each}
+            </select>
+          </div>
+        </div>
+      {/if}
       {#if job}
         <div class="job" aria-live="polite">
           <ProgressBar value={job.phase === "convert" ? 0 : job.percent} max={100} />
@@ -78,6 +97,18 @@
   {/if}
 </section>
 
+{#if t.deleting}
+  {@const d = t.deleting}
+  <Dialog title="Kaydı sil">
+    <p>{when(d.startedAt)} tarihli {formatTimestamp(d.durationSeconds)} süreli kayıt silinsin mi? Bu geri alınamaz.</p>
+    {#if t.notes.get(d.id)}<p class="hint">Yazıya dökümü notlarda kalır.</p>{/if}
+    {#snippet actions()}
+      <Button variant="ghost" onclick={() => (t.deleting = null)}>Vazgeç</Button>
+      <Button variant="danger" onclick={() => t.remove(d)}>Sil</Button>
+    {/snippet}
+  </Dialog>
+{/if}
+
 {#if t.setupOpen}
   <Dialog title="Whisper kur">
     <p class="hint">Konuşmayı yazıya döken whisper.cpp ve bir model bu bilgisayara indirilir. İnternet yalnız kurulumda gerekir.</p>
@@ -114,6 +145,16 @@
   .meta { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
   .play { width: var(--hit); height: var(--hit); flex: none; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); cursor: pointer; }
   .play[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .icon { min-width: var(--hit); height: var(--hit); flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+    border: 0; border-radius: 8px; background: transparent; color: var(--text-2); cursor: pointer; font-size: 11px; }
+  .icon:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+  .icon:disabled { opacity: 0.4; cursor: default; }
+  .del { margin-left: auto; }
+  .del:hover:not(:disabled) { color: var(--danger); }
+  .player { display: grid; gap: 4px; }
+  .seek { width: 100%; height: 28px; accent-color: var(--accent); margin: 0; }
+  .time { flex: 1; text-align: center; }
+  .rate { height: var(--hit); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 0 6px; font: inherit; font-size: 12px; }
   .job { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
   .link { min-height: 32px; border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 0 6px; border-radius: 6px; }
   .link:hover { background: var(--surface-2); }

@@ -1,4 +1,5 @@
 // Reader screen state for one open document. Only this file talks to Repo for annotations.
+import { loadRate } from "./playback";
 import { ImageRepo } from "../core/imageRepo";
 import { INK_KINDS, hitsStroke, isHexColor, simplify, type InkKind, type InkPoint, type InkStroke } from "../core/ink";
 import { InkRepo } from "../core/inkRepo";
@@ -291,6 +292,7 @@ export class Reader {
     const player = this.player;
     player.onpause = player.onended = () => (this.playingId = null);
     if (player.src !== url) player.src = url;
+    player.playbackRate = loadRate();
     // Start a little early so the sentence is not cut.
     player.currentTime = Math.max(0, mark.offsetSeconds - 2);
     this.playingId = annotationId;

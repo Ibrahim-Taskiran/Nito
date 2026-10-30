@@ -5,6 +5,7 @@ import { parseWhisperJson, transcriptMarkdown, transcriptTitle } from "../core/t
 import { WHISPER_SAMPLE_RATE, encodeWav, mixToMono } from "../core/transcribe/wav";
 import type { Id, Note, Recording } from "../core/types";
 import { canSetupWhisper, canTranscribe, type SetupProgress, type WhisperModel, type WhisperStatus } from "../platform/transcriber";
+import { loadRate, saveRate } from "./playback";
 import type { Reader } from "./reader.svelte";
 
 export interface Job {
@@ -34,7 +35,14 @@ export class Transcripts {
   setupProgress = $state<SetupProgress | null>(null);
   setupError = $state<string | null>(null);
   playingId = $state<Id | null>(null);
+  /** Recording loaded in the player (stays set while paused), with its position. */
+  activeId = $state<Id | null>(null);
+  position = $state(0);
+  duration = $state(0);
+  rate = $state(loadRate());
   expandedId = $state<Id | null>(null);
+  /** Recording waiting for the delete confirmation. */
+  deleting = $state<Recording | null>(null);
 
   private store: TranscriptStore;
   private player: HTMLAudioElement | null = null;
@@ -143,14 +151,56 @@ export class Transcripts {
     this.player ??= new Audio();
     const player = this.player;
     player.onpause = player.onended = () => (this.playingId = null);
-    if (player.src !== url) player.src = url;
+    player.ontimeupdate = () => (this.position = player.currentTime);
+    player.onloadedmetadata = player.ondurationchange = () =>
+      (this.duration = Number.isFinite(player.duration) ? player.duration : rec.durationSeconds);
+    if (player.src !== url) {
+      player.src = url;
+      this.position = 0;
+      this.duration = rec.durationSeconds;
+    }
+    player.playbackRate = this.rate;
     if (at !== undefined) player.currentTime = at;
+    this.activeId = rec.id;
     this.playingId = rec.id;
     try {
       await player.play();
     } catch {
       this.playingId = null;
     }
+  }
+
+  setRate(r: number): void {
+    this.rate = r;
+    saveRate(r);
+    if (this.player) this.player.playbackRate = r;
+  }
+
+  seek(seconds: number): void {
+    if (!this.player) return;
+    this.player.currentTime = Math.min(Math.max(0, seconds), this.duration || seconds);
+    this.position = this.player.currentTime;
+  }
+
+  skip(delta: number): void {
+    if (this.player) this.seek(this.player.currentTime + delta);
+  }
+
+  /** Deletes the audio file and the row; marks cascade, a transcript note stays as a normal note. */
+  async remove(rec: Recording): Promise<void> {
+    if (this.activeId === rec.id) {
+      this.player?.pause();
+      this.player?.removeAttribute("src");
+      this.activeId = null;
+    }
+    const url = this.urls.get(rec.filePath);
+    if (url) URL.revokeObjectURL(url);
+    this.urls.delete(rec.filePath);
+    await this.reader.lib.platform.storage.remove(rec.filePath).catch(() => {});
+    await this.reader.lib.repo.deleteRecording(rec.id);
+    this.deleting = null;
+    await this.load();
+    this.reader.marks = await this.reader.lib.repo.marksForDocument(this.reader.doc.id);
   }
 
   dispose(): void {

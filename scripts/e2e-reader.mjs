@@ -49,7 +49,7 @@ await draw(380);
 await page.getByRole("button", { name: "Lazer" }).click();
 await draw(460);
 if (!(await p1.locator(".laser").count())) fail("laser line not drawn");
-await page.waitForTimeout(2200);
+await page.waitForTimeout(4000);
 if (await p1.locator(".laser").count()) fail("laser line did not fade");
 await page.getByRole("button", { name: "Lazer" }).click();
 await page.screenshot({ path: "docs/screenshots/reader-tools-light.png" });
