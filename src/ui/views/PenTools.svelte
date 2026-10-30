@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { ClipboardPaste, Copy, Globe, Hand, Lasso, Trash2, Undo2 } from "@lucide/svelte";
+  import { ClipboardPaste, Copy, FileOutput, Globe, Hand, Lasso, Scissors, Trash2, Undo2 } from "@lucide/svelte";
   import { INK_KINDS } from "../../core/ink";
+  import { keyForInput } from "../../core/pages";
+  import { paperPlace } from "../../core/selection";
   import { parseImageUrl } from "../../core/webImage";
   import type { FingerMode } from "../../core/touchInput";
   import MenuButton from "../components/MenuButton.svelte";
@@ -22,6 +24,7 @@
   const prefs = $derived(edit.prefs);
   const sel = $derived(reader.inkTool === "select" ? edit.selection : null);
   let url = $state("");
+  let target = $state("");
   let busy = $state(false);
 
   const FINGER: { mode: FingerMode; name: string; hint: string }[] = [
@@ -72,6 +75,23 @@
     });
   }
 
+  /** "Sayfaya taşı": same spot and paper size on the chosen page ("12" or "12a"). */
+  async function moveToPage(close: () => void) {
+    const s = edit.selection;
+    const key = keyForInput(reader.pages.slots, target, reader.pages.numPages);
+    const from = s && sizeOf(s.page);
+    const to = key != null && sizeOf(key);
+    if (!s || !from || !to || key === s.page) {
+      onnotice(key === s?.page ? "Seçim zaten bu sayfada." : "Geçerli bir sayfa yazın (ör. 2 ya da 2a).");
+      return;
+    }
+    const t = reader.tools;
+    await run(() => edit.moveTo(key, paperPlace(from, t.bounds(s.page)), paperPlace(to, t.bounds(key))));
+    onnotice(`Seçim ${reader.pages.label(key)}. sayfaya taşındı.`);
+    target = "";
+    close();
+  }
+
   function onKey(e: KeyboardEvent) {
     if (!mine() || typing(e.target) || e.defaultPrevented) return;
     const mod = e.ctrlKey || e.metaKey;
@@ -82,6 +102,9 @@
     } else if (mod && k === "c" && sel) {
       e.preventDefault();
       edit.copy();
+    } else if (mod && k === "x" && sel) {
+      e.preventDefault();
+      void edit.cut();
     } else if ((e.key === "Delete" || e.key === "Backspace") && sel) {
       e.preventDefault();
       void edit.remove();
@@ -155,10 +178,20 @@
 </MenuButton>
 {#if sel}
   <span class="sep" aria-hidden="true"></span>
+  <ToolButton label="Kes" title="Seçimi kes; başka sayfada yapıştırın (Ctrl+X)" onclick={() => edit.cut()}><Scissors size={18} /></ToolButton>
   <ToolButton label="Kopyala" title="Seçimi kopyala (Ctrl+C)" onclick={() => edit.copy()}><Copy size={18} /></ToolButton>
   <ToolButton label="Yapıştır" title="Kopyalananı yapıştır (Ctrl+V)" disabled={!edit.clipReady} onclick={() => run(() => edit.paste(current))}>
     <ClipboardPaste size={18} />
   </ToolButton>
+  <MenuButton label="Sayfaya taşı" title="Seçimi başka bir sayfaya taşı (ya da sürükleyip o sayfaya bırakın)">
+    {#snippet icon()}<FileOutput size={18} />{/snippet}
+    {#snippet children(close)}
+      <form class="link" onsubmit={(e) => { e.preventDefault(); void moveToPage(close); }}>
+        <input placeholder="Sayfa (ör. 2 ya da 2a)" aria-label="Hedef sayfa" bind:value={target} />
+        <button class="item" type="submit" disabled={busy || !target.trim()}>Taşı</button>
+      </form>
+    {/snippet}
+  </MenuButton>
   <ToolButton label="Seçimi sil" title="Seçimi sil (Delete)" onclick={() => edit.remove()}><Trash2 size={18} /></ToolButton>
   {#if sel.strokes.length}
     <div class="swatches" role="group" aria-label="Seçimin rengi">
