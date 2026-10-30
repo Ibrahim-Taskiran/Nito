@@ -41,6 +41,7 @@ Her şey cihazında, internetsiz çalışır.
 
 ### Kütüphane
 - Kapak resimli kartlar ya da liste görünümü, derse göre filtre, sıralama.
+- 500 sayfalık taranmış PDF'lerde bile akıcı: yalnız görünen sayfalar çizilir, bellek sınırlıdır.
 - Hızlı arama (Ctrl+K), Türkçe karakterlere duyarsız.
 - Okuma ilerlemesi ve **"Kaldığın yerden devam et"**.
 - Ad değiştirme, derse ya da haftaya taşıma, silme: sağ tık, uzun basma ya da `⋯` menüsü.
@@ -51,17 +52,26 @@ Her şey cihazında, internetsiz çalışır.
 - Kalemler: **tükenmez, kurşun kalem, fosforlu**. Her biri için 10 renk, özel renk ve kalınlık. Silgi ve **lazer kalem**.
 - Basınca duyarlı kalem desteği. Kalem algılanınca parmak çizmez, sayfayı kaydırır.
 - Sayfaya resim ekleme, taşıma, boyutlandırma.
+- **Metin kutusu ve yapışkan not:** LaTeX formül (KaTeX) ve renkli kod bloğu desteğiyle.
+- **Bant modu:** tanımı ya da formülü bantla kapat, dokununca aç; kendini test et.
+- **Katmanlar:** vurgu, kalem, resim, not ve bant katmanlarını ayrı ayrı gizle ya da göster.
+- **Kenar boşluğu:** dolu slaytın sağına ya da altına yazı alanı ekle; PDF bozulmaz.
+- **İşaretler:** sayfayı "Hoca vurguladı", "Sınav adayı" ya da "Anlaşılmadı" olarak işaretle.
 - Belgede arama (Ctrl+F), sayfa numarasıyla atlama, sayfa küçük resimleri ve içindekiler.
 - İki parmakla yakınlaştırma, kaydırarak sayfa değiştirme, iki belgeyi yan yana açma.
 
 ### Ders kaydı
 - PDF açıkken **ses kaydı**. Kayıt sırasında yapılan vurgu, hocanın o anki sözüne bağlanır: ▶ 12:40.
-- Oynatıcı: konum çubuğu, 10 sn geri/ileri, 0,5×–2× hız (cihaz başına hatırlanır), kayıt silme.
+- **Slayt–ses senkronu:** kayıt sırasında hangi sayfada olduğun saklanır. Sayfadaki ▶ düğmesi, hocanın o sayfayı anlattığı ana atlar.
+- **Notları sesle birlikte göster:** dinlerken o anda aldığın vurgu ve çizimler zamanı gelince belirir.
+- **Sessizliği atla**, **gürültü azalt**, 0,5×–2,5× hız (sesin tonu korunur), 10 sn geri/ileri, kayıt silme.
+- **Sınav ipuçları:** dökümde "sınavda çıkar", "önemli", "dikkat" gibi sözler geçen sayfalara rozet konur.
 - **Yazıya dökme** (masaüstü): whisper.cpp ile cihazda, internetsiz. Dökümdeki her paragrafa tıklayınca ses o andan çalar.
 
 ### Çalışma
 - Vurgulardan otomatik kart; aralıklı tekrar (Leitner 1/2/4/8/16 gün).
 - Çoktan seçmeli quiz, Cornell not şablonu.
+- **Sınav hazırlığı:** işaretlenen sayfalar ve Sınav etiketli vurgular tek listede; derse, haftaya ve türe göre filtre.
 - Ders paketi: bir dersin PDF'leri, notları ve kartları tek dosyada.
 
 ### Notlar
@@ -71,6 +81,8 @@ Her şey cihazında, internetsiz çalışır.
 
 ### Yapay zekâ (masaüstü)
 - Belge özeti ve belgeyle sohbet; cevaplar sayfa numarasıyla kaynak gösterir: [s. 4].
+- Sohbet, ders kaydının dökümünü de kaynak gösterir: [kayıt 12:40]. Tıklayınca ses o andan çalar.
+- **Slayttan kart üret:** seçtiğin sayfalardan tanım kartları ve çoktan seçmeli sorular; kaydetmeden önce düzenlersin.
 - **Kurulum gerekmez.** "Yapay zekâyı kur" düğmesi motoru ve modeli indirir:
   - Hızlı: Qwen3-4B, 2,3 GB
   - Kaliteli: Qwen3-8B, 4,7 GB
@@ -87,6 +99,8 @@ Her şey cihazında, internetsiz çalışır.
 | <img src="docs/screenshots/library-light.png" alt="Kütüphane" /> | <img src="docs/screenshots/reader-tools-light.png" alt="Okuyucu araçları" /> |
 | **Çalışma merkezi** | **Yapay zekâ ile sohbet** |
 | <img src="docs/screenshots/study-overview-light.png" alt="Çalışma merkezi" /> | <img src="docs/screenshots/ai-chat-light.png" alt="Yapay zekâ sohbeti" /> |
+| **Sınav hazırlığı** | **Bant, not ve LaTeX** |
+| <img src="docs/screenshots/exam-light.png" alt="Sınav hazırlığı" /> | <img src="docs/screenshots/page-tools-light.png" alt="Sayfa araçları" /> |
 | **Haftalık program** | **Koyu tema** |
 | <img src="docs/screenshots/plan-light.png" alt="Haftalık program" /> | <img src="docs/screenshots/reader-dark.png" alt="Koyu tema" /> |
 
@@ -179,7 +193,7 @@ Ayrıntı [ROADMAP.md](ROADMAP.md), ilerleme günlüğü [PROGRESS.md](PROGRESS.
 - [x] Faz 1: Kütüphane, okuyucu, vurgular, ses kaydı, Windows kurulumu
 - [x] Faz 2: Çalışma araçları, notlar, yazıya dökme, yapay zekâ
 - [x] Faz 3.5: Zengin arayüz (Bugün, Program, yeni kütüphane ve okuyucu)
-- [ ] Faz 3.6: Slayt–ses senkronu, sessizlik atlama, bant modu, metin kutusu ve LaTeX, sınav görünümü, büyük PDF performansı
+- [x] Faz 3.6: Slayt–ses senkronu, sessizlik atlama, bant modu, metin kutusu ve LaTeX, sınav görünümü, büyük PDF performansı
 - [ ] Faz 3: Tablet derlemeleri (Android, iPad)
 - [ ] Faz 4: İmzalı sürüm, otomatik güncelleme, mağazalar, cihazlar arası senkron
 

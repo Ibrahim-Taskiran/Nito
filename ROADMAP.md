@@ -152,11 +152,11 @@ The owner found the UI too empty next to similar apps. Three parallel worktree a
 - ✅ **Library:** cover cards, search (Ctrl+K), sort, grid/list, course chips, reading progress + "Kaldığın yerden devam et", right-click menu (rename, move to course, week, delete). Migration 007 (`last_page`, `page_count`, `last_opened_at`).
 - ✅ **Home "Bugün" + weekly plan "Program":** start screen (continue reading, today's plan, due cards, recent highlights and recordings), week planner with repeat, drag to another day. Migration 008 (`plan_item`).
 
-### Phase 3.6: Lecture tools (owner request 2026-10-30) ⬜
+### Phase 3.6: Lecture tools (owner request 2026-10-30) ✅
 Chosen from the owner's product list. Three parallel agents:
-- ⬜ **Audio:** slide–audio sync (page changes during recording; tap a page to jump to that moment), note replay while listening, silence skip, noise reduction, 0.75–2.5× speed, transcript paragraphs linked to slides, spoken cues ("sınavda çıkar", "önemli") marked on the slide. Migration 009.
-- ⬜ **Page tools:** tape mode (cover an area, tap to reveal), layer show/hide (highlights, pen, images, text), text boxes and sticky notes with LaTeX (KaTeX) and code blocks (highlight.js), margin expansion, lower pen latency (coalesced/predicted pointer events). Migration 010.
-- ⬜ **Exam + performance:** page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı") and an exam view that lists only flagged pages, 300–500 page PDF test and fixes, AI flashcards and questions from slides (desktop), AI chat that also cites lecture transcripts. Migration 011.
+- ✅ **Audio:** slide–audio sync (page changes during recording; tap a page to jump to that moment), note replay while listening, silence skip, noise reduction, 0.75–2.5× speed, transcript paragraphs linked to slides, spoken cues ("sınavda çıkar", "önemli") marked on the slide. Migration 009.
+- ✅ **Page tools:** tape mode (cover an area, tap to reveal), layer show/hide (highlights, pen, images, text), text boxes and sticky notes with LaTeX (KaTeX) and code blocks (highlight.js), margin expansion, lower pen latency (coalesced/predicted pointer events). Migration 010.
+- ✅ **Exam + performance:** page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı") and an exam view that lists only flagged pages, 300–500 page PDF test and fixes, AI flashcards and questions from slides (desktop), AI chat that also cites lecture transcripts. Migration 011.
 - Postponed: OCR, vector search on images and handwriting, Moodle/Canvas/Drive import, cloud sync.
 
 ### Phase 4: Release 🟨

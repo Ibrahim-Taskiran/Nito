@@ -2,6 +2,14 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (6) — Phase 3.6 done: Audio, Page tools, Exam + perf + AI merged
+- **Merged:** Audio (009_lecture_audio), Page tools (010_page_tools; its 009 placeholder deleted), Exam (011_page_flags). Migrations `[001 … 011]`. New deps katex (MIT), highlight.js (BSD-3). e2e chain ends with e2e-audio, e2e-pagetools, e2e-exam. `npm run perf:bigpdf` (500 pages, ~2 min, not in the chain).
+- **Checks on main:** svelte-check 0, vitest 134 passed, full `npm run e2e` passed. README features and ROADMAP updated.
+- **Perf (500-page PDF):** live thumbnail bitmaps 500 → 4, canvas pixels after scroll 11.3 → 2.5 MP, A0 at 400% capped at 16 MP, scroll back to page 1 11.4 → 3.5 s, heap 40 → 31 MB.
+- **Known limits:** no ▶ on PageNav thumbnails; an annotation's ▶ still uses the old player (the two pause each other); silence analysis decodes the whole file once (~58 MB for 1 h); scanned pages without text cannot make AI cards; nothing tried on a real tablet; new features not clicked in the real Tauri window.
+- **Worktree tip:** a worktree whose node_modules is a junction needs a Vite config with `resolve.preserveSymlinks: true`, or pdf.js fails with "Invalid workerSrc type".
+- **Next step:** owner tries the desktop shortcut (it backs up the DB, then migrations 006–011 run on the real library); then Phase 3 tablet builds or Phase 4.
+
 ## 2026-10-30 (5) — AI merged, README, Phase 3.6 running
 - **Merged:** built-in AI engine (fad4b04, then the Kaliteli switch to Qwen3-8B). README.md written (Turkish, screenshots). Recording delete, speed, seek and laser 3.6 s (e26de01). Desktop shortcut `Nito.lnk` runs `scripts/launch.ps1` (rebuilds when HEAD changes, backs up the DB first).
 - **Running:** Phase 3.6 agents (Audio 009, Page tools 010, Exam/perf/AI 011) in `.claude/worktrees/agent-a09f…`, `agent-a6fc…`, `agent-a611…`. They hit the 5-hour limit; their work was saved as wip commits 639bafe, 5a4e6b9, c677a60 (branches pushed), then resumed.
