@@ -7,7 +7,7 @@
   import { pdfjs, type PDFDocumentProxy } from "../pdf";
   import "../textLayer.css";
 
-  let { pdf, num, width, height, scale, active, annotations, focusedId, search = "", children }: {
+  let { pdf, num, width, height, scale, active, annotations, focusedId, search = "", currentMark = -1, seek = 0, children }: {
     pdf: PDFDocumentProxy;
     num: number;
     /** Page size in PDF points at scale 1. */
@@ -20,6 +20,10 @@
     focusedId: Id | null;
     /** Search text to mark on this page. */
     search?: string;
+    /** Which search mark on this page is the current hit (-1: none). */
+    currentMark?: number;
+    /** Bumped on each hit step; the current mark is scrolled into view once per value. */
+    seek?: number;
     /** Overlays drawn above the text layer (handwriting). */
     children?: Snippet;
   } = $props();
@@ -54,6 +58,13 @@
       }
     }
     marks = out;
+  });
+
+  let seeked = -1;
+  $effect(() => {
+    if (currentMark < 0 || seek === seeked || currentMark >= marks.length) return;
+    seeked = seek;
+    pageEl.querySelector(".found.current")?.scrollIntoView({ block: "center", inline: "nearest" });
   });
 
   $effect(() => {
@@ -112,7 +123,7 @@
     {/each}
   {/each}
   {#each marks as r, i (i)}
-    <div class="found" style:left="{r.x * 100}%" style:top="{r.y * 100}%" style:width="{r.w * 100}%" style:height="{r.h * 100}%"></div>
+    <div class="found" class:current={i === currentMark} style:left="{r.x * 100}%" style:top="{r.y * 100}%" style:width="{r.w * 100}%" style:height="{r.h * 100}%"></div>
   {/each}
   <div class="textLayer" bind:this={textLayer}></div>
   {@render children?.()}
@@ -123,5 +134,6 @@
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .hl { position: absolute; opacity: 0.35; mix-blend-mode: multiply; border-radius: 2px; pointer-events: none; }
   .found { position: absolute; background: #ffb000; opacity: 0.45; mix-blend-mode: multiply; border-radius: 2px; pointer-events: none; outline: 1px solid #e08a00; }
+  .found.current { background: #ff6a00; opacity: 0.55; outline: 2px solid #c24e00; }
   .hl.focused { opacity: 0.55; outline: 2px solid var(--accent); }
 </style>

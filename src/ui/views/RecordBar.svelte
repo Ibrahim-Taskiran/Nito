@@ -1,5 +1,6 @@
 <script lang="ts">
   import { formatTimestamp } from "../../core/recording";
+  import { Mic } from "@lucide/svelte";
   import Button from "../components/Button.svelte";
   import IconButton from "../components/IconButton.svelte";
   import type { Recorder } from "../recorder.svelte";
@@ -8,7 +9,7 @@
 
 <div class="rec" role="group" aria-label="Ses kaydı">
   {#if recorder.state === "idle"}
-    <Button variant="ghost" onclick={() => recorder.start()}><span class="dot"></span>Kaydet</Button>
+    <Button variant="ghost" onclick={() => recorder.start()}><Mic size={18} />Ses kaydı</Button>
   {:else}
     <span class="dot" class:live={recorder.state === "recording"}></span>
     <span class="time" aria-label="Kayıt süresi">{formatTimestamp(recorder.elapsed)}</span>
@@ -31,6 +32,7 @@
   .time { font-variant-numeric: tabular-nums; min-width: 44px; }
   .meter { width: 56px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
   .meter span { display: block; height: 100%; background: var(--accent); transition: width 0.1s linear; }
+  .rec :global(.btn svg) { color: var(--danger); }
   .err { color: var(--danger); font-size: 12px; }
   @media (prefers-reduced-motion: reduce) { .dot.live { animation: none; } }
 </style>

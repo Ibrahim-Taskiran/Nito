@@ -47,6 +47,7 @@
       e.preventDefault();
       void reader.removeImage(id);
     } else if (e.key === "Escape") {
+      e.preventDefault(); // the reader must not also close
       reader.selectedImageId = null;
     }
   }

@@ -63,7 +63,7 @@
       {/if}
     </article>
   {:else}
-    <p class="hint">Kayıt yok. Üstteki “Kaydet” ile dersi kaydedebilirsiniz.</p>
+    <p class="hint">Kayıt yok. Üstteki “Ses kaydı” ile dersi kaydedebilirsiniz.</p>
   {/each}
 
   {#if t.missing}

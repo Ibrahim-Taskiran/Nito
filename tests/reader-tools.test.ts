@@ -130,3 +130,36 @@ describe("search", () => {
     expect(matchesIn("abc", "")).toEqual([]);
   });
 });
+
+describe("reader navigation helpers", () => {
+  it("parses and clamps the page box", async () => {
+    const { parsePageInput } = await import("../src/core/reader");
+    expect(parsePageInput("3", 10)).toBe(3);
+    expect(parsePageInput(" 42 ", 10)).toBe(10);
+    expect(parsePageInput("0", 10)).toBe(1);
+    expect(parsePageInput("abc", 10)).toBeNull();
+    expect(parsePageInput("", 10)).toBeNull();
+  });
+
+  it("flattens the outline with depth", async () => {
+    const { flattenOutline } = await import("../src/core/reader");
+    const rows = flattenOutline([
+      { title: "Giriş", dest: "a", items: [{ title: " Alt ", dest: "b" }] },
+      { title: "", dest: "c", items: [] },
+    ]);
+    expect(rows).toEqual([
+      { title: "Giriş", dest: "a", depth: 0 },
+      { title: "Alt", dest: "b", depth: 1 },
+      { title: "(adsız)", dest: "c", depth: 0 },
+    ]);
+    expect(flattenOutline(null)).toEqual([]);
+  });
+
+  it("finds the current hit's position on its page", async () => {
+    const { hitOnPage } = await import("../src/core/reader");
+    const hits = [{ page: 1 }, { page: 2 }, { page: 2 }, { page: 3 }];
+    expect(hitOnPage(hits, 2)).toBe(1);
+    expect(hitOnPage(hits, 3)).toBe(0);
+    expect(hitOnPage(hits, 9)).toBe(-1);
+  });
+});
