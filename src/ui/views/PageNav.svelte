@@ -28,9 +28,11 @@
   const openMenu = (s: PageSlot, x: number, y: number) => {
     if (oninsert) menu = { key: s.key, label: s.label, x: Math.min(x, window.innerWidth - 240), y: Math.min(y, window.innerHeight - 200) };
   };
-  function pick(fn: () => void) {
+  /** Runs a menu action for the page the menu was opened on, then closes the menu. */
+  function pick(fn: (key: number) => void) {
+    const key = menu?.key;
     menu = null;
-    fn();
+    if (key != null) fn(key);
   }
   const pageFlags = $derived(flags ? PageFlags.for(flags.lib, flags.documentId) : null);
 
@@ -160,10 +162,10 @@
 {#if menu && oninsert}
   {@const m = menu}
   <div class="thumb-menu" role="menu" aria-label="Sayfa {m.label}" style:left="{m.x}px" style:top="{m.y}px">
-    <button role="menuitem" onclick={() => pick(() => oninsert(m.key, "before"))}>Önüne boş sayfa ekle</button>
-    <button role="menuitem" onclick={() => pick(() => oninsert(m.key, "after"))}>Arkasına boş sayfa ekle</button>
+    <button role="menuitem" onclick={() => pick((k) => oninsert(k, "before"))}>Önüne boş sayfa ekle</button>
+    <button role="menuitem" onclick={() => pick((k) => oninsert(k, "after"))}>Arkasına boş sayfa ekle</button>
     {#if m.key < 0 && onremove}
-      <button role="menuitem" class="danger" onclick={() => pick(() => onremove(m.key))}>Bu boş sayfayı sil</button>
+      <button role="menuitem" class="danger" onclick={() => pick(onremove)}>Bu boş sayfayı sil</button>
     {/if}
   </div>
 {/if}

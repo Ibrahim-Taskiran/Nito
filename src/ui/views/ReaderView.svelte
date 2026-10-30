@@ -77,7 +77,7 @@
   const pageFlags = $derived(PageFlags.for(lib, doc.id));
   const importantCount = $derived(slots.filter((s) => pageFlags.on(s.key).includes("important")).length);
   /** Transcript beside the page when there is room for a 300 px column; otherwise under it. */
-  const sideTranscript = $derived(scrollerW >= 900);
+  const sideTranscript = $derived(scrollerW >= 760);
   const transcriptColumn = $derived(sideTranscript && reader.lecture.hasTranscripts && reader.lecture.transcriptBeside);
   /** Size in PDF points of a PDF page or a blank page. */
   const sizeOf = (key: number): { w: number; h: number } =>
@@ -354,7 +354,7 @@
         <span class="pages sr" aria-hidden="true">{currentLabel} / {sizes.length || "–"}</span>
         <input class="page-input" type="text" inputmode="numeric" enterkeyhint="go" aria-label="Sayfa numarası" value={currentLabel}
           onchange={jumpBox} onkeydown={(e) => e.key === "Enter" && e.currentTarget.blur()} onfocus={(e) => e.currentTarget.select()} />
-        <span class="total">/ {sizes.length || "–"}{#if blankCount}<span class="blanks"> + {blankCount} boş</span>{/if}</span>
+        <span class="total">/ {sizes.length || "–"}{#if blankCount}<span class="blanks">&nbsp;+ {blankCount} boş</span>{/if}</span>
       </div>
       <PageFlagMenu {lib} {doc} page={current} />
       <PageMenu {reader} page={current} label={currentLabel} oninsert={(w) => insertBlank(current, w)} onremove={() => (confirmRemove = current)} />
@@ -559,7 +559,7 @@
   .msg { color: var(--text-2); text-align: center; margin-top: 40px; }
   .blanks { font-size: 12px; }
   /* Transcript column beside each page; pages without one keep an empty column so they line up. */
-  .slot.side { display: flex; justify-content: center; align-items: flex-start; gap: 16px; }
+  .slot.side { display: flex; justify-content: safe center; align-items: flex-start; gap: 16px; }
   .slot.side :global(.page) { margin: 0 0 16px; }
   .picker {
     position: fixed; transform: translateX(-50%); z-index: 20; display: flex; gap: 2px; padding: 4px;
