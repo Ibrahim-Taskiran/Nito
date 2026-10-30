@@ -86,6 +86,11 @@
     return () => io.disconnect();
   });
 
+  // Remember the reading position (debounced in Library) for progress and "continue".
+  $effect(() => {
+    if (sizes.length) lib.savePosition(doc.id, current, sizes.length);
+  });
+
   function onPointerUp() {
     const sel = getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) return;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   let { variant = "default", disabled = false, onclick, children }: {
-    variant?: "default" | "primary" | "ghost";
+    variant?: "default" | "primary" | "ghost" | "danger";
     disabled?: boolean;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;
@@ -20,5 +20,7 @@
   .primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
   .ghost { border-color: transparent; background: transparent; }
+  .danger { background: var(--danger); border-color: var(--danger); color: var(--on-accent); }
+  .danger:hover:not(:disabled) { background: var(--danger); filter: brightness(1.08); }
   .btn:disabled { opacity: 0.5; cursor: default; }
 </style>
