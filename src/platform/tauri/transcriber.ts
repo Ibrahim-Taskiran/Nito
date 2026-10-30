@@ -9,9 +9,9 @@ export const tauriTranscriber: Transcriber = {
     ch.onmessage = onProgress;
     return invoke<WhisperStatus>("whisper_setup", { model, onProgress: ch });
   },
-  transcribe(wavRel, model, onProgress) {
+  transcribe(wavRel, model, onProgress, prompt) {
     const ch = new Channel<number>();
     ch.onmessage = onProgress;
-    return invoke<string>("whisper_transcribe", { wavRel, model, onProgress: ch });
+    return invoke<string>("whisper_transcribe", { wavRel, model, prompt: prompt ?? null, onProgress: ch });
   },
 };

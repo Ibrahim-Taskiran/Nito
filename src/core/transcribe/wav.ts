@@ -11,6 +11,21 @@ export function mixToMono(channels: readonly Float32Array[]): Float32Array {
   return out;
 }
 
+/**
+ * Removes DC offset and raises quiet recordings so the peak sits at `target` (gain at most `maxGain`).
+ * Never lowers the level, so nothing clips.
+ */
+export function normalize(samples: Float32Array, target = 0.9, maxGain = 8): Float32Array {
+  if (!samples.length) return samples;
+  let mean = 0;
+  for (const s of samples) mean += s;
+  mean /= samples.length;
+  let peak = 0;
+  for (const s of samples) peak = Math.max(peak, Math.abs(s - mean));
+  const gain = peak > 0 ? Math.min(maxGain, Math.max(1, target / peak)) : 1;
+  return samples.map((s) => (s - mean) * gain);
+}
+
 /** Mono float samples (-1..1) -> RIFF/WAVE bytes, 16-bit little-endian PCM. */
 export function encodeWav(samples: Float32Array, sampleRate = WHISPER_SAMPLE_RATE): Uint8Array {
   const dataBytes = samples.length * 2;

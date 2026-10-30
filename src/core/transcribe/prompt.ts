@@ -17,8 +17,8 @@ const STOP = new Set(
 const WORD = /[\p{L}][\p{L}\p{N}'’-]*[\p{L}\p{N}]/gu;
 
 /**
- * The PDF's most telling words: frequent, not common filler, counted extra when they stand in a short line
- * (a heading). Keeps the most frequent spelling of each word.
+ * The PDF's most telling words (4+ letters, or a 2-3 letter acronym): frequent, not common filler, counted extra
+ * when they stand in a short line (a heading). Keeps the most frequent spelling of each word.
  */
 export function keyTerms(pages: readonly string[], max = 20): string[] {
   const score = new Map<string, number>();
@@ -29,7 +29,8 @@ export function keyTerms(pages: readonly string[], max = 20): string[] {
       const heading = words.length > 0 && words.length <= 6;
       for (const w of words) {
         const key = w.toLocaleLowerCase("tr");
-        if (key.length < 4 || STOP.has(key)) continue;
+        const acronym = w.length <= 3 && w === w.toLocaleUpperCase("tr");
+        if ((key.length < 4 && !acronym) || STOP.has(key)) continue;
         score.set(key, (score.get(key) ?? 0) + (heading ? 3 : 1));
         const f = forms.get(key) ?? new Map<string, number>();
         f.set(w, (f.get(w) ?? 0) + 1);

@@ -167,7 +167,7 @@
       {#each WHISPER_MODELS as m (m.id)}
         <label class="model">
           <input type="radio" name="model" value={m.id} bind:group={t.setupModel} />
-          <span>{m.name}</span><span class="size">{m.size}</span>
+          <span>{m.name}</span><span class="size">{m.size} · {m.ramGb} GB RAM</span>
         </label>
       {/each}
     </fieldset>

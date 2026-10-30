@@ -34,6 +34,43 @@ export function parseWhisperJson(json: string | unknown): Segment[] {
   return out;
 }
 
+// Short lines whisper invents on silence or music, learnt from subtitled videos (matched in lower case).
+const HALLUCINATIONS = [
+  /altyaz[ıi]/iu,
+  /izledi[ğg]iniz i[çc]in te[şs]ekk[üu]r/iu,
+  /abone ol/iu,
+  /bir sonraki videoda/iu,
+  /videoyu be[ğg]en/iu,
+  /amara\.org/iu,
+  /^(?:www\.|https?:\/\/)\S+$/iu,
+];
+
+const plain = (t: string) => t.toLocaleLowerCase("tr").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+
+/** The same phrase said 4+ times in a row (a decoding loop) is kept once. */
+export function collapseRepeats(text: string): string {
+  return text.replace(/(\S.{1,58}?)(?:[\s,]+\1){3,}/gu, "$1");
+}
+
+/**
+ * Removes whisper's invented lines: known subtitle credits, the prompt read back, and a segment that repeats
+ * the one before it; collapses repetition loops inside a segment.
+ */
+export function dropHallucinations(segments: readonly Segment[], prompt = ""): Segment[] {
+  const out: Segment[] = [];
+  const promptText = plain(prompt);
+  let last = "";
+  for (const s of segments) {
+    const text = collapseRepeats(s.text).trim();
+    const key = plain(text);
+    if (!key || key === last || (text.length <= 80 && HALLUCINATIONS.some((re) => re.test(text.toLocaleLowerCase("tr"))))) continue;
+    if (promptText && key.length > 12 && promptText.includes(key)) continue;
+    last = key;
+    out.push({ ...s, text });
+  }
+  return out;
+}
+
 export interface Paragraph {
   start: number;
   text: string;
