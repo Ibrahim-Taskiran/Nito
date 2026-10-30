@@ -24,6 +24,7 @@
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
+  import TimerButton from "./TimerButton.svelte";
   import SplitPicker from "./SplitPicker.svelte";
   import TapeLayer from "./TapeLayer.svelte";
 
@@ -301,6 +302,7 @@
       {/if}
       <h1 title={doc.title}>{doc.title}</h1>
       {#if !compact}<RecordBar recorder={reader.recorder} />{/if}
+      <TimerButton />
       <ToolButton label="Ara" title="PDF'te ara (Ctrl+F)" pressed={searchOpen} onclick={() => (searchOpen ? closeSearch() : openSearch())}>
         <Search size={18} />
       </ToolButton>
