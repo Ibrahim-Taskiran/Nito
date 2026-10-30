@@ -12,11 +12,11 @@
 </div>
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.28); display: grid; place-items: center; z-index: 10; }
+  .backdrop { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; z-index: 50; padding: 16px; }
   .dialog {
-    width: min(440px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px; box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+    width: min(460px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-3);
   }
-  h2 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
-  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  h2 { margin: 0 0 16px; font-size: 18px; line-height: 26px; font-weight: 700; }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
 </style>

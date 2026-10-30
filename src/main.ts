@@ -1,5 +1,7 @@
 import { mount } from "svelte";
 import App from "./App.svelte";
+import "@fontsource-variable/manrope";
+import "@fontsource-variable/hanken-grotesk";
 import "./ui/tokens.css";
 import { createPlatform } from "./platform";
 import { Library } from "./ui/library.svelte";
