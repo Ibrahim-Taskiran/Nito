@@ -2,6 +2,11 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
+- **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
+- **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
+- **Next step:** merge the four branches, fix the migration order in `migrate.ts` to `[…, m012, m013, m014, m015]`, add new e2e scripts to the chain, run check + vitest + full e2e, update ROADMAP 3.8 icons, push.
+
 ## 2026-10-30 (7) — Phase 3.7 done: pages, pen, lasso, timer; double scrollbar fixed
 - **Merged:** Pages (f9a52cb: transcript beside page, "Önemli" flag + mini PDF + pdf-lib export, virtual blank pages with negative page keys = -page_insert.id, migration 012), Pen (shape recogniser, palm/touch rejection with per-device settings `nito.penInput`, web images by paste/drop/link, lasso select move/scale/recolour/copy/delete/undo; no migration). Study timer (6588624, `src/core/timer.ts`, `ui/timer.svelte.ts`, TimerButton/TimerAlert). Window no longer scrolls, only views (baa503f).
 - **Owner rule:** phones and tablets first, desktop second (ROADMAP architecture rules, Claude memory).

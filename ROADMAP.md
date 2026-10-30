@@ -164,6 +164,13 @@ Chosen from the owner's product list. Three parallel agents:
 - ✅ **Pen:** (plus lasso select: move, scale, recolour, copy, delete, undo) shape correction (hold at the end of a stroke: wobbly line → straight line, also circle, rectangle, arrow); palm and accidental touch rejection (contact size, pen-only mode, touch sensitivity setting, ignore touches while the pen is down); images from the web browser (drag and drop, paste, image link).
 - ✅ **Study timer:** stopwatch and alarm in the reader, keeps counting until stopped or the app quits.
 
+### Phase 3.8: Notebook and reader cleanup (owner request 2026-10-30) 🟨
+Four parallel worktree agents:
+- 🟨 **Reader toolbar:** one "Kalem" group (default black tükenmez; kind, colour, width inside), Lazer separate, "Resim" group (gallery + web image); sticky note colours; remove inserted blank pages. Migration 015 if needed.
+- 🟨 **Notebook ("Defter"):** opens beside the PDF like "Yan yana"; starts with one plain page; add Düz, Kareli, Çizgili, Noktalı pages. Migration 013.
+- 🟨 **Move across pages:** move a lasso selection from one page to another (drag and cut/paste).
+- 🟨 **Study time + transcription:** stopwatch time saved per PDF and shown in Çalışma Merkezi (migration 014); better Turkish Whisper output (model, beam search, prompt, VAD, hallucination filter).
+
 ### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.
 - 🟨 Sync between devices: file-based (folder or cloud drive) or our own small server later. Done: manual backup / restore of the whole library to a folder (Yedekle / Geri yükle). Not done: automatic two-way sync.
