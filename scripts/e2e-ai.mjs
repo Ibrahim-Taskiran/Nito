@@ -98,7 +98,7 @@ const setup = page.getByRole("region", { name: "Yapay zekâyı kur" });
 await setup.waitFor();
 const suggested = await setup.locator(".choice", { hasText: "Bu bilgisayar için önerilen" }).innerText();
 if (!suggested.includes("Kaliteli")) await fail(`16 GB RAM should suggest Kaliteli, got ${suggested}`);
-if (!(await setup.getByText(/Gereken alan: 4,5 GB/).count())) await fail("setup card should show the space it needs");
+if (!(await setup.getByText(/Gereken alan: 4,8 GB/).count())) await fail("setup card should show the space it needs");
 for (const b of await setup.locator(".choice, button").all()) {
   const h = (await b.boundingBox())?.height ?? 0;
   if (h < 40) await fail(`setup targets must be 40px, got ${h}`);

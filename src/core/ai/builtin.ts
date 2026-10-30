@@ -12,7 +12,7 @@ export interface BuiltinModelInfo {
 /** Both Apache-2.0, so they may ship with a paid app. */
 export const BUILTIN_MODELS: readonly BuiltinModelInfo[] = [
   { id: "fast", name: "Hızlı", detail: "Qwen3 4B Instruct · daha az bellek, daha hızlı yanıt", ramGb: 8 },
-  { id: "quality", name: "Kaliteli", detail: "Qwen2.5 7B Instruct · daha iyi özet, daha yavaş", ramGb: 16 },
+  { id: "quality", name: "Kaliteli", detail: "Qwen3 8B · daha iyi özet, daha yavaş", ramGb: 16 },
 ];
 
 const GB = 1024 ** 3;

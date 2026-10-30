@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-const SIZES: Record<BuiltinModel, number> = { fast: 2_497_281_120, quality: 4_683_074_240 };
+const SIZES: Record<BuiltinModel, number> = { fast: 2_497_281_120, quality: 5_027_783_488 };
 const GB = 1024 ** 3;
 
 export function webAi(): AiHost {
