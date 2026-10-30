@@ -1,6 +1,7 @@
 // E2E for the reader tools: pen kinds saved after reopen, laser not saved, image insert persists,
 // search finds a word, the page box jumps, the left panel shows thumbnails. Needs `npm run dev`.
 import { chromium } from "@playwright/test";
+import { openPens, pen } from "./e2e-ink.mjs";
 import { resolve } from "node:path";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
@@ -35,14 +36,21 @@ async function draw(y) {
 }
 
 // Highlighter (pink), pencil, ballpoint with a custom colour.
-await page.getByRole("button", { name: "Fosforlu" }).click();
-await page.getByRole("button", { name: "Renk: Pembe" }).click();
+await pen(page, "Fosforlu", "Pembe");
+// Grouped toolbar: one "Kalem" button shows the kind and colour; the kinds live in its panel; Lazer stays apart.
+const penGroup = page.getByRole("button", { name: "Kalem", exact: true });
+if ((await penGroup.getAttribute("aria-pressed")) !== "true") fail("Kalem group not pressed");
+if ((await penGroup.getAttribute("title")) !== "Fosforlu · Pembe") fail(`Kalem title: ${await penGroup.getAttribute("title")}`);
+if (await page.getByRole("button", { name: "Tükenmez", exact: true }).count()) fail("pen kinds outside the Kalem panel");
+if (!(await page.getByRole("toolbar", { name: "Kalem araçları" }).getByRole("button", { name: "Lazer" }).isVisible())) fail("Lazer not on the toolbar");
 await draw(220);
-await page.getByRole("button", { name: "Kurşun kalem" }).click();
+await pen(page, "Kurşun kalem");
 await draw(300);
-await page.getByRole("button", { name: "Tükenmez" }).click();
+await pen(page, "Tükenmez");
+await openPens(page);
 await page.getByLabel("Özel renk").fill("#123456");
 await page.getByLabel("Kalınlık").fill("2");
+await page.keyboard.press("Escape");
 await draw(380);
 
 // Laser: visible, then fades and is never saved.
@@ -56,7 +64,8 @@ await page.screenshot({ path: "docs/screenshots/reader-tools-light.png" });
 
 // Image from the file picker, then move it.
 const imgChooser = page.waitForEvent("filechooser");
-await page.getByRole("button", { name: "Resim ekle" }).click();
+await page.getByRole("button", { name: "Resim", exact: true }).click();
+await page.getByRole("button", { name: "Dosyadan resim ekle" }).click();
 await (await imgChooser).setFiles({ name: "nokta.png", mimeType: "image/png", buffer: PNG });
 const pimg = p1.locator(".pimg");
 await pimg.waitFor().catch(() => fail("image not placed"));

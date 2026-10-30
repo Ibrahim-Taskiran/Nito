@@ -1,6 +1,7 @@
 // E2E for page tools: tape cover / reveal saved after reopen, layer toggles, text box with LaTeX and a highlighted
 // code block, sticky note collapse, margin expansion keeps a stroke drawn in the margin. Needs `npm run dev`.
 import { chromium } from "@playwright/test";
+import { penToggle } from "./e2e-ink.mjs";
 import { resolve } from "node:path";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
@@ -74,12 +75,20 @@ b = await box();
 await page.mouse.click(b.x + 500, b.y + 560);
 await editor.waitFor({ timeout: 3000 }).catch(() => fail("sticky editor did not open"));
 await editor.fill("**Sınavda çıkar**");
+// Note colour: pink, kept after reopen (also on the folded icon).
+const PINK = "rgb(255, 214, 224)";
+const bg = (loc) => loc.evaluate((el) => getComputedStyle(el).backgroundColor);
+await page.getByRole("button", { name: "Not rengi", exact: true }).click();
+await page.getByRole("button", { name: "Not rengi: Pembe" }).click();
+if ((await bg(p1.locator(".pnote.sticky"))) !== PINK) fail("sticky note not recoloured");
 await page.getByRole("button", { name: "Notu küçült" }).click();
 await p1.getByRole("button", { name: "Notu aç" }).waitFor({ timeout: 3000 }).catch(() => fail("sticky did not collapse"));
 await page.waitForTimeout(200);
 await reopen();
+if ((await bg(p1.getByRole("button", { name: "Notu aç" })).catch(() => "")) !== PINK) fail("note colour lost after reopen");
 await p1.getByRole("button", { name: "Notu aç" }).click({ timeout: 5000 }).catch(() => fail("collapsed sticky lost after reopen"));
 await p1.locator(".pnote.sticky strong").waitFor({ timeout: 3000 }).catch(() => fail("sticky text lost"));
+if ((await bg(p1.locator(".pnote.sticky"))) !== PINK) fail("open sticky lost its colour");
 if (!(await p1.locator(".pnote.text .katex").count())) fail("text box lost after reopen");
 
 // Layers: hide and show tapes, notes, highlights.
@@ -116,14 +125,14 @@ await page.getByRole("button", { name: "Genişliğe sığdır" }).click();
 await page.waitForTimeout(300);
 b = await box();
 sheetW = (await p1.locator(".sheet").boundingBox()).width;
-await page.getByRole("button", { name: "Tükenmez" }).click();
+await penToggle(page);
 const mx = b.x + sheetW + 40;
 await page.mouse.move(mx, b.y + 200);
 await page.mouse.down();
 for (let i = 1; i <= 8; i++) await page.mouse.move(mx + i * 12, b.y + 200 + (i % 2 ? 10 : 0), { steps: 2 });
 await page.mouse.up();
 await page.waitForTimeout(300);
-await page.getByRole("button", { name: "Tükenmez" }).click();
+await penToggle(page);
 const strokeX = async () => (await p1.locator('path[data-kind="pen"]').first().boundingBox())?.x;
 const x0 = await strokeX();
 if (!x0 || x0 < b.x + sheetW) fail("stroke not in the margin");

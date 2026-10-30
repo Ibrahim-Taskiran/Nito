@@ -2,6 +2,7 @@
 // the page chip plays from the right moment, the page timeline, note replay, silence skip, 2.5× and a spoken cue badge.
 // Needs `npm run dev` (NITO_URL).
 import { chromium } from "@playwright/test";
+import { penToggle } from "./e2e-ink.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -82,13 +83,13 @@ await pageInput.press("Enter");
 const p2 = page.locator('[data-page="2"]');
 await p2.locator(".textLayer span").first().waitFor();
 await page.waitForTimeout(1200);
-await page.getByRole("button", { name: "Tükenmez" }).click();
+await penToggle(page);
 const box = await p2.boundingBox();
 await page.mouse.move(box.x + 100, box.y + 200);
 await page.mouse.down();
 await page.mouse.move(box.x + 200, box.y + 230, { steps: 8 });
 await page.mouse.up();
-await page.getByRole("button", { name: "Tükenmez" }).click();
+await penToggle(page);
 await page.waitForTimeout(800);
 await page.evaluate(() => {
   const span = document.querySelector('[data-page="2"] .textLayer span');
