@@ -33,7 +33,7 @@
   {:else}
     <p class="hint">Metni seçip bir etiket seçerek vurgu ekleyin.</p>
   {/each}
-  <RecordingList {reader} />
+  <RecordingList {reader} {onjump} />
 </aside>
 
 <style>

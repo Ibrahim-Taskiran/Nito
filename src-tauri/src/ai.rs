@@ -28,9 +28,12 @@ pub struct ModelSpec {
     url: &'static str,
     bytes: u64,
     sha256: &'static str,
+    /// Extra llama-server flags for this model.
+    args: &'static [&'static str],
 }
 
 /// Both Apache-2.0 (checked on the Hugging Face model cards). URLs are pinned to a repo commit.
+/// Qwen2.5-7B was tried for "quality" and dropped: it slipped into Chinese on this PC.
 pub const MODELS: [ModelSpec; 2] = [
     ModelSpec {
         id: "fast",
@@ -38,13 +41,16 @@ pub const MODELS: [ModelSpec; 2] = [
         url: "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/a06e946bb6b655725eafa393f4a9745d460374c9/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
         bytes: 2_497_281_120,
         sha256: "3605803b982cb64aead44f6c1b2ae36e3acdb41d8e46c8a94c6533bc4c67e597",
+        args: &[],
     },
     ModelSpec {
         id: "quality",
-        file: "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        url: "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/8911e8a47f92bac19d6f5c64a2e2095bd2f7d031/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
-        bytes: 4_683_074_240,
-        sha256: "65b8fcd92af6b4fefa935c625d1ac27ea29dcb6ee14589c55a8f115ceaaa1423",
+        file: "Qwen3-8B-Q4_K_M.gguf",
+        url: "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/7c41481f57cb95916b40956ab2f0b139b296d974/Qwen3-8B-Q4_K_M.gguf",
+        bytes: 5_027_783_488,
+        sha256: "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+        // Hybrid model: answer directly, no <think> block.
+        args: &["--reasoning-budget", "0"],
     },
 ];
 
@@ -237,6 +243,7 @@ fn spawn(dir: &Path, model: &str) -> Result<Server, String> {
     cmd.arg("-m").arg(&path)
         .args(["--host", "127.0.0.1", "--port", &port.to_string(), "--api-key", &key])
         .args(["-c", CONTEXT, "-np", "1", "--no-webui"])
+        .args(m.args)
         .stdin(Stdio::null())
         .stdout(log.try_clone().map_err(|e| e.to_string())?)
         .stderr(log);

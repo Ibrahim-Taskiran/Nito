@@ -9,7 +9,9 @@
   /** Rect while dragging; written to the database on release. */
   let drag = $state<{ id: number; mode: "move" | "resize"; x0: number; y0: number; from: ImageRect; rect: ImageRect } | null>(null);
 
-  const images = $derived(reader.images.filter((i) => i.page === page));
+  const images = $derived(reader.tools.layers.images ? reader.images.filter((i) => i.page === page) : []);
+  /** The layer covers the page and its added margin; rects stay normalised to the PDF page. */
+  const b = $derived(reader.tools.bounds(page));
   const rectOf = (i: { id: number } & ImageRect): ImageRect => (drag?.id === i.id ? drag.rect : i);
 
   function start(e: PointerEvent, img: { id: number } & ImageRect, mode: "move" | "resize") {
@@ -25,9 +27,9 @@
   function move(e: PointerEvent) {
     if (!drag) return;
     const r = layer.getBoundingClientRect();
-    const dx = (e.clientX - drag.x0) / r.width;
-    const dy = (e.clientY - drag.y0) / r.height;
-    drag.rect = drag.mode === "move" ? moveRect(drag.from, dx, dy) : resizeRect(drag.from, dx);
+    const dx = ((e.clientX - drag.x0) / r.width) * b.w;
+    const dy = ((e.clientY - drag.y0) / r.height) * b.h;
+    drag.rect = drag.mode === "move" ? moveRect(drag.from, dx, dy, b) : resizeRect(drag.from, dx, b);
   }
 
   function end() {
@@ -65,7 +67,7 @@
     {@const r = rectOf(img)}
     {@const selected = reader.selectedImageId === img.id}
     <div class="pimg" class:selected role="img" aria-label="Eklenen resim"
-      style:left="{r.x * 100}%" style:top="{r.y * 100}%" style:width="{r.w * 100}%" style:height="{r.h * 100}%"
+      style:left="{(r.x / b.w) * 100}%" style:top="{(r.y / b.h) * 100}%" style:width="{(r.w / b.w) * 100}%" style:height="{(r.h / b.h) * 100}%"
       onpointerdown={(e) => start(e, img, "move")} onpointermove={move} onpointerup={end} onpointercancel={end}>
       {#if reader.imageUrls.get(img.filePath)}
         <img src={reader.imageUrls.get(img.filePath)} alt="" draggable="false" />

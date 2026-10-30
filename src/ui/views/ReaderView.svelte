@@ -1,25 +1,30 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import {
-    ChevronDown, ChevronUp, Columns2, Eraser, Highlighter, ImagePlus, MessageSquareText, MoveHorizontal, PanelLeft, Pen,
-    Pencil, Search, WandSparkles, X, ZoomIn, ZoomOut,
+    Bandage, ChevronDown, ChevronUp, Columns2, Eraser, Eye, EyeOff, Highlighter, ImagePlus, Layers, MessageSquareText,
+    MoveHorizontal, PanelLeft, Pen, Pencil, Search, SquareDashed, StickyNote, Type, WandSparkles, X, ZoomIn, ZoomOut,
   } from "@lucide/svelte";
   import { LABELS } from "../../core/labels";
   import { INK_KINDS } from "../../core/ink";
+  import { LAYERS, MARGIN_MAX, type MarginSide } from "../../core/pageTools";
   import { hitOnPage, normaliseRects, pagesToRender, parsePageInput, zoomIn, zoomOut, clampZoom } from "../../core/reader";
   import type { Document, LabelKey, Rect } from "../../core/types";
   import Button from "../components/Button.svelte";
   import IconButton from "../components/IconButton.svelte";
+  import MenuButton from "../components/MenuButton.svelte";
   import ToolButton from "../components/ToolButton.svelte";
   import type { Library } from "../library.svelte";
   import { Reader, type InkSize } from "../reader.svelte";
   import AnnotationPanel from "./AnnotationPanel.svelte";
   import ImageLayer from "./ImageLayer.svelte";
   import InkLayer from "./InkLayer.svelte";
+  import PageAudio from "./PageAudio.svelte";
+  import NoteLayer from "./NoteLayer.svelte";
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
   import SplitPicker from "./SplitPicker.svelte";
+  import TapeLayer from "./TapeLayer.svelte";
 
   /** `compact`: one half of the split view; `onclose` replaces "back to library". */
   let { lib, doc, compact = false, onclose }: { lib: Library; doc: Document; compact?: boolean; onclose?: () => void } = $props();
@@ -110,6 +115,9 @@
     return () => io.disconnect();
   });
 
+  // Slide–audio sync: the recorder stores each page change with its offset.
+  $effect(() => reader.recorder.notePage(current));
+
   // Remember the reading position (debounced in Library) for progress and "continue".
   $effect(() => {
     if (sizes.length) lib.savePosition(doc.id, current, sizes.length);
@@ -122,7 +130,8 @@
     const start = range.startContainer instanceof Element ? range.startContainer : range.startContainer.parentElement;
     const pageEl = start?.closest<HTMLElement>("[data-page]");
     if (!pageEl || !scroller.contains(pageEl)) return;
-    const rects = normaliseRects(range.getClientRects(), pageEl.getBoundingClientRect());
+    // Highlights are normalised to the PDF area (.sheet), not to a page grown by an added margin.
+    const rects = normaliseRects(range.getClientRects(), (pageEl.querySelector(".sheet") ?? pageEl).getBoundingClientRect());
     const text = sel.toString().replace(/\s+/g, " ").trim();
     if (!rects.length || !text) return;
     const last = range.getBoundingClientRect();
@@ -140,7 +149,7 @@
   /** Zoom so the current page fills the width (minus the scroller padding). */
   function fitWidth() {
     const w = sizes[current - 1]?.w ?? sizes[0]?.w;
-    if (w) scale = clampZoom((scroller.clientWidth - 48) / w);
+    if (w) scale = clampZoom((scroller.clientWidth - 48) / (w * (1 + reader.tools.margin(current).right)));
   }
 
   function goTo(page: number) {
@@ -249,13 +258,29 @@
     }
   }
 
+  const marginNow = $derived(reader.tools.margin(current));
+
+  async function growMargin(side: MarginSide) {
+    await reader.tools.growMargin(current, side);
+  }
+
+  async function clearMargin(side: MarginSide) {
+    notice = null;
+    const all = await reader.tools.clearMargin(current, side, reader.ink, reader.images);
+    if (!all) notice = "Kenar boşluğunda yazı ya da not var; o kısım kaldı. Önce onları silin ya da taşıyın.";
+  }
+
+  /** Something on the page that Escape should close first (note, menu, picture). */
+  const escapeTaken = () =>
+    reader.selectedImageId != null || reader.tools.selectedNoteId != null || !!root.querySelector(".menu .panel");
+
   function onKey(e: KeyboardEvent) {
     // In the split view only the pane holding the focus opens its search.
     const mine = !compact || root.contains(document.activeElement);
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f" && mine) {
       e.preventDefault();
       void openSearch();
-    } else if (e.key === "Escape" && !e.defaultPrevented && reader.selectedImageId == null) {
+    } else if (e.key === "Escape" && !e.defaultPrevented && !escapeTaken()) {
       if (pick) pick = null;
       else if (searchOpen && mine) closeSearch();
       else if (!compact && !picking) lib.close();
@@ -301,7 +326,7 @@
         <ToolButton label="Yan yana" onclick={() => (picking = true)}><Columns2 size={18} /></ToolButton>
       {/if}
     </div>
-    <div class="row" role="toolbar" aria-label="Kalem araçları">
+    <div class="row tools" role="toolbar" aria-label="Kalem araçları">
       <ToolButton label="Tükenmez" pressed={reader.inkTool === "pen"} onclick={() => reader.setTool("pen")}><Pen size={18} /></ToolButton>
       <ToolButton label="Kurşun kalem" pressed={reader.inkTool === "pencil"} onclick={() => reader.setTool("pencil")}><Pencil size={18} /></ToolButton>
       <ToolButton label="Fosforlu" pressed={reader.inkTool === "highlighter"} onclick={() => reader.setTool("highlighter")}><Highlighter size={18} /></ToolButton>
@@ -309,7 +334,40 @@
         <WandSparkles size={18} />
       </ToolButton>
       <ToolButton label="Silgi" pressed={reader.inkTool === "eraser"} onclick={() => reader.setTool("eraser")}><Eraser size={18} /></ToolButton>
+      <ToolButton label="Bant" title="Bant: bir alanı kapat, dokununca açılır" pressed={reader.inkTool === "tape"} onclick={() => reader.setTool("tape")}>
+        <Bandage size={18} />
+      </ToolButton>
+      <ToolButton label="Metin" title="Metin kutusu ekle (LaTeX ve kod olur)" pressed={reader.inkTool === "text"} onclick={() => reader.setTool("text")}>
+        <Type size={18} />
+      </ToolButton>
+      <ToolButton label="Not" title="Yapışkan not ekle" pressed={reader.inkTool === "note"} onclick={() => reader.setTool("note")}>
+        <StickyNote size={18} />
+      </ToolButton>
       <ToolButton label="Resim ekle" title="Bu sayfaya resim ekle" onclick={addImage}><ImagePlus size={18} /></ToolButton>
+      <MenuButton label="Katmanlar" title="Katmanları göster / gizle">
+        {#snippet icon()}<Layers size={18} />{/snippet}
+        {#snippet children()}
+          {#each LAYERS as l (l.key)}
+            <label class="item"><input type="checkbox" checked={reader.tools.layers[l.key]}
+              onchange={(e) => reader.tools.setLayer(l.key, e.currentTarget.checked)} />{l.name}</label>
+          {/each}
+        {/snippet}
+      </MenuButton>
+      <MenuButton label="Kenar boşluğu" title="Bu sayfaya yazı alanı ekle">
+        {#snippet icon()}<SquareDashed size={18} />{/snippet}
+        {#snippet children()}
+          <p class="hint">Sayfa {current}: PDF aynı kalır, yanına ve altına yazabilirsiniz.</p>
+          <button class="item" disabled={marginNow.right >= MARGIN_MAX} onclick={() => growMargin("right")}>Sağa boşluk ekle</button>
+          <button class="item" disabled={marginNow.bottom >= MARGIN_MAX} onclick={() => growMargin("bottom")}>Alta boşluk ekle</button>
+          <button class="item" disabled={!marginNow.right} onclick={() => clearMargin("right")}>Sağ boşluğu kaldır</button>
+          <button class="item" disabled={!marginNow.bottom} onclick={() => clearMargin("bottom")}>Alt boşluğu kaldır</button>
+        {/snippet}
+      </MenuButton>
+      {#if reader.inkTool === "tape"}
+        <span class="sep" aria-hidden="true"></span>
+        <ToolButton label="Tümünü aç" title="Bu belgedeki bütün bantları aç" onclick={() => reader.tools.revealAll(true)}><Eye size={18} /></ToolButton>
+        <ToolButton label="Tümünü kapat" title="Bu belgedeki bütün bantları kapat" onclick={() => reader.tools.revealAll(false)}><EyeOff size={18} /></ToolButton>
+      {/if}
       {#if penOn}
         <span class="sep" aria-hidden="true"></span>
         <div class="swatches" role="group" aria-label="{kindInfo.name} rengi">
@@ -361,10 +419,14 @@
       {:else}
         {#each sizes as size, i (i)}
           <PdfPage pdf={reader.pdf} num={i + 1} width={size.w} height={size.h} {scale} active={active.has(i + 1)}
-            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId}
+            annotations={reader.tools.layers.highlights ? reader.annotations.filter((a) => a.page === i + 1 && !reader.lecture.hidesAnnotation(a.id)) : []}
+            focusedId={reader.focusedId} margin={reader.tools.margins.get(i + 1)}
             search={reader.searchQuery} currentMark={hit?.page === i + 1 ? currentMark : -1} {seek}>
             <ImageLayer {reader} page={i + 1} />
             <InkLayer {reader} page={i + 1} />
+            <NoteLayer {reader} page={i + 1} />
+            <TapeLayer {reader} page={i + 1} />
+            <PageAudio {reader} page={i + 1} />
           </PdfPage>
         {/each}
       {/if}
@@ -431,4 +493,9 @@
   .picker button:hover { background: var(--surface-2); }
   .chip { width: 12px; height: 12px; border-radius: 50%; }
   @media (max-width: 1023px) { .row { padding: 4px 8px; } }
+  /* Tablet portrait: tool labels are read out but not shown, so the tool row stays on one or two lines. */
+  @media (max-width: 900px) {
+    .tools :global(.tool > span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .tools :global(.tool) { padding: 0 8px; }
+  }
 </style>

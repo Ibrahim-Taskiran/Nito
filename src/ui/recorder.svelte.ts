@@ -1,7 +1,9 @@
 // Lecture recording while a PDF is open. MediaRecorder lives here; timing and MIME rules are in core/recording.
 import { RecordingClock, extensionForMime, levelFromSamples, pickRecordingMime } from "../core/recording";
+import { LectureRepo } from "../core/lectureRepo";
 import type { Id } from "../core/types";
 import type { Library } from "./library.svelte";
+import { loadPref } from "./playback";
 
 export type RecorderState = "idle" | "recording" | "paused" | "saving";
 
@@ -20,8 +22,26 @@ export class Recorder {
   private audio: AudioContext | null = null;
   private chunks: Blob[] = [];
   private tick = 0;
+  /** Page on screen; each change while recording is stored with its offset (slide–audio sync). */
+  private page = 1;
+  private lecture: LectureRepo;
 
-  constructor(readonly lib: Library, readonly documentId: Id, private onSaved: () => void) {}
+  constructor(readonly lib: Library, readonly documentId: Id, private onSaved: () => void) {
+    this.lecture = new LectureRepo(lib.repo.db);
+  }
+
+  /** Called by the reader whenever the page on screen changes. */
+  notePage(page: number): void {
+    if (page === this.page) return;
+    this.page = page;
+    if (this.active) this.savePage();
+  }
+
+  private savePage(): void {
+    if (this.recordingId === null) return;
+    const at = Math.round(this.clock.elapsedMs(performance.now())) / 1000;
+    this.lecture.addPageVisit(this.recordingId, this.page, at).catch((e) => console.warn("Sayfa zamanı kaydedilemedi:", e));
+  }
 
   get active(): boolean {
     return this.state === "recording" || this.state === "paused";
@@ -37,7 +57,10 @@ export class Recorder {
     if (this.state !== "idle") return;
     this.error = null;
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const clean = loadPref("mic");
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: clean, noiseSuppression: clean, autoGainControl: clean },
+      });
     } catch (e) {
       this.error = e instanceof Error && e.name === "NotAllowedError" ? "Mikrofon izni verilmedi." : "Mikrofon açılamadı.";
       return;
@@ -50,6 +73,7 @@ export class Recorder {
     this.media.start(1000);
     this.clock.start(performance.now());
     this.state = "recording";
+    this.savePage();
 
     this.audio = new AudioContext();
     const analyser = this.audio.createAnalyser();
