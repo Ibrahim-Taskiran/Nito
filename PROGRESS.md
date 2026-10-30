@@ -2,6 +2,14 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (12) — Phase 3.8 four branches merged; redesign still running
+- **Merged on main:** notebook (3fcc524), cross-page selection move, toolbar groups + note colours + "Sayfayı kaldır" (2222301), study time + Whisper accuracy (2b71a1a).
+- **Migration order (final):** m013 notebook, m014 note colour (renamed from 015), m015 study time (renamed from 014). Nobody ran the app between merges, so no real DB has the old numbers.
+- **Checks on main:** svelte-check 0, vitest 193 passed, cargo check ok, full `npm run e2e` (17 scripts) exit 0. e2e-notebook now uses the `e2e-ink.mjs` Kalem helpers.
+- **Half done:** redesign agent (owner's Stitch design) in its own worktree; StudyView and ReaderView second pass still to do after it merges main.
+- **Owner action:** re-run "Whisper kur" and pick the suggested large-v3-turbo-q5_0 (also downloads the Silero VAD file); try a real Turkish lecture.
+- **Known limits:** q5_0 model not run on a real lecture yet; one notebook per PDF; notebook pages not in PDF export.
+
 ## 2026-10-30 (11) — Study time per PDF + Whisper accuracy (branch `feat/study-time-whisper`)
 - **Study time:** `core/study/studyTime.ts` (pure `advance`: stopwatch time goes to the PDF open in the reader at that moment; switching PDFs splits, closed reader or split view credits nothing; `formatStudyTime` → "1 sa 25 dk"). `ui/studyTime.svelte.ts` tracks from App, flushes every 30 s, on pause/switch/close and when the page hides. Migration `015_study_time.ts` (study_time: document_id, day, ms); final order m013 notebook, m014 note colour, m015 study time. Çalışma Merkezi: new "Çalışma süresi" card per PDF, course total in "Ders ilerlemesi".
 - **Whisper:** new model `large-v3-turbo-q5_0` (574 MB, suggested; base = "Hızlı"; full turbo kept), sha256 checked for every model and the Silero VAD v5.1.2 (MIT, 885 KB, downloaded in setup). whisper-cli gets `-bs 5 -bo 5 -mc 128 --suppress-nst --prompt … --vad -vm …`; an old binary that says "unknown argument" is retried with the basic flags. Prompt = course + title + PDF key terms + a punctuated Turkish seed (`core/transcribe/prompt.ts`). WAV is DC-centred and raised to 0.9 peak (gain ≤ 8). `dropHallucinations` removes subtitle credits, thanks lines, the prompt read back, repeated segments and repetition loops.
