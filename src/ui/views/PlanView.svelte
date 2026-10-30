@@ -171,7 +171,7 @@
         <section class="col" class:today={day === plan.today} class:over={drag?.moving && drag.over === day} data-day={day} aria-label={DAY_NAMES[i]}>
           <div class="colhead">
             <span class="dname">{DAY_NAMES[i]}</span>
-            <span class="ddate">{shortDate(day)}{#if day === plan.today} · Bugün{/if}</span>
+            <span class="ddate">{shortDate(day)}{#if day === plan.today}{" · Bugün"}{/if}</span>
             {#if dayTotal(day)}<span class="dtotal">{formatMinutes(dayTotal(day))}</span>{/if}
           </div>
           {@render dayList(day)}

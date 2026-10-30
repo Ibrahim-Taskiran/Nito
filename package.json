@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "screenshots": "node scripts/screenshots.mjs",
     "smoke:tauri": "node scripts/smoke-tauri.mjs",
-    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs && node scripts/e2e-transcribe.mjs && node scripts/e2e-ai.mjs && node scripts/e2e-touch.mjs",
+    "e2e": "node scripts/screenshots.mjs && node scripts/e2e-record.mjs && node scripts/e2e-study.mjs && node scripts/e2e-notes.mjs && node scripts/e2e-transcribe.mjs && node scripts/e2e-ai.mjs && node scripts/e2e-touch.mjs && node scripts/e2e-home.mjs",
     "licenses": "node scripts/check-licenses.mjs",
     "tauri": "tauri"
   },
