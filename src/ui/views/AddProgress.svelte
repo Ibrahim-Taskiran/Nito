@@ -24,8 +24,8 @@
 <style>
   .muted { color: var(--text-2); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
   .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 5;
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 45; max-width: calc(100vw - 24px);
     display: flex; align-items: center; gap: 12px; padding: 4px 4px 4px 16px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 6px 24px rgb(0 0 0 / 0.12);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-3);
   }
 </style>

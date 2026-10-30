@@ -65,6 +65,9 @@
 
 <main class="notes">
   <header class="toolbar">
+    <h1 class="page">Notlar</h1>
+    <span class="n-badge">{notes.notes.length} not</span>
+    <span class="grow"></span>
     <label class="field">
       <span>Ders</span>
       <select aria-label="Ders" value={String(notes.courseFilter)} onchange={(e) => setCourse(e.currentTarget.value)}>
@@ -79,8 +82,7 @@
         {#each kinds as k (k)}<option value={k}>{k === "all" ? "Tümü" : KIND_NAMES[k]}</option>{/each}
       </select>
     </label>
-    <span class="grow"></span>
-    <Button variant="ghost" onclick={() => (watchOpen = true)}>Klasör izle</Button>
+    <Button onclick={() => (watchOpen = true)}>Klasör izle</Button>
     <Button variant="primary" onclick={newNote}>Yeni not</Button>
   </header>
 
@@ -152,32 +154,35 @@
 {#if watchOpen}<WatchFolders {watcher} web={lib.platform.name === "web"} onclose={() => (watchOpen = false)} />{/if}
 
 <style>
-  .notes { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .toolbar, .actions { display: flex; align-items: center; gap: 8px; padding: 8px 16px; flex-wrap: wrap; }
-  .toolbar { border-bottom: 1px solid var(--border); }
-  .actions { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .notes { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 8px 28px 28px; }
+  .toolbar, .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .page { font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .actions { padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-1); }
   .grow { flex: 1; }
   .sep { width: 1px; align-self: stretch; background: var(--border); margin: 4px 4px; }
-  .field { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+  .field { display: flex; align-items: center; gap: 8px; color: var(--text-2); font: 600 12px/1 var(--font-label); letter-spacing: 0.04em; text-transform: uppercase; }
   select {
     min-height: var(--hit); max-width: 260px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--surface); color: var(--text);
+    background: var(--surface); color: var(--text); font: 500 14px/1 var(--font); text-transform: none; letter-spacing: 0;
   }
   .hint { color: var(--text-2); font-size: 13px; }
-  .body { flex: 1; display: flex; min-height: 0; }
-  .list { width: 280px; flex: none; overflow-y: auto; padding: 8px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; }
+  .body {
+    flex: 1; display: flex; min-height: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1); overflow: hidden;
+  }
+  .list { width: 300px; flex: none; overflow-y: auto; padding: 10px; border-right: 1px solid var(--border); background: var(--surface-2); display: flex; flex-direction: column; gap: 4px; }
   .item {
     min-height: var(--hit); padding: 8px 12px; border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer;
     text-align: left; display: flex; flex-direction: column; gap: 2px;
   }
-  .item:hover { background: var(--surface-2); }
-  .item.active { background: var(--accent-soft); }
-  .item.active .title { color: var(--accent); }
-  .title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item:hover { background: var(--surface-3); }
+  .item.active { background: var(--surface); box-shadow: var(--shadow-1); }
+  .item.active .title { color: var(--accent-strong); }
+  .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .meta { color: var(--text-2); font-size: 12px; }
-  .viewer { flex: 1; min-width: 0; overflow-y: auto; padding: 20px 28px; display: flex; flex-direction: column; gap: 12px; }
+  .viewer { flex: 1; min-width: 0; overflow-y: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 12px; }
   .vhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
-  .vhead h1, .title-input { flex: 1 1 100%; margin: 0; font-size: 18px; font-weight: 600; }
+  .vhead h1, .title-input { flex: 1 1 100%; margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em; }
   .title-input, .editor {
     border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); padding: 8px 12px;
   }
@@ -192,8 +197,15 @@
   .md :global(h2) { font-size: 16px; margin: 24px 0 8px; }
   .md :global(h3) { font-size: 14px; margin: 18px 0 6px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
   .md :global(h4) { font-size: 14px; margin: 14px 0 6px; }
-  .md :global(blockquote) { margin: 8px 0; padding: 8px 14px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .md :global(blockquote) { margin: 8px 0; padding: 10px 16px; border-left: 4px solid var(--accent); background: var(--surface-2); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
   .md :global(a) { color: var(--accent); }
   .md :global(code) { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
   .md :global(hr) { border: 0; border-top: 1px solid var(--border); }
+  @media (max-width: 719px) {
+    .notes { padding: 8px 12px 16px; }
+    .page { font-size: 24px; }
+    .body { flex-direction: column; overflow: auto; }
+    .list { width: auto; max-height: 40%; border-right: 0; border-bottom: 1px solid var(--border); }
+    .viewer { padding: 16px; overflow: visible; }
+  }
 </style>

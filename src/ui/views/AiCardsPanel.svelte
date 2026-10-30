@@ -64,8 +64,8 @@
 </section>
 
 <style>
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-  h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-1); }
+  h2 { font-size: 18px; line-height: 26px; font-weight: 700; margin: 0; }
   .muted, .saved { color: var(--text-2); font-size: 13px; margin: 0; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .row select { flex: 1 1 200px; }

@@ -277,7 +277,7 @@
     background: var(--surface-2); border-radius: var(--radius-sm); border-left: 4px solid var(--kind);
     touch-action: none; user-select: none; cursor: grab;
   }
-  .item.dragging { z-index: 5; cursor: grabbing; box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); opacity: 0.95; }
+  .item.dragging { z-index: 5; cursor: grabbing; box-shadow: var(--shadow-3); opacity: 0.95; }
   .tick { display: grid; place-items: center; width: 40px; height: 40px; margin: -10px -6px -10px -10px; cursor: pointer; }
   .tick input { margin: 0; width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
   .body { display: grid; gap: 1px; min-width: 0; min-height: 40px; align-content: start; padding: 0; border: 0; background: transparent; text-align: left; cursor: inherit; }

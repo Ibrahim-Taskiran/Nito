@@ -31,7 +31,7 @@
     <div class="progress">
       <svg class="ring" viewBox="0 0 36 36" aria-hidden="true">
         <circle cx="18" cy="18" r="15.5" class="track" />
-        <circle cx="18" cy="18" r="15.5" class="val" stroke-dasharray="{p.ratio * 97.4} 97.4" />
+        {#if p.ratio > 0}<circle cx="18" cy="18" r="15.5" class="val" stroke-dasharray="{p.ratio * 97.4} 97.4" />{/if}
       </svg>
       <span class="pct">%{Math.round(p.ratio * 100)}</span>
       <div class="ptext">
