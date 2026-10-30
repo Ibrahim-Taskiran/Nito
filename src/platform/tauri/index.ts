@@ -60,8 +60,8 @@ export function createTauriPlatform(): Platform {
       },
     },
     listFolder: (path, recursive) => listPdfs([path], recursive),
-    async saveExport(name, text) {
-      await storage.write(`exports/${name}`, new TextEncoder().encode(text));
+    async saveExport(name, data) {
+      await storage.write(`exports/${name}`, typeof data === "string" ? new TextEncoder().encode(data) : data);
       return join(await appDataDir(), "storage", "exports", name);
     },
     pickers: {

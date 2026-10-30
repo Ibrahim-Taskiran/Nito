@@ -44,6 +44,6 @@ export interface Platform {
   onDrop(cb: (files: SourceFile[]) => void): Promise<() => void>;
   /** PDFs of a known folder, without a dialog (watched folders). Web: always empty. */
   listFolder(path: string, recursive: boolean): Promise<SourceFile[]>;
-  /** Saves a text export. Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
-  saveExport(name: string, text: string): Promise<string | null>;
+  /** Saves an export (text, or bytes such as a PDF). Tauri: storage `exports/<name>`, returns the full path. Web: downloads it, returns null. */
+  saveExport(name: string, data: string | Uint8Array): Promise<string | null>;
 }
