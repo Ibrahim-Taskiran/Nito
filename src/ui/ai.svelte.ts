@@ -64,11 +64,21 @@ export class Ai {
   phase = $state("");
   error = $state<string | null>(null);
 
+  // Getters, not $derived: this object outlives the AiView that first creates it, and a derived owned by
+  // an unmounted component stops updating.
   /** Ollama model whose licence does not allow commercial use (the user's own choice, shown as a note). */
-  restricted = $derived(this.engineKind === "ollama" && this.model != null && !isPermissive(this.model));
-  suggested = $derived<BuiltinModel>(suggestModel(this.builtin?.ramBytes ?? 0));
-  installed = $derived<BuiltinModel[]>(this.builtin?.models.filter((m) => m.installed).map((m) => m.id) ?? []);
-  canAnswer = $derived(this.status === "ready" && (this.engineKind === "builtin" || this.model != null));
+  get restricted(): boolean {
+    return this.engineKind === "ollama" && this.model != null && !isPermissive(this.model);
+  }
+  get suggested(): BuiltinModel {
+    return suggestModel(this.builtin?.ramBytes ?? 0);
+  }
+  get installed(): BuiltinModel[] {
+    return this.builtin?.models.filter((m) => m.installed).map((m) => m.id) ?? [];
+  }
+  get canAnswer(): boolean {
+    return this.status === "ready" && (this.engineKind === "builtin" || this.model != null);
+  }
   private engine: Engine | null = null;
   private abort: AbortController | null = null;
 

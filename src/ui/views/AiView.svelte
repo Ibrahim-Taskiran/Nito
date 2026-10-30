@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Settings } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
   import type { Hit } from "../../core/ai/bm25";
   import { BUILTIN_MODELS, formatGb, modelName, type BuiltinModel } from "../../core/ai/builtin";
@@ -100,7 +101,7 @@
       </select>
     </label>
     {#if open}
-      <Button variant="ghost" onclick={() => (settings = !settings)}>{settings ? "Ayarları kapat" : "Yapay zekâ ayarları"}</Button>
+      <Button variant="ghost" onclick={() => (settings = !settings)}><Settings size={16} aria-hidden={true} /> {settings ? "Ayarları kapat" : "Ayarlar"}</Button>
     {/if}
   </header>
 
@@ -192,7 +193,7 @@
   {:else if ai.engineKind === "ollama" && !ai.model}
     <section class="card state" role="status">
       <h2>Uygun Ollama modeli yok</h2>
-      <p>"Yapay zekâ ayarları"ndan bir model seç ya da bir terminalde önerilen modeli indir: <code>ollama pull qwen2.5:7b</code></p>
+      <p>"Ayarlar"dan bir model seç ya da bir terminalde önerilen modeli indir: <code>ollama pull qwen2.5:7b</code></p>
       <Button variant="primary" onclick={() => ai.connect()}>Yeniden dene</Button>
     </section>
   {:else}

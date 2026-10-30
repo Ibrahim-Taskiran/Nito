@@ -1,5 +1,7 @@
-// E2E: side-by-side reader, AI screen (Ollama down state, real or mocked chat, citation opens the page).
-// Needs the dev server. NITO_URL picks it; NITO_MOCK_OLLAMA=1 forces a mocked Ollama.
+// E2E: side-by-side reader, AI screen (built-in engine setup card with progress/cancel, chat, citation opens
+// the page, summary, settings switch/delete), Ollama-only down state, low disk, and no AI on a phone.
+// Needs the dev server. NITO_URL picks it. The built-in engine is faked in the web build; its server is mocked,
+// or real when NITO_AI_URL (+ NITO_AI_KEY) points at a running llama-server.
 import { chromium } from "@playwright/test";
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
@@ -36,11 +38,16 @@ function lecturePdf() {
   return Buffer.from(out, "latin1");
 }
 
+const realUrl = process.env.NITO_AI_URL;
+const engineUrl = realUrl ?? "http://127.0.0.1:18080";
 const browser = await chromium.launch({ channel: process.env.NITO_BROWSER ?? "msedge" });
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+await page.addInitScript((cfg) => (window.__NITO_FAKE_AI__ = cfg), { url: engineUrl, key: process.env.NITO_AI_KEY ?? "test-key", ramGb: 16 });
+// The owner's Ollama must not change the flow.
+await page.route(/:11434\//, (r) => r.abort("connectionrefused"));
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-page.on("console", (m) => m.type() === "error" && !/11434|ERR_FAILED|ERR_CONNECTION/.test(m.text()) && errors.push(m.text()));
+page.on("console", (m) => m.type() === "error" && !/11434|ERR_FAILED|ERR_CONNECTION|net::/.test(m.text()) && errors.push(m.text()));
 const fail = async (msg) => {
   console.error("FAIL:", msg, errors.join("\n"));
   await page.screenshot({ path: "docs/screenshots/ai-fail.png" }).catch(() => {});
@@ -77,36 +84,35 @@ if (await page.locator(".split").count()) await fail("split should close");
 console.log("split: two panes, independent zoom, panel toggle, back to single reader ok");
 await page.getByRole("button", { name: "← Kütüphane" }).click();
 
-// ---- AI: down state first (Ollama blocked), then real or mocked
-await page.route(/:11434\//, (r) => r.abort("connectionrefused"));
-await page.getByRole("button", { name: "Yapay zekâ" }).click();
-await page.getByRole("heading", { name: "Ollama çalışmıyor" }).waitFor();
-await page.screenshot({ path: "docs/screenshots/ai-down-light.png" });
-await page.unroute(/:11434\//);
-
-let real = process.env.NITO_MOCK_OLLAMA !== "1";
-if (real) {
-  real = await fetch("http://localhost:11434/api/tags").then((r) => r.ok, () => false);
-  if (!real) console.log("Ollama not reachable: using a mocked Ollama");
-}
-if (!real) {
-  await page.route(/:11434\/api\/tags/, (r) => r.fulfill({ json: { models: [{ name: "qwen2.5:7b" }] } }));
-  await page.route(/:11434\/api\/chat/, (r) =>
+// ---- AI: built-in engine not set up yet -> setup card
+if (!realUrl) {
+  await page.route(/127\.0\.0\.1:18080\/v1\/chat\/completions/, (r) =>
     r.fulfill({
-      contentType: "application/x-ndjson",
+      contentType: "text/event-stream",
       body: ["TCP bağlantıyı üçlü el sıkışma ile kurar ", "[s. 1].", " UDP bağlantısızdır [s. 2]."]
-        .map((t) => JSON.stringify({ message: { content: t }, done: false })).join("\n") + "\n" + JSON.stringify({ done: true }) + "\n",
+        .map((t) => `data: ${JSON.stringify({ choices: [{ delta: { content: t } }] })}\n\n`).join("") + "data: [DONE]\n\n",
     }));
 }
-await page.getByRole("button", { name: "Yeniden dene" }).click();
-await page.getByRole("heading", { name: "Notlarla sohbet" }).waitFor();
-const models = await page.getByLabel("Model").locator("option").allTextContents();
-// Prefer the small model for test speed when it is installed (research licence: local dev only).
-if (real && models.includes("qwen2.5:3b")) {
-  await page.getByLabel("Model").selectOption("qwen2.5:3b");
-  await page.getByText("yalnız araştırma lisanslıdır").waitFor();
+await page.getByRole("button", { name: "Yapay zekâ" }).click();
+const setup = page.getByRole("region", { name: "Yapay zekâyı kur" });
+await setup.waitFor();
+const suggested = await setup.locator(".choice", { hasText: "Bu bilgisayar için önerilen" }).innerText();
+if (!suggested.includes("Kaliteli")) await fail(`16 GB RAM should suggest Kaliteli, got ${suggested}`);
+if (!(await setup.getByText(/Gereken alan: 4,5 GB/).count())) await fail("setup card should show the space it needs");
+for (const b of await setup.locator(".choice, button").all()) {
+  const h = (await b.boundingBox())?.height ?? 0;
+  if (h < 40) await fail(`setup targets must be 40px, got ${h}`);
 }
-const model = await page.getByLabel("Model").inputValue();
+await page.screenshot({ path: "docs/screenshots/ai-setup-light.png" });
+await setup.getByRole("button", { name: "İndir ve kur" }).click();
+await setup.getByText(/indiriliyor/).first().waitFor();
+await setup.getByRole("button", { name: "İptal" }).click();
+await setup.getByRole("alert").filter({ hasText: "İndirme iptal edildi." }).waitFor();
+console.log("setup: Kaliteli suggested, disk note, progress shown, cancel works");
+await setup.getByText("Hızlı", { exact: true }).click();
+await setup.getByRole("button", { name: "İndir ve kur" }).click();
+await page.getByRole("heading", { name: "Notlarla sohbet" }).waitFor({ timeout: 10_000 });
+const model = realUrl ? "real llama-server" : "mocked llama-server";
 
 const t0 = Date.now();
 await page.getByLabel("Soru").fill("TCP bağlantıyı nasıl kurar?");
@@ -114,7 +120,7 @@ await page.getByRole("button", { name: "Gönder" }).click();
 await page.locator(".turn.assistant").first().waitFor();
 await page.getByRole("button", { name: "Gönder" }).waitFor({ timeout: 120_000 }).catch(() => fail("no answer in 120 s"));
 const answer = (await page.locator(".turn.assistant").first().innerText()).trim();
-console.log(`chat (${real ? "real Ollama" : "mocked"}, ${model}, ${((Date.now() - t0) / 1000).toFixed(1)} s):`, answer.replace(/\s+/g, " ").slice(0, 400));
+console.log(`chat (${model}, ${((Date.now() - t0) / 1000).toFixed(1)} s):`, answer.replace(/\s+/g, " ").slice(0, 400));
 if (!answer || answer === "…") await fail("empty answer");
 await page.screenshot({ path: "docs/screenshots/ai-chat-light.png" });
 
@@ -152,6 +158,65 @@ await page.screenshot({ path: "docs/screenshots/ai-summary-light.png" });
 
 await page.emulateMedia({ colorScheme: "dark" });
 await page.screenshot({ path: "docs/screenshots/ai-chat-dark.png" });
+await page.emulateMedia({ colorScheme: "light" });
+
+// ---- settings: download and use Kaliteli, then delete Hızlı
+await page.getByRole("button", { name: "Ayarlar", exact: true }).click();
+const settings = page.getByRole("region", { name: "Yapay zekâ ayarları" });
+const row = (name) => settings.locator("li").filter({ has: page.getByText(name, { exact: true }) });
+await row("Hızlı").getByText("Kullanılıyor").waitFor();
+await row("Kaliteli").getByRole("button", { name: "İndir" }).click();
+await settings.getByText(/indiriliyor/).first().waitFor();
+await row("Kaliteli").getByText("Kullanılıyor").waitFor({ timeout: 10_000 });
+await row("Hızlı").getByRole("button", { name: "Sil" }).click();
+await row("Hızlı").getByRole("button", { name: "Evet, sil" }).click();
+await row("Hızlı").getByText("İndirilmedi").waitFor();
+await page.screenshot({ path: "docs/screenshots/ai-settings-light.png" });
+await page.getByRole("button", { name: "Ayarları kapat" }).click();
+await page.getByRole("heading", { name: "Notlarla sohbet" }).waitFor();
+console.log("settings: Kaliteli downloaded and in use, Hızlı deleted");
+if (errors.length) await fail("console errors");
+
+/** A fresh page (own in-memory library) with one PDF, so the sidebar shows. */
+async function freshPage(opts, fake) {
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, ...opts });
+  if (fake) await p.addInitScript((cfg) => (window.__NITO_FAKE_AI__ = cfg), fake);
+  await p.route(/:11434\//, (r) => r.abort("connectionrefused"));
+  await p.goto(url);
+  const ch = p.waitForEvent("filechooser");
+  await p.getByRole("button", { name: "PDF ekle" }).click();
+  await (await ch).setFiles([{ name: "Hafta 5_Tasima.pdf", mimeType: "application/pdf", buffer: lecturePdf() }]);
+  await p.getByRole("button", { name: /Hafta 5/ }).first().waitFor();
+  return p;
+}
+
+// ---- no built-in engine (other OS / browser) and no Ollama: the Ollama help card
+const down = await freshPage({});
+await down.getByRole("button", { name: "Yapay zekâ" }).click();
+await down.getByRole("heading", { name: "Ollama çalışmıyor" }).waitFor();
+await down.screenshot({ path: "docs/screenshots/ai-down-light.png" });
+await down.close();
+console.log("down: Ollama help card without a built-in engine");
+
+// ---- not enough disk space: clear note, button off
+const low = await freshPage({}, { freeGb: 1, ramGb: 8 });
+await low.getByRole("button", { name: "Yapay zekâ" }).click();
+await low.getByText("Diskte yeterli yer yok").waitFor();
+if (!(await low.getByRole("button", { name: "İndir ve kur" }).isDisabled())) await fail("install should be off with a full disk");
+await low.close();
+console.log("low disk: note shown, install disabled");
+
+// ---- phone: no AI anywhere
+const phone = await freshPage({
+  viewport: { width: 800, height: 1100 }, hasTouch: true, isMobile: true,
+  userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36",
+}, { ramGb: 16 });
+await phone.getByRole("button", { name: "Bugün" }).waitFor();
+if (await phone.getByRole("button", { name: "Yapay zekâ" }).count()) await fail("mobile must not show AI in the sidebar");
+if (await phone.getByText(/Yapay zekâ|Özetle/).count()) await fail("mobile must not show any AI entry point");
+await phone.close();
+console.log("mobile: no AI entry point");
+
 if (errors.length) await fail("console errors");
 console.log("e2e-ai ok");
 await browser.close();
