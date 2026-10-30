@@ -7,6 +7,7 @@ import { centeredRect, imageExt, imageMime, type ImageRect, type PageImage } fro
 import type { AnnotationMark } from "../core/repo";
 import { findHits, firstHitFrom, type SearchHit } from "../core/search";
 import type { Annotation, Document, Id, LabelKey, Rect } from "../core/types";
+import { Lecture } from "./lecture.svelte";
 import type { Library } from "./library.svelte";
 import { openPdf, type PDFDocumentProxy } from "./pdf";
 import { Recorder } from "./recorder.svelte";
@@ -43,6 +44,8 @@ export class Reader {
   /** Annotation whose recording is playing. */
   playingId = $state<Id | null>(null);
   readonly recorder: Recorder;
+  /** Recordings of this document: player, page timeline, note replay, cues. */
+  readonly lecture: Lecture;
   /** Handwriting on this document. */
   ink = $state<InkStroke[]>([]);
   inkTool = $state<InkTool>("none");
@@ -68,7 +71,8 @@ export class Reader {
   constructor(readonly lib: Library, readonly doc: Document) {
     this.inkRepo = new InkRepo(lib.repo.db);
     this.imageRepo = new ImageRepo(lib.repo.db);
-    this.recorder = new Recorder(lib, doc.id, () => void this.reloadAnnotations());
+    this.recorder = new Recorder(lib, doc.id, () => void this.reloadAnnotations().then(() => this.lecture.load()));
+    this.lecture = new Lecture(this);
   }
 
   async load(): Promise<void> {
@@ -78,6 +82,7 @@ export class Reader {
         this.reloadAnnotations(),
         this.reloadInk(),
         this.reloadImages(),
+        this.lecture.load(),
       ]);
       this.pdf = pdf;
     } catch (e) {
@@ -88,6 +93,7 @@ export class Reader {
   async close(): Promise<void> {
     await this.recorder.stop();
     this.player?.pause();
+    this.lecture.dispose();
     for (const url of this.audioUrls.values()) URL.revokeObjectURL(url);
     for (const url of this.imageUrls.values()) URL.revokeObjectURL(url);
     await this.pdf?.loadingTask.destroy();
@@ -159,7 +165,9 @@ export class Reader {
     const pts = simplify(points);
     if (!pts.length) return;
     const stroke = { documentId: this.doc.id, page, color: this.inkColor, width: this.inkWidth, points: pts, kind: this.inkKind };
-    await this.inkRepo.add(stroke);
+    const mark = this.recorder.mark();
+    const id = await this.inkRepo.add(stroke);
+    if (mark) await this.lecture.markStroke(id, mark.recordingId, mark.offsetSeconds);
     await this.reloadInk();
   }
 
@@ -274,6 +282,11 @@ export class Reader {
     this.hitIndex = 0;
   }
 
+  /** Stops the ▶ mm:ss playback of an annotation (the shared lecture player is starting). */
+  pauseMark(): void {
+    this.player?.pause();
+  }
+
   /** Plays the recording from the moment the annotation was made; a second call stops it. */
   async play(annotationId: Id): Promise<void> {
     const mark = this.marks.get(annotationId);
@@ -288,6 +301,7 @@ export class Reader {
       url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mark.mimeType }));
       this.audioUrls.set(mark.filePath, url);
     }
+    this.lecture.pause();
     this.player ??= new Audio();
     const player = this.player;
     player.onpause = player.onended = () => (this.playingId = null);

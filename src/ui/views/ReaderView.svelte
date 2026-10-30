@@ -16,6 +16,7 @@
   import AnnotationPanel from "./AnnotationPanel.svelte";
   import ImageLayer from "./ImageLayer.svelte";
   import InkLayer from "./InkLayer.svelte";
+  import PageAudio from "./PageAudio.svelte";
   import PageNav from "./PageNav.svelte";
   import PdfPage from "./PdfPage.svelte";
   import RecordBar from "./RecordBar.svelte";
@@ -109,6 +110,9 @@
     for (const el of scroller.querySelectorAll("[data-page]")) io.observe(el);
     return () => io.disconnect();
   });
+
+  // Slide–audio sync: the recorder stores each page change with its offset.
+  $effect(() => reader.recorder.notePage(current));
 
   // Remember the reading position (debounced in Library) for progress and "continue".
   $effect(() => {
@@ -361,10 +365,11 @@
       {:else}
         {#each sizes as size, i (i)}
           <PdfPage pdf={reader.pdf} num={i + 1} width={size.w} height={size.h} {scale} active={active.has(i + 1)}
-            annotations={reader.annotations.filter((a) => a.page === i + 1)} focusedId={reader.focusedId}
+            annotations={reader.annotations.filter((a) => a.page === i + 1 && !reader.lecture.hidesAnnotation(a.id))} focusedId={reader.focusedId}
             search={reader.searchQuery} currentMark={hit?.page === i + 1 ? currentMark : -1} {seek}>
             <ImageLayer {reader} page={i + 1} />
             <InkLayer {reader} page={i + 1} />
+            <PageAudio {reader} page={i + 1} />
           </PdfPage>
         {/each}
       {/if}
