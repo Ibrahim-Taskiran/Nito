@@ -38,7 +38,7 @@ async function render(storage: Storage, d: Document): Promise<Uint8Array> {
     if (!blob) throw new Error("Kapak oluşturulamadı");
     return new Uint8Array(await blob.arrayBuffer());
   } finally {
-    void pdf.destroy();
+    void pdf.loadingTask.destroy();
   }
 }
 
