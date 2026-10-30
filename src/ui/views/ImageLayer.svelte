@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Trash2 } from "@lucide/svelte";
   import { moveRect, resizeRect, type ImageRect } from "../../core/pageImage";
+  import { applyRect } from "../../core/selection";
   import type { Reader } from "../reader.svelte";
 
   let { reader, page }: { reader: Reader; page: number } = $props();
@@ -12,7 +13,13 @@
   const images = $derived(reader.tools.layers.images ? reader.images.filter((i) => i.page === page) : []);
   /** The layer covers the page and its added margin; rects stay normalised to the PDF page. */
   const b = $derived(reader.tools.bounds(page));
-  const rectOf = (i: { id: number } & ImageRect): ImageRect => (drag?.id === i.id ? drag.rect : i);
+  /** Pictures in a lasso selection follow its live move / scale. */
+  const rectOf = (i: { id: number } & ImageRect): ImageRect => {
+    if (drag?.id === i.id) return drag.rect;
+    const sel = reader.edit.selection;
+    const t = reader.edit.preview;
+    return sel?.page === page && sel.images.includes(i.id) && (t.k !== 1 || t.dx || t.dy) ? applyRect(t, i) : i;
+  };
 
   function start(e: PointerEvent, img: { id: number } & ImageRect, mode: "move" | "resize") {
     if (e.button > 0) return;
