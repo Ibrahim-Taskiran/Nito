@@ -1,5 +1,5 @@
 // E2E for the study timer in the reader: stopwatch counts, pauses, keeps running after the reader closes,
-// alarm rings; on a phone the panel opens as a bottom sheet. Needs `npm run dev`.
+// alarm rings, the time shows in Çalışma Merkezi; on a phone the panel opens as a bottom sheet. Needs `npm run dev`.
 import { chromium } from "@playwright/test";
 import { resolve } from "node:path";
 
@@ -61,6 +61,16 @@ await panel.getByRole("button", { name: /Kur/ }).click();
 await page.getByRole("alertdialog", { name: "Süre doldu" }).waitFor({ timeout: 8000 }).catch(() => fail("alarm did not ring"));
 await page.getByRole("button", { name: "Tamam" }).click();
 console.log("alarm: rings and closes");
+
+// Time counted while the PDF was open shows in Çalışma Merkezi.
+await page.keyboard.press("Escape");
+await page.keyboard.press("Escape");
+await page.getByRole("button", { name: "Çalışma Merkezi" }).click();
+const row = page.getByTestId("study-time").filter({ hasText: "Uzun Belge" });
+await row.waitFor({ timeout: 5000 }).catch(() => fail("no study time row in Çalışma Merkezi"));
+const time = (await row.textContent()).replace(/\s+/g, " ").trim();
+if (!/1 dk'dan az|\d+ dk/.test(time)) fail(`study time text: ${time}`);
+console.log(`study time: ${time}`);
 await page.close();
 
 // Phone: the panel is a bottom sheet inside the screen.
