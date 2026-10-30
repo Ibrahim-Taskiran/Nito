@@ -20,8 +20,9 @@
   const placing = $derived(reader.inkTool === "text" || reader.inkTool === "note");
   const inert = $derived(isInkTool(reader.inkTool) || reader.inkTool === "tape");
   const rectOf = (n: PageNote): PageRect => (drag?.id === n.id ? drag.rect : n);
-  const pos = (r: PageRect) =>
-    `left:${(r.x / b.w) * 100}%;top:${(r.y / b.h) * 100}%;width:${(r.w / b.w) * 100}%;height:${(r.h / b.h) * 100}%`;
+  /** Text boxes grow with their text (height is a minimum); sticky notes keep their size and scroll. */
+  const pos = (r: PageRect, grow: boolean) =>
+    `left:${(r.x / b.w) * 100}%;top:${(r.y / b.h) * 100}%;width:${(r.w / b.w) * 100}%;${grow ? "min-height" : "height"}:${(r.h / b.h) * 100}%`;
 
   async function place(e: MouseEvent) {
     if (!placing) return;
@@ -127,7 +128,7 @@
         onclick={(e) => { e.stopPropagation(); void tools.updateNote(n.id, { collapsed: false }); }}><StickyNote size={20} /></button>
     {:else}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="pnote {n.kind}" class:selected class:editing class:empty={!n.body.trim()} style={pos(r)} data-note={n.id}
+      <div class="pnote {n.kind}" class:selected class:editing class:empty={!n.body.trim()} style={pos(r, n.kind === "text" && !editing)} data-note={n.id}
         aria-label={n.kind === "sticky" ? "Yapışkan not" : "Metin kutusu"} role="group"
         onpointerdown={(e) => start(e, n, "move")} onpointermove={move} onpointerup={end} onpointercancel={end}
         ondblclick={() => startEdit(n.id)} {@attach longPress(() => void startEdit(n.id))}>
