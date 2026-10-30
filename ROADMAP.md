@@ -145,11 +145,11 @@ These four groups are independent and can run in parallel, each in its own git w
 - ✅ Touch gestures: pinch zoom and swipe between pages.
 - ✅ Whisper and Ollama are desktop-only at first. Hide them on mobile, or offer a "send to desktop" option later.
 
-### Phase 3.5: Richer UI (owner request 2026-10-30) 🟨
+### Phase 3.5: Richer UI (owner request 2026-10-30) ✅
 The owner found the UI too empty next to similar apps. Three parallel worktree agents:
-- 🟨 **Reader:** icon + text toolbar, "Ses kaydı" (renamed from "Kaydet"), page number box, search (Ctrl+F), left panel (page thumbnails, outline), pen kinds (tükenmez, kurşun kalem, fosforlu) with 10+ colours, custom colour and width, laser pen (not saved, fades), insert image from gallery (move, resize, delete). Migration 006.
-- 🟨 **Library:** cover cards, search (Ctrl+K), sort, grid/list, course chips, reading progress + "Kaldığın yerden devam et", right-click menu (rename, move to course, week, delete). Migration 007 (`last_page`, `page_count`, `last_opened_at`).
-- 🟨 **Home "Bugün" + weekly plan "Program":** start screen (continue reading, today's plan, due cards, recent highlights and recordings), week planner with repeat, drag to another day. Migration 008 (`plan_item`).
+- ✅ **Reader:** icon + text toolbar, "Ses kaydı" (renamed from "Kaydet"), page number box, search (Ctrl+F), left panel (page thumbnails, outline), pen kinds (tükenmez, kurşun kalem, fosforlu) with 10+ colours, custom colour and width, laser pen (not saved, fades), insert image from gallery (move, resize, delete). Migration 006.
+- ✅ **Library:** cover cards, search (Ctrl+K), sort, grid/list, course chips, reading progress + "Kaldığın yerden devam et", right-click menu (rename, move to course, week, delete). Migration 007 (`last_page`, `page_count`, `last_opened_at`).
+- ✅ **Home "Bugün" + weekly plan "Program":** start screen (continue reading, today's plan, due cards, recent highlights and recordings), week planner with repeat, drag to another day. Migration 008 (`plan_item`).
 
 ### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.

@@ -2,6 +2,14 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (3) — Phase 3.5 done: Library, Home + Plan, Reader merged into main
+- **Merged:** Library (merge after 04a1a62), Home + Plan (c5babf6), Reader (e468064). Migrations `[001 … 005, 006_ink_kinds, 007_reading, 008_plan]`. The e2e chain ends with e2e-library, e2e-home and e2e-reader.
+- **Checks on main:** svelte-check 0, tsc 0, vitest 92 passed, `cargo check` ok, `npm run e2e` (all 10 scripts) passed.
+- **Owner rule (2026-10-30):** one app for Windows, Android and iOS. Every feature must work with touch and pen (long press next to right click, 40px targets, nothing hover-only, tablet widths). Only publishing (store, signing, APK release) is postponed.
+- **Known limits:** a search word split across two text-layer pieces is counted but not highlighted; the thickness slider has 3 steps; a one-page PDF is marked Okundu on open; image insert on mobile depends on the dialog plugin `open`; nothing tried on a real tablet yet.
+- **Not verified in the real Tauri window:** the new migrations 006–008 on the owner's real DB (at v5). Run `npm run smoke:tauri` with a DB copy kept first.
+- **Next step:** ask the owner what to polish next; then the Tauri window check above.
+
 ## 2026-10-30 — Phase 3.5 reader tools (branch worktree-agent-ac58affee2bb8af17)
 - **Done:** two-row icon + text toolbar (lucide): "Ses kaydı" with mic icon, Ara (Ctrl+F), page number box (hidden `.pages` "N / M" kept for tests), zoom, Sayfalar (left panel: lazy thumbnails + pdf.js outline), Vurgular, Yan yana. Tool row: Tükenmez, Kurşun kalem, Fosforlu, Lazer (fades, not saved), Silgi, Resim ekle (Platform `pickImage`, move/resize/delete). Pen palette (10 per kind), custom colour, width slider. Search bar with count, next/prev, current hit marked and scrolled into view. All controls ≥40px, toolbar wraps at tablet width (checked at 800px, no sideways scroll).
 - **Files:** src/ui/views/ReaderView.svelte, PageNav.svelte (new), PdfPage.svelte, ImageLayer.svelte, RecordBar.svelte, RecordingList.svelte, src/ui/components/ToolButton.svelte (new), src/core/reader.ts (parsePageInput, flattenOutline, hitOnPage), tests/reader-tools.test.ts, scripts/e2e-reader.mjs (new, in `npm run e2e`), e2e-record/transcribe/touch/ai label updates.
