@@ -1,7 +1,7 @@
 //! Built-in AI engine on desktop: llama.cpp's `llama-server` (MIT) runs as a child process on 127.0.0.1.
 //! Setup downloads a pinned Windows CPU build and a GGUF model (Apache-2.0) into `<app data>/ai/`,
 //! and checks the sha256 of both. The server gets a random port and API key and dies with the app.
-use crate::fetch::{agent, download, find_file, hex, SetupProgress, CANCELLED};
+use crate::fetch::{agent, check, download, find_file, hex, SetupProgress, CANCELLED};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -152,14 +152,6 @@ pub fn needed_bytes(dir: &Path, m: &ModelSpec) -> u64 {
 }
 
 const GB: f64 = (1u64 << 30) as f64;
-
-fn check(sha: &str, want: &str, file: &Path) -> Result<(), String> {
-    if sha == want {
-        return Ok(());
-    }
-    let _ = fs::remove_file(file);
-    Err("İndirilen dosya bozuk çıktı (sha256 tutmadı). Yeniden dene.".into())
-}
 
 /// Installs the engine (if missing) and `model` (if missing) into `dir`.
 pub fn setup(dir: &Path, model: &str, progress: &mut dyn FnMut(SetupProgress), cancel: &AtomicBool) -> Result<(), String> {

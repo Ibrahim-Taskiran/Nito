@@ -28,6 +28,8 @@ export class Study {
   exam = $state<DocHighlight[]>([]);
   docs = $state<Document[]>([]);
   progress = $state<CourseProgress[]>([]);
+  /** Study time per document id. */
+  times = $state<Map<Id, number>>(new Map());
   session = $state<Session | null>(null);
   quiz = $state<Quiz | null>(null);
   /** One-line status after an action (note created, pack saved). */
@@ -39,6 +41,10 @@ export class Study {
   quizable = $derived(this.cards.filter((c) => c.hasAnswer).length);
   card = $derived(this.session?.queue[this.session.index] ?? null);
   question = $derived(this.quiz?.questions[this.quiz.index] ?? null);
+  /** Documents with study time, longest first. */
+  timed = $derived(
+    this.docs.filter((d) => this.times.has(d.id)).sort((a, b) => (this.times.get(b.id) ?? 0) - (this.times.get(a.id) ?? 0)),
+  );
   quizScore = $derived(this.quiz ? score(this.quiz.questions, this.quiz.picks) : null);
 
   constructor(readonly lib: Library) {
@@ -47,11 +53,12 @@ export class Study {
 
   async refresh(): Promise<void> {
     this.today = isoDay(new Date());
-    [this.cards, this.exam, this.docs, this.progress] = await Promise.all([
+    [this.cards, this.exam, this.docs, this.progress, this.times] = await Promise.all([
       this.repo.listCards(this.courseId, this.today),
       this.repo.examHighlights(this.courseId),
       this.repo.documents(this.courseId),
       this.repo.courseProgress(),
+      this.repo.studyTimes(),
     ]);
   }
 
