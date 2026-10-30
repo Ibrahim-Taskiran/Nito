@@ -11,9 +11,10 @@ import m009 from "./migrations/009_lecture_audio";
 import m010 from "./migrations/010_page_tools";
 import m011 from "./migrations/011_page_flags";
 import m012 from "./migrations/012_pages";
+import m015 from "./migrations/015_note_color";
 
 /** Ordered list; index + 1 is the schema version stored in PRAGMA user_version. */
-export const MIGRATIONS: readonly string[] = [m001, m002, m003, m004, m005, m006, m007, m008, m009, m010, m011, m012];
+export const MIGRATIONS: readonly string[] = [m001, m002, m003, m004, m005, m006, m007, m008, m009, m010, m011, m012, m015];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

@@ -28,8 +28,8 @@ export interface InkColor {
 
 /** Ballpoint colours: dark, saturated, readable on white paper. */
 const PEN_COLORS: readonly InkColor[] = [
-  { color: "#1f2a44", name: "Koyu" },
   { color: "#000000", name: "Siyah" },
+  { color: "#1f2a44", name: "Koyu" },
   { color: "#c0392b", name: "Kırmızı" },
   { color: "#2f6fb0", name: "Mavi" },
   { color: "#1e8449", name: "Yeşil" },
