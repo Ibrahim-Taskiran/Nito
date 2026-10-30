@@ -1,5 +1,6 @@
 // E2E for tablet input: pen strokes saved and erased, pinch zoom, swipe to the next page. Needs `npm run dev`.
 import { chromium } from "@playwright/test";
+import { takePen } from "./e2e-ink.mjs";
 import { resolve } from "node:path";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
@@ -22,8 +23,7 @@ await page.getByRole("button", { name: "Aç" }).click();
 await page.locator(".textLayer span").first().waitFor();
 
 // Pen: draw a zigzag on page 1.
-await page.getByRole("button", { name: "Tükenmez" }).click();
-await page.getByRole("button", { name: "Renk: Kırmızı" }).click();
+await takePen(page, "Tükenmez", "Kırmızı");
 const box = await page.locator('[data-page="1"]').boundingBox();
 await page.mouse.move(box.x + 100, box.y + 300);
 await page.mouse.down();

@@ -4,6 +4,7 @@
 // PageNav long press, draw on one, reopen, delete with confirm). Phone 390x844, tablet 820x1180, desktop.
 // Fake whisper. Needs the dev server (NITO_URL).
 import { chromium } from "@playwright/test";
+import { penToggle } from "./e2e-ink.mjs";
 import { mkdirSync, readFileSync } from "node:fs";
 import { PDFDocument } from "pdf-lib";
 
@@ -76,12 +77,12 @@ const tr = (n) => page.locator(`[data-transcript="${n}"]`);
 const drawOn = async (loc) => {
   await loc.scrollIntoViewIfNeeded();
   const box = await loc.boundingBox();
-  await page.getByRole("button", { name: "Tükenmez" }).click();
+  await penToggle(page);
   await page.mouse.move(box.x + 60, box.y + 80);
   await page.mouse.down();
   await page.mouse.move(box.x + 160, box.y + 120, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole("button", { name: "Tükenmez" }).click();
+  await penToggle(page);
 };
 /** Touch long press through CDP: pointerType "touch", as on a tablet. */
 const cdp = await ctx.newCDPSession(page);
@@ -246,6 +247,14 @@ await (await pageMenu()).getByRole("button", { name: "Bu boş sayfayı sil" }).c
 await dlg.getByRole("button", { name: "Sil" }).click();
 await page.waitForFunction(() => document.querySelectorAll(".scroller [data-blank]").length === 1).catch(() => fail("blank page not deleted"));
 if (!/\+ 1 boş/.test(await page.locator(".total").innerText())) await fail("page count after delete");
+// "Sayfayı kaldır" sits on blank pages only.
+await jump("4a");
+const dropBlank = page.locator(".scroller [data-blank]").getByRole("button", { name: "Sayfayı kaldır" });
+await dropBlank.waitFor({ timeout: 3000 }).catch(() => fail("no Sayfayı kaldır on the blank page"));
+if (await page.locator(".scroller [data-page]:not([data-blank])").getByRole("button", { name: "Sayfayı kaldır" }).count()) await fail("Sayfayı kaldır on a PDF page");
+await dropBlank.click();
+await dlg.getByRole("button", { name: "Sil" }).click();
+await page.waitForFunction(() => !document.querySelector(".scroller [data-blank]")).catch(() => fail("Sayfayı kaldır did not remove the page"));
 console.log("blank: insert from menu and long press, draw, reopen, search, delete with confirm");
 
 // Phone: the toolbar controls stay touch-sized.

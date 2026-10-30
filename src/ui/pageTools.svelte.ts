@@ -2,14 +2,23 @@
 import type { InkStroke } from "../core/ink";
 import type { PageImage } from "../core/pageImage";
 import {
-  NO_MARGIN, clearMargin, contentExtent, growMargin, noteRectAt, pageBounds, parseLayers,
+  DEFAULT_NOTE_COLOR, NO_MARGIN, asNoteColor, clearMargin, contentExtent, growMargin, noteRectAt, pageBounds, parseLayers,
   type LayerKey, type Layers, type Margin, type MarginSide, type NoteKind, type PageNote, type PageRect, type Tape,
 } from "../core/pageTools";
-import { PageToolsRepo } from "../core/pageToolsRepo";
+import { PageToolsRepo, type NotePatch } from "../core/pageToolsRepo";
 import type { SqlDb } from "../core/db/sql";
 import type { Id } from "../core/types";
 
 const LAYERS_KEY = "nito.layers";
+const NOTE_COLOR_KEY = "nito.noteColor";
+
+function loadNoteColor(): string {
+  try {
+    return asNoteColor(localStorage.getItem(NOTE_COLOR_KEY));
+  } catch {
+    return DEFAULT_NOTE_COLOR;
+  }
+}
 
 function loadLayers(): Layers {
   try {
@@ -25,6 +34,8 @@ export class PageTools {
   margins = $state.raw(new Map<number, Margin>());
   /** Shown layers; a per-device setting. */
   layers = $state<Layers>(loadLayers());
+  /** Colour for the next sticky note: the last one picked (per device). */
+  noteColor = $state(loadNoteColor());
   selectedNoteId = $state<Id | null>(null);
   editingNoteId = $state<Id | null>(null);
   private repo: PageToolsRepo;
@@ -108,16 +119,25 @@ export class PageTools {
 
   // Text boxes and sticky notes.
   async addNote(page: number, kind: NoteKind, at: { x: number; y: number }): Promise<Id> {
-    const id = await this.repo.addNote(this.documentId, page, kind, noteRectAt(kind, at, this.bounds(page)));
+    const id = await this.repo.addNote(this.documentId, page, kind, noteRectAt(kind, at, this.bounds(page)), "", this.noteColor);
     this.notes = await this.repo.notes(this.documentId);
     this.selectedNoteId = id;
     this.editingNoteId = id;
     return id;
   }
 
-  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean; page: number }>): Promise<void> {
+  async updateNote(id: Id, patch: NotePatch): Promise<void> {
     this.notes = this.notes.map((n) => (n.id === id ? { ...n, ...patch } : n));
     await this.repo.updateNote(id, patch);
+  }
+
+  /** Recolours a sticky note; new notes take the same colour. */
+  async setNoteColor(id: Id, color: string): Promise<void> {
+    this.noteColor = asNoteColor(color);
+    try {
+      localStorage.setItem(NOTE_COLOR_KEY, this.noteColor);
+    } catch { /* storage off */ }
+    await this.updateNote(id, { color: this.noteColor });
   }
 
   async removeNote(id: Id): Promise<void> {

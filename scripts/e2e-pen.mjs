@@ -4,6 +4,7 @@
 // moving a selection to page 2 (drag, undo, "Sayfaya taşı", reopen).
 // Needs `npm run dev`.
 import { chromium } from "@playwright/test";
+import { penToggle } from "./e2e-ink.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -96,7 +97,7 @@ async function run(vp, label) {
   const circle = (cx, cy, r, n = 40) =>
     Array.from({ length: n + 1 }, (_, i) => [cx + r * Math.cos((i / n) * 2.05 * Math.PI) + jit(2), cy + r * Math.sin((i / n) * 2.05 * Math.PI) + jit(2)]);
   const count = () => strokes.count();
-  const tool = (name) => page.getByRole("button", { name, exact: true }).click();
+  const tool = (name) => (name === "Tükenmez" ? penToggle(page) : page.getByRole("button", { name, exact: true }).click());
   const penMenu = async (option) => {
     await page.getByRole("button", { name: "Kalem ve dokunma" }).click();
     await page.getByRole("radio", { name: new RegExp(option) }).check();
@@ -173,13 +174,13 @@ async function run(vp, label) {
   }, { x: b.x + W * 0.7, y: b.y + H * 0.3, src: imgUrl });
   await page.waitForFunction(() => document.querySelectorAll('[data-page="1"] .pimg').length === 2, null, { timeout: 4000 })
     .catch(() => fail(`${label}: dropped browser image missing`));
-  await page.getByRole("button", { name: "Web resmi" }).click();
+  await page.getByRole("button", { name: "Resim", exact: true }).click();
   await page.getByRole("textbox", { name: "Resim bağlantısı" }).fill(imgUrl);
   await page.getByRole("button", { name: "Bağlantıdan resim ekle" }).click();
   await page.waitForFunction(() => document.querySelectorAll('[data-page="1"] .pimg').length === 3, null, { timeout: 5000 })
     .catch(() => fail(`${label}: link image missing`));
   // A web page link is refused with a message.
-  await page.getByRole("button", { name: "Web resmi" }).click();
+  await page.getByRole("button", { name: "Resim", exact: true }).click();
   await page.getByRole("textbox", { name: "Resim bağlantısı" }).fill(new URL("/", url).href);
   await page.getByRole("button", { name: "Bağlantıdan resim ekle" }).click();
   await page.getByRole("alert").waitFor({ timeout: 4000 }).catch(() => fail(`${label}: no message for a non-image link`));

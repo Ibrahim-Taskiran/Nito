@@ -3,6 +3,7 @@
 // confirm, and on a phone covers the PDF until closed. Needs the dev server (NITO_URL).
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { penDown, takePen } from "./e2e-ink.mjs";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
 const PHONE = { width: 390, height: 844 };
@@ -46,7 +47,6 @@ const fail = async (msg) => {
 const pane = page.getByRole("complementary", { name: "Defter" });
 const nbPages = pane.locator("[data-nb-page]");
 const toggle = page.getByRole("button", { name: "Defter", exact: true });
-const pen = page.getByRole("button", { name: "Tükenmez" });
 const waitCount = (n, what) =>
   page.waitForFunction((n) => document.querySelectorAll("[data-nb-page]").length === n, n, { timeout: 5000 }).catch(() => fail(what));
 
@@ -84,12 +84,12 @@ const gridKey = await grid.getAttribute("data-nb-page");
 // ---- 3) Draw on it with the reader's pen.
 await grid.scrollIntoViewIfNeeded();
 const g = await grid.boundingBox();
-await pen.click();
+await takePen(page);
 await page.mouse.move(g.x + 60, g.y + 80);
 await page.mouse.down();
 await page.mouse.move(g.x + 180, g.y + 140, { steps: 8 });
 await page.mouse.up();
-await pen.click();
+await penDown(page);
 const strokes = () => page.locator(`[data-nb-page="${gridKey}"] path[data-kind="pen"]`).count();
 await page.waitForFunction((k) => document.querySelectorAll(`[data-nb-page="${k}"] path[data-kind="pen"]`).length === 1, gridKey, { timeout: 5000 })
   .catch(() => fail("stroke not drawn on the notebook page"));

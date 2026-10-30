@@ -1,6 +1,6 @@
 // Data access for tapes, text boxes / sticky notes and page margins.
 import type { Row, SqlDb } from "./db/sql";
-import { asMargin, asNoteKind, type Margin, type NoteKind, type PageNote, type PageRect, type Tape } from "./pageTools";
+import { DEFAULT_NOTE_COLOR, asMargin, asNoteColor, asNoteKind, type Margin, type NoteKind, type PageNote, type PageRect, type Tape } from "./pageTools";
 import type { Id } from "./types";
 
 const toTape = (r: Row): Tape => ({
@@ -25,7 +25,10 @@ const toNote = (r: Row): PageNote => ({
   h: Number(r.h),
   body: String(r.body ?? ""),
   collapsed: Number(r.collapsed) === 1,
+  color: asNoteColor(r.color),
 });
+
+export type NotePatch = Partial<PageRect & { body: string; collapsed: boolean; color: string; page: number }>;
 
 export class PageToolsRepo {
   constructor(readonly db: SqlDb) {}
@@ -58,14 +61,14 @@ export class PageToolsRepo {
     return (await this.db.all("SELECT * FROM page_note WHERE document_id = ? ORDER BY id", [documentId])).map(toNote);
   }
 
-  async addNote(documentId: Id, page: number, kind: NoteKind, r: PageRect, body = ""): Promise<Id> {
+  async addNote(documentId: Id, page: number, kind: NoteKind, r: PageRect, body = "", color = DEFAULT_NOTE_COLOR): Promise<Id> {
     return (await this.db.run(
-      "INSERT INTO page_note (document_id, page, kind, x, y, w, h, body) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [documentId, page, kind, r.x, r.y, r.w, r.h, body],
+      "INSERT INTO page_note (document_id, page, kind, x, y, w, h, body, color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [documentId, page, kind, r.x, r.y, r.w, r.h, body, asNoteColor(color)],
     )).lastId;
   }
 
-  async updateNote(id: Id, patch: Partial<PageRect & { body: string; collapsed: boolean; page: number }>): Promise<void> {
+  async updateNote(id: Id, patch: NotePatch): Promise<void> {
     const cols: string[] = [];
     const vals: (string | number)[] = [];
     for (const k of ["page", "x", "y", "w", "h", "body"] as const) {
@@ -73,6 +76,10 @@ export class PageToolsRepo {
         cols.push(`${k} = ?`);
         vals.push(patch[k]);
       }
+    }
+    if (patch.color !== undefined) {
+      cols.push("color = ?");
+      vals.push(asNoteColor(patch.color));
     }
     if (patch.collapsed !== undefined) {
       cols.push("collapsed = ?");
