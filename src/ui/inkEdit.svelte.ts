@@ -4,8 +4,8 @@ import { hitsStroke, simplify, type InkPoint, type InkStroke } from "../core/ink
 import type { PageImage } from "../core/pageImage";
 import type { PageNote } from "../core/pageTools";
 import {
-  IDENTITY, applyBox, applyPoints, applyRect, clampMove, pasteOffset, pointsBox, rectInLasso, strokeInLasso, unionBox,
-  type Box, type Pt, type Transform,
+  IDENTITY, applyBox, applyPoints, applyRect, clampMove, mapBox, mapPoints, pageMap, pasteOffset, pointsBox, rectInLasso,
+  strokeInLasso, unionBox, type Box, type PagePlace, type Pt, type Transform,
 } from "../core/selection";
 import { SHAPE_NAMES, type Shape } from "../core/shapes";
 import { TouchGate, parsePenInput, type PenInputPrefs } from "../core/touchInput";
@@ -14,7 +14,7 @@ import type { Reader } from "./reader.svelte";
 
 const PREFS_KEY = "nito.penInput";
 
-type StrokeState = Pick<InkStroke, "id" | "points" | "width" | "color">;
+type StrokeState = Pick<InkStroke, "id" | "page" | "points" | "width" | "color">;
 type Undo =
   | { kind: "add"; ids: Id[]; images?: Id[]; notes?: Id[] }
   | { kind: "shape"; id: Id; raw: InkPoint[] }
@@ -53,6 +53,8 @@ export class InkEdit {
   selection = $state<Selection | null>(null);
   /** Move / scale shown while dragging the selection; saved on release. */
   preview = $state<Transform>(IDENTITY);
+  /** Page the selection is being dragged over (it moves there on release). */
+  dropPage = $state<number | null>(null);
   private undos = $state<Undo[]>([]);
   private clip: Clip | null = null;
   clipReady = $state(false);
@@ -89,6 +91,15 @@ export class InkEdit {
     this.undos = [...this.undos.slice(-49), u];
   }
 
+  private pushEdit(p: { strokes: InkStroke[]; images: PageImage[]; notes: PageNote[] }): void {
+    this.push({
+      kind: "edit",
+      strokes: p.strokes.map(({ id, page, points, width, color }) => ({ id, page, points, width, color })),
+      images: p.images.map((x) => ({ ...x })),
+      notes: p.notes.map((x) => ({ ...x })),
+    });
+  }
+
   async addStroke(page: number, raw: InkPoint[]): Promise<void> {
     const id = await this.reader.addStroke(page, raw);
     if (id != null) this.push({ kind: "add", ids: [id] });
@@ -120,9 +131,9 @@ export class InkEdit {
       for (const id of u.images ?? []) await r.removeImage(id);
       for (const id of u.notes ?? []) await r.tools.removeNote(id);
     } else if (u.kind === "edit") {
-      for (const s of u.strokes) await r.inkRepo.update(s.id, { points: s.points, width: s.width, color: s.color });
-      for (const i of u.images) await r.moveImage(i.id, { x: i.x, y: i.y, w: i.w, h: i.h });
-      for (const n of u.notes) await r.tools.updateNote(n.id, { x: n.x, y: n.y, w: n.w, h: n.h });
+      for (const s of u.strokes) await r.inkRepo.update(s.id, { page: s.page, points: s.points, width: s.width, color: s.color });
+      for (const i of u.images) await r.moveImage(i.id, { x: i.x, y: i.y, w: i.w, h: i.h }, i.page);
+      for (const n of u.notes) await r.tools.updateNote(n.id, { page: n.page, x: n.x, y: n.y, w: n.w, h: n.h });
     } else {
       for (const s of u.strokes) await r.inkRepo.add(s);
       for (const i of u.images) await r.imageRepo.add(i);
@@ -205,12 +216,7 @@ export class InkEdit {
     if (!s || (t.dx === 0 && t.dy === 0 && t.k === 1)) return;
     const p = this.picked();
     const r = this.reader;
-    this.push({
-      kind: "edit",
-      strokes: p.strokes.map((x) => ({ id: x.id, points: x.points, width: x.width, color: x.color })),
-      images: p.images.map((x) => ({ ...x })),
-      notes: p.notes.map((x) => ({ ...x })),
-    });
+    this.pushEdit(p);
     // Show the result at once; the database follows.
     r.ink = r.ink.map((x) => (s.strokes.includes(x.id) ? { ...x, points: applyPoints(t, x.points), width: x.width * t.k } : x));
     for (const x of p.strokes) await r.inkRepo.update(x.id, { points: applyPoints(t, x.points), width: x.width * t.k });
@@ -223,10 +229,41 @@ export class InkEdit {
     await r.reloadInk();
   }
 
+  /**
+   * Moves the selection to another page. `from` / `to` say where both pages are (screen rects for a drag,
+   * paper sizes otherwise); `shift` is the drag distance in the same units. One undo step.
+   */
+  async moveTo(page: number, from: PagePlace, to: PagePlace, shift?: Pt): Promise<boolean> {
+    const s = this.selection;
+    const box = this.box();
+    this.preview = IDENTITY;
+    if (!s || !box || page === s.page) return false;
+    const m = pageMap(from, to, box, shift);
+    const p = this.picked();
+    const r = this.reader;
+    this.pushEdit(p);
+    r.ink = r.ink.map((x) => (s.strokes.includes(x.id) ? { ...x, page, points: mapPoints(m, x.points), width: x.width * m.sx } : x));
+    for (const x of p.strokes) await r.inkRepo.update(x.id, { page, points: mapPoints(m, x.points), width: x.width * m.sx });
+    for (const i of p.images) await r.moveImage(i.id, mapBox(m, i), page);
+    // Text keeps its size, so a note keeps its box size too.
+    for (const n of p.notes) {
+      const b = mapBox(m, n);
+      await r.tools.updateNote(n.id, { page, x: b.x, y: b.y });
+    }
+    this.selection = { ...s, page };
+    await r.reloadInk();
+    return true;
+  }
+
+  /** Copy, then delete (one undo step brings the selection back). */
+  async cut(): Promise<void> {
+    if (this.copy()) await this.remove();
+  }
+
   async recolor(color: string): Promise<void> {
     const p = this.picked();
     if (!p.strokes.length) return;
-    this.push({ kind: "edit", strokes: p.strokes.map((x) => ({ id: x.id, points: x.points, width: x.width, color: x.color })), images: [], notes: [] });
+    this.pushEdit({ strokes: p.strokes, images: [], notes: [] });
     for (const x of p.strokes) await this.reader.inkRepo.update(x.id, { color });
     await this.reader.reloadInk();
   }
