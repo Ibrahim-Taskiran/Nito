@@ -36,8 +36,13 @@ Her şey cihazında, internetsiz çalışır.
 ## Özellikler
 
 ### Bugün ve Program
-- Açılış ekranı: kaldığın belgeler, bugünün planı, tekrar zamanı gelen kartlar, son vurgular ve kayıtlar.
-- Haftalık ders programı: haftalık tekrar, sürükleyerek başka güne taşıma, tamamlandı işareti.
+- Açılış ekranı: kaldığın belgeler, bugünün planı, kutulara göre tekrar zamanı gelen kartlar, haftalık çalışma grafiği, sıradaki sınava kalan gün, son vurgular ve kayıtlar.
+- Haftalık ders programı: gün sütunları, bugün vurgulu, haftalık tekrar, sürükleyerek başka güne taşıma, tamamlandı işareti.
+
+### Görünüm
+- Sakin, tablet öncelikli tasarım: koyu çivit tonları, Manrope ve Hanken Grotesk yazı tipleri (uygulamanın içinde, internetsiz).
+- Açık, koyu ve sistem teması. Kenar çubuğu tablette ikon şeridine, telefonda çekmece ve alt menüye dönüşür.
+- Her ekrandan arama (Ctrl+K) ve "PDF ekle".
 
 ### Kütüphane
 - Kapak resimli kartlar ya da liste görünümü, derse göre filtre, sıralama.
@@ -49,14 +54,16 @@ Her şey cihazında, internetsiz çalışır.
 
 ### PDF okuyucu
 - Etiketli vurgular (Sınav, Tanım, Soru …) ve vurgulara yorum.
-- Kalemler: **tükenmez, kurşun kalem, fosforlu**. Her biri için 10 renk, özel renk ve kalınlık. Silgi ve **lazer kalem**.
+- Tek **Kalem** düğmesi: varsayılan siyah tükenmez. Açınca **tükenmez, kurşun kalem, fosforlu**, 10+ renk, özel renk ve kalınlık. Silgi ve ayrı **lazer kalem**.
 - Basınca duyarlı kalem desteği. **Avuç içi ve yanlış dokunma engeli**: büyük temaslar ve kalem ekrandayken gelen dokunuşlar yok sayılır. "Yalnız kalemle çiz", "Parmakla da çiz" ve dokunma hassasiyeti ayarı.
 - **Şekil düzeltme:** çizginin sonunda kalemi bekletince yamuk çizgi düz çizgiye dönüşür; daire, dikdörtgen, üçgen ve ok da tanınır. El yazısına dokunulmaz, geri alınabilir.
-- **Seç aracı:** kementle yazı ve çizimleri seç; taşı, büyüt, küçült, rengini değiştir, kopyala, sil, geri al.
-- Sayfaya resim ekleme, taşıma, boyutlandırma. Galeriden, panodan yapıştırarak, tarayıcıdan sürükleyerek ya da bağlantıdan.
-- **Boş sayfa ekleme:** istediğin yere; PDF dosyası değişmez.
+- **Seç aracı:** kementle yazı ve çizimleri seç; taşı, büyüt, küçült, rengini değiştir, kopyala, kes, sil, geri al.
+- **Başka sayfaya taşı:** seçimi başka sayfaya sürükle ya da "Sayfaya taşı" ile sayfa numarasını yaz. Yazı, metin kutusu ve resim birlikte taşınır.
+- **Resim** menüsü: dosyadan, panodan yapıştırarak, tarayıcıdan sürükleyerek ya da bağlantıdan. Taşıma ve boyutlandırma.
+- **Boş sayfa ekleme ve kaldırma:** istediğin yere ekle, "Sayfayı kaldır" ile sil; PDF dosyası değişmez.
+- **Defter:** PDF'in yanında açılan not defteri. Düz beyaz sayfayla başlar; düz, kareli, çizgili ya da noktalı sayfa eklenir. Kalem, metin ve notlar burada da çalışır. Telefonda PDF'in üstüne açılır.
 - **Önemli sayfalar:** "Önemli" işaretli sayfalar yanda küçük ayrı bir PDF gibi durur; istersen gerçek PDF olarak kaydedilir.
-- **Metin kutusu ve yapışkan not:** LaTeX formül (KaTeX) ve renkli kod bloğu desteğiyle.
+- **Metin kutusu ve yapışkan not:** LaTeX formül (KaTeX) ve renkli kod bloğu desteğiyle. Notlar için 7 renk.
 - **Bant modu:** tanımı ya da formülü bantla kapat, dokununca aç; kendini test et.
 - **Katmanlar:** vurgu, kalem, resim, not ve bant katmanlarını ayrı ayrı gizle ya da göster.
 - **Kenar boşluğu:** dolu slaytın sağına ya da altına yazı alanı ekle; PDF bozulmaz.
@@ -71,13 +78,14 @@ Her şey cihazında, internetsiz çalışır.
 - **Sessizliği atla**, **gürültü azalt**, 0,5×–2,5× hız (sesin tonu korunur), 10 sn geri/ileri, kayıt silme.
 - **Döküm sayfanın yanında:** her sayfanın yanında (telefonda altında) o sayfada söylenenler, süreye dokununca ses o andan çalar.
 - **Sınav ipuçları:** dökümde "sınavda çıkar", "önemli", "dikkat" gibi sözler geçen sayfalara rozet konur.
-- **Yazıya dökme** (masaüstü): whisper.cpp ile cihazda, internetsiz. Dökümdeki her paragrafa tıklayınca ses o andan çalar.
+- **Yazıya dökme** (masaüstü): whisper.cpp ile cihazda, internetsiz. Önerilen model Türkçede daha doğru large-v3-turbo (574 MB). Ders adı ve PDF'teki terimler modele ipucu olarak verilir; sessiz yerler (VAD) ve "İzlediğiniz için teşekkürler" gibi uydurma satırlar ayıklanır. Dökümdeki her paragrafa tıklayınca ses o andan çalar.
 
 ### Kronometre ve alarm
-- Okuyucudaki saat düğmesi: çalışma süreni sayan kronometre ve dakika ayarlı alarm. Okuyucuyu kapatsan da sayar.
+- Üst çubuktaki "Süre" düğmesi: kronometre ve dakika ayarlı alarm. Okuyucuyu kapatsan da sayar.
+- Kronometre çalışırken geçen süre açık olan PDF'e yazılır; Çalışma Merkezi'nde PDF ve ders başına "Çalışma süresi" görünür.
 
 ### Çalışma
-- Vurgulardan otomatik kart; aralıklı tekrar (Leitner 1/2/4/8/16 gün).
+- Vurgulardan otomatik kart; aralıklı tekrar (Leitner 1/2/4/8/16 gün), kutu dağılımı ve ders başına ilerleme halkası.
 - Çoktan seçmeli quiz, Cornell not şablonu.
 - **Sınav hazırlığı:** işaretlenen sayfalar ve Sınav etiketli vurgular tek listede; derse, haftaya ve türe göre filtre.
 - Ders paketi: bir dersin PDF'leri, notları ve kartları tek dosyada.
@@ -102,15 +110,21 @@ Her şey cihazında, internetsiz çalışır.
 
 ## Ekran görüntüleri
 
-| Kütüphane | Okuyucu ve kalemler |
+| Bugün | Kütüphane |
 |---|---|
-| <img src="docs/screenshots/library-light.png" alt="Kütüphane" /> | <img src="docs/screenshots/reader-tools-light.png" alt="Okuyucu araçları" /> |
-| **Çalışma merkezi** | **Yapay zekâ ile sohbet** |
-| <img src="docs/screenshots/study-overview-light.png" alt="Çalışma merkezi" /> | <img src="docs/screenshots/ai-chat-light.png" alt="Yapay zekâ sohbeti" /> |
-| **Sınav hazırlığı** | **Bant, not ve LaTeX** |
-| <img src="docs/screenshots/exam-light.png" alt="Sınav hazırlığı" /> | <img src="docs/screenshots/page-tools-light.png" alt="Sayfa araçları" /> |
-| **Haftalık program** | **Koyu tema** |
-| <img src="docs/screenshots/plan-light.png" alt="Haftalık program" /> | <img src="docs/screenshots/reader-dark.png" alt="Koyu tema" /> |
+| <img src="docs/screenshots/home-light.png" alt="Bugün" /> | <img src="docs/screenshots/library-light.png" alt="Kütüphane" /> |
+| **Çalışma Merkezi** | **Okuyucu ve Kalem grubu** |
+| <img src="docs/screenshots/study-light.png" alt="Çalışma Merkezi" /> | <img src="docs/screenshots/reader-tools-light.png" alt="Okuyucu araçları" /> |
+| **Defter** | **Bant, not ve LaTeX** |
+| <img src="docs/screenshots/notebook-light.png" alt="Defter" /> | <img src="docs/screenshots/page-tools-light.png" alt="Sayfa araçları" /> |
+| **Haftalık program** | **Yapay zekâ ile sohbet** |
+| <img src="docs/screenshots/plan-light.png" alt="Haftalık program" /> | <img src="docs/screenshots/ai-chat-light.png" alt="Yapay zekâ sohbeti" /> |
+| **Sınav hazırlığı** | **Koyu tema** |
+| <img src="docs/screenshots/exam-light.png" alt="Sınav hazırlığı" /> | <img src="docs/screenshots/home-dark.png" alt="Koyu tema" /> |
+
+Telefon görünümü:
+
+<img src="docs/screenshots/home-phone-light.png" alt="Telefonda Bugün" width="240" /> <img src="docs/screenshots/notebook-phone-light.png" alt="Telefonda Defter" width="240" />
 
 Tablet görünümü:
 
@@ -192,7 +206,7 @@ npm run licenses       # npm ve Rust bağımlılıklarının lisans denetimi
 npm run smoke:tauri    # gerçek Tauri penceresinde salt okunur duman testi
 ```
 
-Uçtan uca testler kütüphane, okuyucu, kalemler, ses kaydı (sahte mikrofonla), yazıya dökme, çalışma, notlar, yapay zekâ, ana ekran ve tablet dokunma hareketlerini kapsar.
+Uçtan uca testler kütüphane, okuyucu, kalemler, ses kaydı (sahte mikrofonla), yazıya dökme, çalışma, notlar, yapay zekâ, ana ekran, defter, sayfalar arası taşıma, kronometre ve tablet dokunma hareketlerini kapsar.
 
 ## Yol haritası
 
@@ -203,6 +217,7 @@ Ayrıntı [ROADMAP.md](ROADMAP.md), ilerleme günlüğü [PROGRESS.md](PROGRESS.
 - [x] Faz 3.5: Zengin arayüz (Bugün, Program, yeni kütüphane ve okuyucu)
 - [x] Faz 3.7: Şekil düzeltme, avuç engeli, Seç aracı, boş sayfa, önemli sayfalar, döküm sayfanın yanında, kronometre
 - [x] Faz 3.6: Slayt–ses senkronu, sessizlik atlama, bant modu, metin kutusu ve LaTeX, sınav görünümü, büyük PDF performansı
+- [x] Faz 3.8: Defter, Kalem grubu, not renkleri, sayfalar arası taşıma, PDF başına çalışma süresi, daha doğru Türkçe döküm, yeni tasarım
 - [ ] Faz 3: Tablet derlemeleri (Android, iPad)
 - [ ] Faz 4: İmzalı sürüm, otomatik güncelleme, mağazalar, cihazlar arası senkron
 

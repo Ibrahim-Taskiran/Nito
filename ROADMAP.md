@@ -164,7 +164,7 @@ Chosen from the owner's product list. Three parallel agents:
 - ✅ **Pen:** (plus lasso select: move, scale, recolour, copy, delete, undo) shape correction (hold at the end of a stroke: wobbly line → straight line, also circle, rectangle, arrow); palm and accidental touch rejection (contact size, pen-only mode, touch sensitivity setting, ignore touches while the pen is down); images from the web browser (drag and drop, paste, image link).
 - ✅ **Study timer:** stopwatch and alarm in the reader, keeps counting until stopped or the app quits.
 
-### Phase 3.8: Notebook and reader cleanup (owner request 2026-10-30) 🟨
+### Phase 3.8: Notebook and reader cleanup (owner request 2026-10-30) ✅
 Four parallel worktree agents:
 - ✅ **Reader toolbar:** one "Kalem" group (default black tükenmez; kind, colour, width inside), Lazer separate, "Resim" group (gallery + web image); sticky note colours; remove inserted blank pages. Migration 014.
 - ✅ **Notebook ("Defter"):** opens beside the PDF like "Yan yana"; starts with one plain page; add Düz, Kareli, Çizgili, Noktalı pages. Migration 013.

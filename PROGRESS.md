@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (14) — Phase 3.8 done: redesign merged, README updated
+- **Merged:** redesign branch (owner's Stitch design "Nito Study Canvas"): tokens, bundled Manrope + Hanken Grotesk (OFL), new shell (sidebar, top bar, bottom nav), Bugün, Kütüphane, Program, Notlar, Yapay zekâ, Çalışma Merkezi, reader dock, notebook and timer panels.
+- **README:** Phase 3.8 features, new screenshot table (home, study, notebook, phone views), roadmap line. e2e-notebook now writes `docs/screenshots/notebook-light.png` and `notebook-phone-light.png`.
+- **Checks on main:** svelte-check 0, vitest 193 passed, full `npm run e2e` (17 scripts) exit 0.
+- **Next step:** owner opens the desktop shortcut (DB backup, migrations 013–015), re-runs "Whisper kur", tries a real lecture; then tablet builds (Phase 3) or whatever the owner asks.
+- **Known limits:** in rail mode the theme switch shows only when the sidebar is expanded; with Sayfalar + Vurgular + Defter open the PDF column is narrow on a 1280 px screen.
+
 ## 2026-10-30 (13) — New look "Nito Study Canvas" (branch `worktree-agent-aa05a95fd3bc2ee8b`)
 - **Done:** design tokens (slate-indigo light + dark, radii, shadows, Manrope/Hanken Grotesk bundled via @fontsource-variable, OFL added to the licence allow list); shared Button/IconButton/ToolButton/MenuButton/Dialog/ProgressBar/ThemeSwitch + global `.n-*` blocks (card, chip, badge, eyebrow, kbd) and a `Ring` component. New shell: `Sidebar` (logo, ANA MENÜ with counts, DERSLERİM + klasör ekle, theme switch, collapsible rail; tablets <1100 px start as rail), `TopBar` (global Ctrl+K search → Kütüphane, Süre timer, PDF ekle), `BottomNav` + drawer under 720 px. Redesigned Bugün (resume cards, plan, Leitner boxes, weekly done-minutes chart, next "Sınav" plan countdown, son eklenenler), Kütüphane (title row, durum filter, week groups with collapse, floating detail card, review banner), Program, Notlar, Yapay zekâ, Çalışma Merkezi (card hero, 5 Leitner boxes, course rings with study time, exam chips), reader toolbar (tool dock, icon-only pane toggles <1600 px), Defter pane, timer panel.
 - **Skipped as fake (no backend):** Pomodoro, cloud sync, account/avatar, notifications, Stylus Modu, Cornell notebook, .apkg export, "Hafıza kalıcılığı" score, names in the greeting.

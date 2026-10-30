@@ -105,7 +105,7 @@ await page.mouse.move(h.x - 100, h.y + 200, { steps: 5 });
 await page.mouse.up();
 const grown = (await pane.boundingBox()).width;
 if (!(grown > nbBox.width + 60)) await fail(`resize: ${nbBox.width} -> ${grown}`);
-await page.screenshot({ path: "test-results/notebook-desktop.png" });
+await page.screenshot({ path: "docs/screenshots/notebook-light.png" });
 
 // ---- 5) Close, reopen the document: pages and the stroke are kept.
 await toggle.click();
@@ -135,7 +135,7 @@ const pb = await pane.boundingBox();
 if (!(pb.width >= PHONE.width - 2)) await fail(`phone: notebook should fill the width (${pb.width})`);
 const nb0 = await nbPages.first().boundingBox();
 if (!(nb0.width > 300 && nb0.x >= 0 && nb0.x + nb0.width <= PHONE.width)) await fail("phone: page should fit the screen");
-await page.screenshot({ path: "test-results/notebook-phone.png" });
+await page.screenshot({ path: "docs/screenshots/notebook-phone-light.png" });
 await pane.getByRole("button", { name: "Defteri kapat" }).click();
 if (await pane.count()) await fail("phone: notebook did not close");
 if (!(await page.locator(".scroller [data-page]").first().isVisible())) await fail("phone: PDF not shown after closing");
