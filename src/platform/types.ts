@@ -15,6 +15,8 @@ export interface Pickers {
   pickPdfs(): Promise<SourceFile[]>;
   /** Folder picker. Subfolder names become course names when `recursive`. */
   pickFolder(recursive: boolean): Promise<SourceFile[]>;
+  /** One picture from the device (gallery on mobile). Null when cancelled. */
+  pickImage(): Promise<SourceFile | null>;
 }
 
 /** Whole-library copy to a folder (e.g. a cloud-drive folder). Desktop and mobile app only. */

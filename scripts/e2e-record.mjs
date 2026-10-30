@@ -26,7 +26,7 @@ await page.getByRole("button", { name: /Hafta 2/ }).click();
 await page.getByRole("button", { name: "Aç" }).click();
 await page.locator(".textLayer span").first().waitFor();
 
-await page.getByRole("button", { name: "Kaydet" }).click();
+await page.getByRole("button", { name: "Ses kaydı" }).click();
 await page.getByRole("button", { name: "Duraklat" }).waitFor();
 await page.waitForTimeout(3200);
 await page.evaluate(() => {

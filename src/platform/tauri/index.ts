@@ -5,6 +5,7 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { Row, SqlDb } from "../../core/db/sql";
 import type { SourceFile } from "../../core/library/addDocuments";
+import { IMAGE_EXTENSIONS } from "../../core/pageImage";
 import type { Platform } from "../types";
 import { tauriTranscriber } from "./transcriber";
 import { isMobileDevice } from "../device";
@@ -64,6 +65,11 @@ export function createTauriPlatform(): Platform {
     pickers: {
       pickPdfs: async () => listPdfs(asList(await open({ multiple: true, filters: [{ name: "PDF", extensions: ["pdf"] }] })), false),
       pickFolder: async (recursive) => listPdfs(asList(await open({ directory: true })), recursive),
+      async pickImage() {
+        const path = await open({ filters: [{ name: "Resim", extensions: [...IMAGE_EXTENSIONS] }] });
+        if (typeof path !== "string") return null;
+        return source({ path, name: path.split(/[\\/]/).pop() ?? path, folder: null });
+      },
     },
     async onDrop(cb) {
       return getCurrentWebview().onDragDropEvent(async (e) => {

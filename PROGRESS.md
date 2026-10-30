@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 — Phase 3.5 reader tools (branch worktree-agent-ac58affee2bb8af17)
+- **Done:** two-row icon + text toolbar (lucide): "Ses kaydı" with mic icon, Ara (Ctrl+F), page number box (hidden `.pages` "N / M" kept for tests), zoom, Sayfalar (left panel: lazy thumbnails + pdf.js outline), Vurgular, Yan yana. Tool row: Tükenmez, Kurşun kalem, Fosforlu, Lazer (fades, not saved), Silgi, Resim ekle (Platform `pickImage`, move/resize/delete). Pen palette (10 per kind), custom colour, width slider. Search bar with count, next/prev, current hit marked and scrolled into view. All controls ≥40px, toolbar wraps at tablet width (checked at 800px, no sideways scroll).
+- **Files:** src/ui/views/ReaderView.svelte, PageNav.svelte (new), PdfPage.svelte, ImageLayer.svelte, RecordBar.svelte, RecordingList.svelte, src/ui/components/ToolButton.svelte (new), src/core/reader.ts (parsePageInput, flattenOutline, hitOnPage), tests/reader-tools.test.ts, scripts/e2e-reader.mjs (new, in `npm run e2e`), e2e-record/transcribe/touch/ai label updates.
+- **Checks:** svelte-check 0 errors; vitest 80 passed; e2e-reader, touch, record, notes, transcribe, ai, study pass.
+- **Next step:** merge into main (m006 goes before m007 in migrate.ts); try on a real Android tablet once the APK builds.
+- **Known:** search marks are found per text-layer span, so a word split across spans is counted in the bar but not marked on the page.
+
 ## 2026-10-30 — Phase 3.5 Library (branch worktree-agent-a0b6e32675cf7d6c2: e74dda8, 30a1a90, c3dc845, 04a1a62)
 - **Done:** migration 007 (`last_page`, `page_count`, `last_opened_at`), repo rename/move/week/delete, `core/library/browse.ts` (Turkish-folding search, sort, progress, parseWeek). `LibraryView`: search box (Ctrl+K), sort select, grid/list toggle (saved per device), course chips, cover cards (first page via `ui/thumbs.ts`, cached `thumbs/<hash>.png`), progress bar + badges, detail panel with "Kaldığın yerden devam et". Reader saves the position (debounced 1 s). Menu (⋯ button, right click, 500 ms long press via `ui/longpress.ts`): open, rename, move to course (or new course), week, read/unread, favourite, delete with confirm. Tablet: ⋯ always visible, 40px targets, tap opens the doc when the detail panel is hidden (<1024px).
 - **Checks:** svelte-check 0, vitest 70, all e2e scripts incl. new `scripts/e2e-library.mjs` passed.

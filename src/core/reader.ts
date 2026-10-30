@@ -58,3 +58,39 @@ export function normaliseRects(rects: Iterable<Box>, page: Box): Rect[] {
   const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
   return merged.map((r) => ({ x: r4(r.x), y: r4(r.y), w: r4(r.w), h: r4(r.h) }));
 }
+
+/** Page number typed into the page box, clamped to 1..count. Null when it is not a number. */
+export function parsePageInput(text: string, count: number): number | null {
+  const n = Number.parseInt(text.trim(), 10);
+  if (!Number.isFinite(n) || count < 1) return null;
+  return Math.min(count, Math.max(1, n));
+}
+
+export interface OutlineNode<D> {
+  title: string;
+  dest: D;
+  items?: readonly OutlineNode<D>[];
+}
+
+export interface OutlineRow<D> {
+  title: string;
+  dest: D;
+  depth: number;
+}
+
+/** Outline tree (pdf.js getOutline) as a flat, indented list in reading order. */
+export function flattenOutline<D>(items: readonly OutlineNode<D>[] | null | undefined, depth = 0): OutlineRow<D>[] {
+  return (items ?? []).flatMap((it) => [
+    { title: it.title.trim() || "(adsız)", dest: it.dest, depth },
+    ...flattenOutline(it.items, depth + 1),
+  ]);
+}
+
+/** Which mark on a page is the current search hit: the hit's position among that page's hits. */
+export function hitOnPage(hits: readonly { page: number }[], index: number): number {
+  const h = hits[index];
+  if (!h) return -1;
+  let k = 0;
+  for (let i = 0; i < index; i++) if (hits[i].page === h.page) k++;
+  return k;
+}

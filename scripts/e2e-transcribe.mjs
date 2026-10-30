@@ -32,7 +32,7 @@ async function openWithRecording({ fake, colorScheme }) {
     await page.screenshot({ path: "test-results/e2e-transcribe-fail.png" });
     fail("pdf did not render");
   });
-  await page.getByRole("button", { name: "Kaydet" }).click();
+  await page.getByRole("button", { name: "Ses kaydı" }).click();
   await page.getByRole("button", { name: "Duraklat" }).waitFor();
   await page.waitForTimeout(3000);
   await page.getByRole("button", { name: "Kaydı durdur" }).click();
