@@ -170,6 +170,7 @@ Four parallel worktree agents:
 - 🟨 **Notebook ("Defter"):** opens beside the PDF like "Yan yana"; starts with one plain page; add Düz, Kareli, Çizgili, Noktalı pages. Migration 013.
 - 🟨 **Move across pages:** move a lasso selection from one page to another (drag and cut/paste).
 - 🟨 **Study time + transcription:** stopwatch time saved per PDF and shown in Çalışma Merkezi (migration 014); better Turkish Whisper output (model, beam search, prompt, VAD, hallucination filter).
+- 🟨 **New look (owner design, Stitch export "Nito Study Canvas"):** slate-indigo palette, Manrope + Hanken Grotesk (bundled, OFL), light/dark, new sidebar and shell; Bugün, Kütüphane, Program, Notlar, Yapay zekâ redesigned; Çalışma Merkezi and Reader get a second pass after the Phase 3.8 merges. No fake UI for features that do not exist.
 
 ### Phase 4: Release 🟨
 - Code signing (free options first), installer, and an auto-update channel we control.

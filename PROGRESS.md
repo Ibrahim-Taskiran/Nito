@@ -5,6 +5,7 @@ Newest entry first. Each entry records: what was finished, the files touched, th
 ## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
 - **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
 - **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
+- **Also running:** a fifth worktree agent restyles the app to the owner's design (zip on Desktop, `stitch_tablet_pdf_study_app.zip`; DESIGN.md + 3 screens: Bugün, Kütüphane, Çalışma Merkezi). It leaves StudyView/ReaderView markup alone; second pass after merge.
 - **Next step:** merge the four branches, fix the migration order in `migrate.ts` to `[…, m012, m013, m014, m015]`, add new e2e scripts to the chain, run check + vitest + full e2e, update ROADMAP 3.8 icons, push.
 
 ## 2026-10-30 (7) — Phase 3.7 done: pages, pen, lasso, timer; double scrollbar fixed
