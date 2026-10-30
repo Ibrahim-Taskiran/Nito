@@ -4,12 +4,17 @@ import { suggestModel, type BuiltinModel } from "../core/ai/builtin";
 import { buildCorpus } from "../core/ai/corpus";
 import { EngineDown, openAiEngine, type Engine } from "../core/ai/engine";
 import { isPermissive, listModels, ollamaEngine, pickModel } from "../core/ai/ollama";
-import { chatPrompt, cleanAnswer, resolveCitation, summaryPrompt, type ChatMessage } from "../core/ai/prompts";
+import { cardsPrompt, parseCards, type DraftCard } from "../core/ai/cards";
+import { chatPrompt, cleanAnswer, resolveCitation, resolveTranscript, summaryPrompt, type ChatMessage } from "../core/ai/prompts";
+import { formatTimestamp } from "../core/recording";
+import { toRecording } from "../core/repo";
+import { StudyRepo } from "../core/study/studyRepo";
 import type { Document, Id } from "../core/types";
 import type { AiHost, AiStatus } from "../platform/ai";
 import type { SetupProgress } from "../platform/transcriber";
 import type { Library } from "./library.svelte";
 import { pageTexts } from "./pageText";
+import { loadRate } from "./playback";
 
 const MODEL_KEY = "nito.ai.model";
 const ENGINE_KEY = "nito.ai.engine";
@@ -59,7 +64,19 @@ export class Ai {
   summary = $state("");
   summarySaved = $state(false);
   turns = $state<Turn[]>([]);
-  busy = $state<"summary" | "chat" | null>(null);
+  busy = $state<"summary" | "chat" | "cards" | null>(null);
+  /** "Slayttan kart üret": document, page range and the drafts waiting for review. */
+  cardsDocId = $state<Id | null>(null);
+  cardsFrom = $state(1);
+  cardsTo = $state(5);
+  drafts = $state<(DraftCard & { keep: boolean })[]>([]);
+  /** Items the model gave that failed validation. */
+  draftsSkipped = $state(0);
+  cardsSaved = $state<number | null>(null);
+  /** Lecture recording playing from a "[kayıt mm:ss]" citation. */
+  playing = $state<{ title: string; label: string } | null>(null);
+  private player: HTMLAudioElement | null = null;
+  private audioUrl: string | null = null;
   /** What the busy task is doing right now (e.g. reading PDFs). */
   phase = $state("");
   error = $state<string | null>(null);
@@ -106,6 +123,7 @@ export class Ai {
     const id = this.courseId;
     this.docs = await this.lib.repo.listDocuments(id == null ? { kind: "all" } : { kind: "course", courseId: id });
     if (!this.docs.some((d) => d.id === this.summaryDocId)) this.summaryDocId = this.docs[0]?.id ?? null;
+    if (!this.docs.some((d) => d.id === this.cardsDocId)) this.cardsDocId = this.docs[0]?.id ?? null;
   }
 
   private async findOllama(): Promise<void> {
@@ -260,7 +278,7 @@ export class Ai {
     this.abort?.abort();
   }
 
-  private async run(kind: "summary" | "chat", fn: (engine: Engine, signal: AbortSignal) => Promise<void>): Promise<void> {
+  private async run(kind: "summary" | "chat" | "cards", fn: (engine: Engine, signal: AbortSignal) => Promise<void>): Promise<void> {
     const engine = this.engine;
     if (this.busy || !engine) return;
     this.busy = kind;
@@ -316,7 +334,11 @@ export class Ai {
     const notes = (await this.lib.repo.listNotes()).filter(
       (n) => this.courseId == null || n.courseId === this.courseId || (n.documentId != null && ids.has(n.documentId)),
     );
-    return new Bm25(buildCorpus({ docs, notes }));
+    const links = await this.lib.repo.db.all<{ id: number; transcript_note_id: number }>(
+      "SELECT id, transcript_note_id FROM recording WHERE transcript_note_id IS NOT NULL AND file_path <> ''",
+    );
+    const recordings = new Map(links.map((r) => [Number(r.transcript_note_id), Number(r.id)]));
+    return new Bm25(buildCorpus({ docs, notes, recordings }));
   }
 
   ask(question: string): Promise<void> {
@@ -336,6 +358,92 @@ export class Ai {
         onToken: (t) => (turn.content += t),
       });
     });
+  }
+
+  /** Plays the lecture recording a "[kayıt mm:ss]" citation points to; false when it cannot be found. */
+  async playTranscript(at: number, hits: Hit[] = []): Promise<boolean> {
+    const chunk = resolveTranscript(at, hits);
+    if (chunk?.recordingId == null) return false;
+    const row = (await this.lib.repo.db.all("SELECT * FROM recording WHERE id = ?", [chunk.recordingId]))[0];
+    if (!row) return false;
+    const rec = toRecording(row);
+    try {
+      const bytes = await this.lib.platform.storage.read(rec.filePath);
+      if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = URL.createObjectURL(new Blob([bytes as BlobPart], { type: rec.mimeType }));
+    } catch {
+      return false;
+    }
+    this.player ??= new Audio();
+    const player = this.player;
+    player.onpause = player.onended = () => (this.playing = null);
+    player.src = this.audioUrl;
+    player.playbackRate = loadRate();
+    // The cited moment, or the paragraph start when the model's time is far off.
+    const from = Math.abs(at - (chunk.at ?? at)) <= 30 ? at : chunk.at ?? at;
+    player.currentTime = Math.max(0, from - 1);
+    this.playing = { title: chunk.title, label: formatTimestamp(from) };
+    try {
+      await player.play();
+    } catch {
+      this.playing = null;
+    }
+    return true;
+  }
+
+  stopPlaying(): void {
+    this.player?.pause();
+    this.playing = null;
+  }
+
+  // ---- AI cards from slides
+  setCardsDoc(id: Id): void {
+    this.cardsDocId = id;
+    this.drafts = [];
+    this.cardsSaved = null;
+  }
+
+  generateCards(): Promise<void> {
+    return this.run("cards", async (engine, signal) => {
+      const doc = this.docs.find((d) => d.id === this.cardsDocId);
+      if (!doc) return;
+      this.drafts = [];
+      this.cardsSaved = null;
+      this.phase = "Slaytlar okunuyor…";
+      const pages = await pageTexts(this.lib.platform, doc);
+      const from = Math.min(Math.max(1, Math.round(this.cardsFrom) || 1), pages.length);
+      const to = Math.min(Math.max(from, Math.round(this.cardsTo) || from), pages.length);
+      [this.cardsFrom, this.cardsTo] = [from, to];
+      if (!pages.slice(from - 1, to).some((p) => p.trim())) throw new Error("Bu sayfalarda seçilebilir metin yok (taranmış olabilir).");
+      this.phase = "Kartlar hazırlanıyor…";
+      let n = 0;
+      const answer = await engine.chat({
+        messages: cardsPrompt(doc.title, pages, from, to),
+        signal,
+        onToken: (t) => {
+          n += t.length;
+          this.phase = `Kartlar hazırlanıyor… (${n} karakter)`;
+        },
+      });
+      const { cards, skipped } = parseCards(answer, from, to);
+      this.drafts = cards.map((c) => ({ ...c, keep: true }));
+      this.draftsSkipped = skipped;
+    });
+  }
+
+  /** Saves the kept drafts as Tanım / Soru cards of the document (Çalışma Merkezi › Kartlar). */
+  async saveDrafts(): Promise<void> {
+    const doc = this.docs.find((d) => d.id === this.cardsDocId);
+    const keep: DraftCard[] = this.drafts.filter((d) => d.keep).map(({ keep: _, ...d }) => d as DraftCard);
+    if (!doc || !keep.length) return;
+    this.error = null;
+    try {
+      await new StudyRepo(this.lib.repo.db).saveAiCards(doc.id, keep);
+      this.cardsSaved = keep.length;
+      this.drafts = [];
+    } catch (e) {
+      this.error = errText(e);
+    }
   }
 
   async openSummaryPage(page: number): Promise<void> {

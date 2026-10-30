@@ -1,15 +1,22 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { flattenOutline, type OutlineRow } from "../../core/reader";
+  import { flagInfo } from "../../core/exam/flags";
+  import type { Id } from "../../core/types";
+  import type { Library } from "../library.svelte";
+  import { PageFlags } from "../pageFlags.svelte";
   import type { PDFDocumentProxy } from "../pdf";
 
   /** Left panel: page thumbnails and the PDF's table of contents. */
-  let { pdf, sizes, current, onjump }: {
+  let { pdf, sizes, current, onjump, flags }: {
     pdf: PDFDocumentProxy;
     sizes: { w: number; h: number }[];
     current: number;
     onjump: (page: number) => void;
+    /** Shows page flags on the thumbnails. */
+    flags?: { lib: Library; documentId: Id };
   } = $props();
+  const pageFlags = $derived(flags ? PageFlags.for(flags.lib, flags.documentId) : null);
 
   const THUMB_W = 112;
   let tab = $state<"pages" | "outline">("pages");
@@ -33,21 +40,57 @@
     if (n) onjump(n);
   }
 
-  /** Renders a small page image the first time the thumbnail scrolls into view. */
+  /**
+   * Draws a small page image while the thumbnail is near the view and frees it when it scrolls away,
+   * so a 500-page PDF keeps only a screenful of thumbnail bitmaps. A thumbnail that only flies past is
+   * never drawn, and a draw still running when it leaves is cancelled.
+   */
   function thumb(canvas: HTMLCanvasElement, num: number) {
-    let done = false;
-    const io = new IntersectionObserver(async ([e]) => {
-      if (!e.isIntersecting || done) return;
-      done = true;
-      io.disconnect();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let task: { cancel(): void } | null = null;
+    let near = false;
+    const free = () => {
+      clearTimeout(timer);
+      task?.cancel();
+      task = null;
+      canvas.width = canvas.height = 0;
+      delete canvas.dataset.drawn;
+    };
+    const draw = async () => {
       const page = await pdf.getPage(num);
-      const vp = page.getViewport({ scale: (THUMB_W * (window.devicePixelRatio || 1)) / page.getViewport({ scale: 1 }).width });
-      canvas.width = Math.floor(vp.width);
-      canvas.height = Math.floor(vp.height);
-      await page.render({ canvas, viewport: vp }).promise.catch(() => {});
-    }, { root: list, rootMargin: "200px" });
+      if (!near) return;
+      const base = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: (THUMB_W * Math.min(2, window.devicePixelRatio || 1)) / base.width });
+      const off = document.createElement("canvas");
+      off.width = Math.floor(vp.width);
+      off.height = Math.floor(vp.height);
+      const t = page.render({ canvas: off, viewport: vp });
+      task = t;
+      try {
+        await t.promise;
+      } catch {
+        return; // cancelled
+      } finally {
+        if (task === t) task = null;
+      }
+      if (!near) return;
+      canvas.width = off.width;
+      canvas.height = off.height;
+      canvas.getContext("2d")!.drawImage(off, 0, 0);
+      off.width = off.height = 0;
+      canvas.dataset.drawn = "";
+    };
+    const io = new IntersectionObserver(([e]) => {
+      near = e.isIntersecting;
+      if (!near) return free();
+      if (canvas.dataset.drawn === undefined && !task) {
+        clearTimeout(timer);
+        timer = setTimeout(() => void draw().catch(() => {}), 80);
+      }
+    }, { root: list, rootMargin: "300px" });
+    canvas.width = canvas.height = 0;
     io.observe(canvas);
-    return { destroy: () => io.disconnect() };
+    return { destroy: () => { io.disconnect(); near = false; free(); } };
   }
 
   // Keep the current page's thumbnail in sight.
@@ -69,6 +112,11 @@
           aria-current={current === i + 1 ? "page" : undefined} onclick={() => onjump(i + 1)}>
           <canvas use:thumb={i + 1} style:aspect-ratio="{s.w} / {s.h}"></canvas>
           <span>{i + 1}</span>
+          {#if pageFlags?.on(i + 1).length}
+            <span class="flags" aria-label="İşaretler: {pageFlags.on(i + 1).map((k) => flagInfo(k).name).join(', ')}">
+              {#each pageFlags.on(i + 1) as k (k)}<i style:background={flagInfo(k).color} title={flagInfo(k).name}></i>{/each}
+            </span>
+          {/if}
         </button>
       {/each}
     {:else if outline === null}
@@ -97,6 +145,9 @@
     border: 0; border-radius: var(--radius-sm); background: transparent; cursor: pointer; color: var(--text-2); font-size: 12px;
   }
   .thumb:hover { background: var(--surface-2); }
+  .thumb { position: relative; }
+  .flags { position: absolute; top: 10px; right: 14px; display: flex; flex-direction: column; gap: 3px; }
+  .flags i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
   .thumb canvas { width: 112px; background: #fff; box-shadow: 0 0 0 1px var(--border); border-radius: 2px; }
   .thumb.current canvas { box-shadow: 0 0 0 2px var(--accent); }
   .thumb.current span { color: var(--accent); font-weight: 600; }

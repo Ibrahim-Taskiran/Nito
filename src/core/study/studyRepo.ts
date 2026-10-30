@@ -1,4 +1,5 @@
 // Data access for the Study Center. Reuses Repo for shared tables; owns card_review.
+import { draftToAnnotation, type DraftCard } from "../ai/cards";
 import type { SqlDb, SqlValue } from "../db/sql";
 import { Repo, toAnnotation, toDocument } from "../repo";
 import type { Annotation, Document, Id } from "../types";
@@ -18,6 +19,15 @@ export interface DocHighlight {
   doc: Document;
 }
 
+function parseWrong(json: string): string[] {
+  try {
+    const v = JSON.parse(json);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
+  } catch {
+    return [];
+  }
+}
+
 const courseWhere = (courseId: Id | null, col = "d.course_id"): [string, SqlValue[]] =>
   courseId == null ? ["1", []] : [`${col} = ?`, [courseId]];
 
@@ -31,9 +41,10 @@ export class StudyRepo {
   async listCards(courseId: Id | null, today: string): Promise<Card[]> {
     const [where, params] = courseWhere(courseId);
     const rows = await this.db.all(
-      `SELECT a.*, d.course_id, r.box, r.due, r.last_reviewed
+      `SELECT a.*, d.course_id, r.box, r.due, r.last_reviewed, ch.wrong AS ch_wrong
        FROM annotation a JOIN document d ON d.id = a.document_id
        LEFT JOIN card_review r ON r.annotation_id = a.id
+       LEFT JOIN card_choice ch ON ch.annotation_id = a.id
        WHERE a.label IN (${CARD_LABELS.map(() => "?").join(", ")}) AND ${where}
        ORDER BY d.week IS NULL, d.week, d.title, a.page, a.created_at`,
       [...CARD_LABELS, ...params],
@@ -49,8 +60,21 @@ export class StudyRepo {
         ...face, ...state,
         annotationId: a.id, documentId: a.documentId, courseId: r.course_id == null ? null : Number(r.course_id),
         label: a.label, page: a.page, hasAnswer: face.back !== NO_ANSWER && face.back.trim() !== "",
+        ...(r.ch_wrong == null ? {} : { wrong: parseWrong(String(r.ch_wrong)) }),
       }];
     });
+  }
+
+  /** Saves reviewed AI drafts as Tanım / Soru cards (no rects: they come from the whole page). Returns the new ids. */
+  async saveAiCards(documentId: Id, drafts: readonly DraftCard[]): Promise<Id[]> {
+    const ids: Id[] = [];
+    for (const d of drafts) {
+      const a = draftToAnnotation(d);
+      const id = await this.repo.addAnnotation({ documentId, page: d.page, rects: [], label: a.label, text: a.text, comment: a.comment });
+      if (a.wrong.length) await this.db.run("INSERT INTO card_choice (annotation_id, wrong) VALUES (?, ?)", [id, JSON.stringify(a.wrong)]);
+      ids.push(id);
+    }
+    return ids;
   }
 
   async saveReview(annotationId: Id, s: CardState): Promise<void> {

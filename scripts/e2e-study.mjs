@@ -53,7 +53,7 @@ await page.getByRole("button", { name: "Çalışma Merkezi" }).click();
 const due = page.getByTestId("due-count");
 await due.waitFor();
 if ((await due.textContent()) !== "2") fail(`expected 2 due cards, got ${await due.textContent()}`);
-if (!(await page.getByText("Hafta 5: Protokoller · s. 1").count())) fail("exam highlight not listed");
+await page.getByRole("button", { name: "Hafta 5: Protokoller, sayfa 1" }).waitFor({ timeout: 5000 }).catch(() => fail("exam highlight not listed in Sınav hazırlığı"));
 await shot("overview", "light");
 await shot("overview", "dark");
 

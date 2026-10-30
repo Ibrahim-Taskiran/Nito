@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { labelInfo } from "../../core/labels";
   import { groupByWeek } from "../../core/week";
   import Button from "../components/Button.svelte";
   import ProgressBar from "../components/ProgressBar.svelte";
   import type { Library } from "../library.svelte";
   import { Study } from "../study.svelte";
   import QuizPanel from "./study/QuizPanel.svelte";
+  import ExamPrep from "./study/ExamPrep.svelte";
   import ReviewPanel from "./study/ReviewPanel.svelte";
 
   let { lib }: { lib: Library } = $props();
@@ -15,7 +15,6 @@
   const st = new Study(lib);
   onMount(() => void st.refresh());
 
-  const examWeeks = $derived(groupByWeek(st.exam.map((e) => ({ ...e, week: e.doc.week, title: e.doc.title }))));
   const unreadWeeks = $derived(groupByWeek(st.unread));
   const docWeeks = $derived(groupByWeek(st.docs));
   const progress = $derived(st.courseId == null ? st.progress : st.progress.filter((p) => p.courseId === st.courseId));
@@ -79,22 +78,8 @@
       {/each}
     </section>
 
-    <section class="card">
-      <h2>Sınav vurguları</h2>
-      {#each examWeeks as g (g.label)}
-        <h3>{g.label}</h3>
-        <ul>
-          {#each g.items as e (e.ann.id)}
-            <li>
-              <span class="dot" style:background={labelInfo("exam").color}></span>
-              <span><span class="text">{e.ann.text || "(metinsiz vurgu)"}</span>
-                <span class="muted">{e.doc.title} · s. {e.ann.page}{e.ann.comment ? ` · ${e.ann.comment}` : ""}</span></span>
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <p class="muted">Sınav etiketli vurgu yok.</p>
-      {/each}
+    <section class="card wide" aria-label="Sınav hazırlığı">
+      {#key st.courseId}<ExamPrep {lib} courseId={st.courseId} />{/key}
     </section>
 
     <section class="card">
@@ -154,10 +139,6 @@
   .progress:first-of-type { border-top: 0; }
   .line { display: flex; justify-content: space-between; gap: 8px; }
   .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  li { display: flex; gap: 8px; align-items: baseline; }
-  li > span:last-child { display: grid; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; transform: translateY(1px); }
   .doc {
     display: block; width: 100%; text-align: left; min-height: var(--hit); padding: 0 8px; border: 0;
     border-radius: var(--radius-sm); background: transparent; cursor: pointer;

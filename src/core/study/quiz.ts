@@ -19,14 +19,16 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
 }
 
 /**
- * One question per answerable card, up to `limit`. Distractors are other cards' backs
- * from the same course (up to 3, fewer when the course has too few cards).
+ * One question per answerable card, up to `limit`. Distractors are the card's own wrong options
+ * (AI questions), then other cards' backs from the same course (up to 3 in all).
  */
 export function buildQuiz(cards: readonly Card[], rng: Rng, limit = 10): QuizQuestion[] {
   const usable = cards.filter((c) => c.hasAnswer);
   return shuffle(usable, rng).slice(0, limit).map((card) => {
-    const others = [...new Set(usable.filter((c) => c.courseId === card.courseId && c.back !== card.back).map((c) => c.back))];
-    const options = shuffle([card.back, ...shuffle(others, rng).slice(0, 3)], rng);
+    // AI questions bring their own wrong options; other cards fill up to 3 from the same course.
+    const own = (card.wrong ?? []).filter((w) => w !== card.back);
+    const others = [...new Set(usable.filter((c) => c.courseId === card.courseId && c.back !== card.back && !own.includes(c.back)).map((c) => c.back))];
+    const options = shuffle([card.back, ...shuffle(own, rng).slice(0, 3), ...shuffle(others, rng).slice(0, Math.max(0, 3 - own.length))], rng);
     return { card, options, answer: options.indexOf(card.back) };
   });
 }
