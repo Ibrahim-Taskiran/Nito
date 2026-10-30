@@ -167,7 +167,7 @@ Chosen from the owner's product list. Three parallel agents:
 ### Phase 3.8: Notebook and reader cleanup (owner request 2026-10-30) 🟨
 Four parallel worktree agents:
 - 🟨 **Reader toolbar:** one "Kalem" group (default black tükenmez; kind, colour, width inside), Lazer separate, "Resim" group (gallery + web image); sticky note colours; remove inserted blank pages. Migration 015 if needed.
-- 🟨 **Notebook ("Defter"):** opens beside the PDF like "Yan yana"; starts with one plain page; add Düz, Kareli, Çizgili, Noktalı pages. Migration 013.
+- ✅ **Notebook ("Defter"):** opens beside the PDF like "Yan yana"; starts with one plain page; add Düz, Kareli, Çizgili, Noktalı pages. Migration 013.
 - 🟨 **Move across pages:** move a lasso selection from one page to another (drag and cut/paste).
 - 🟨 **Study time + transcription:** stopwatch time saved per PDF and shown in Çalışma Merkezi (migration 014); better Turkish Whisper output (model, beam search, prompt, VAD, hallucination filter).
 - 🟨 **New look (owner design, Stitch export "Nito Study Canvas"):** slate-indigo palette, Manrope + Hanken Grotesk (bundled, OFL), light/dark, new sidebar and shell; Bugün, Kütüphane, Program, Notlar, Yapay zekâ redesigned; Çalışma Merkezi and Reader get a second pass after the Phase 3.8 merges. No fake UI for features that do not exist.

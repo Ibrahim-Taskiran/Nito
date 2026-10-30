@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-30 (9) — Phase 3.8 notebook ("Defter") on branch feat/notebook
+- **Done:** "Defter" toolbar button opens a notebook beside the PDF (resizable column on wide screens, covers the reader body under 760 px). Starts with one Düz page; add Düz/Kareli/Çizgili/Noktalı (CSS backgrounds), move up/down, delete with confirm (last page stays). Same pen, eraser, lasso, text and sticky notes as PDF pages: notebook pages use page keys -(1e9 + notebook_page.id) in the existing layer tables.
+- **Files:** `src/core/notebook.ts`, `src/core/db/migrations/013_notebook.ts`, `migrate.ts`, `src/ui/notebook.svelte.ts`, `src/ui/views/NotebookPane.svelte`, `ReaderView.svelte` (button, mount, `.body` relative), `tests/notebook.test.ts`, `scripts/e2e-notebook.mjs`, `package.json` e2e chain.
+- **Checks:** svelte-check 0, vitest 175 passed, e2e-notebook OK.
+- **Limits:** one notebook per PDF; pictures cannot be added to notebook pages; notebook pages are not in the PDF export.
+- **Next step:** coordinator merges; migration order m013 before m014/m015.
+
 ## 2026-10-30 (8) — Phase 3.8 started: notebook, toolbar groups, cross-page move, study time, Whisper accuracy
 - **Owner asked (7 items):** notebook beside PDF (plain first page, add grid/lined/dot pages); group reader toolbar (Kalem group, Lazer apart, Resim group); sticky note colour; move writing to another page; stopwatch time into Çalışma Merkezi per PDF; remove blank pages; fewer transcription errors.
 - **Running:** four worktree agents (toolbar+note colour+blank page removal → migration 015; notebook → 013; cross-page move; study time 014 + Whisper). Branches under `.claude/worktrees/`.
