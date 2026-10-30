@@ -9,7 +9,7 @@ export async function openPens(page) {
 }
 
 /** Takes up a pen kind (and colour), then closes the panel. */
-export async function pen(page, kind = "Tükenmez", color) {
+export async function takePen(page, kind = "Tükenmez", color) {
   const panel = await openPens(page);
   const b = panel.getByRole("button", { name: kind, exact: true });
   if ((await b.getAttribute("aria-pressed")) !== "true") await b.click();
@@ -26,5 +26,5 @@ export async function penDown(page) {
 export async function penToggle(page, kind = "Tükenmez") {
   const group = page.getByRole("button", { name: "Kalem", exact: true });
   const inUse = (await group.getAttribute("aria-pressed")) === "true" && (await group.getAttribute("title"))?.startsWith(`${kind} ·`);
-  await (inUse ? penDown(page) : pen(page, kind));
+  await (inUse ? penDown(page) : takePen(page, kind));
 }
