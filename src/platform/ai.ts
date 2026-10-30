@@ -2,7 +2,6 @@
 import type { BuiltinModel } from "../core/ai/builtin";
 import type { Endpoint, Fetch } from "../core/ai/engine";
 import type { SetupProgress } from "./transcriber";
-import type { Platform } from "./types";
 
 export interface AiModelState {
   id: BuiltinModel;
@@ -38,5 +37,3 @@ export interface AiHost {
   /** Absent where it cannot run (browser dev without the e2e fake). Ollama is then the only engine. */
   builtin?: BuiltinEngine;
 }
-
-export const hasAi = (p: Platform): boolean => !!p.ai;
