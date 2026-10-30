@@ -181,7 +181,7 @@ const isWordChar = (c: string | undefined) => !!c && /[\p{L}\p{N}]/u.test(c);
  */
 export function findCues(paragraphs: readonly PagedParagraph[] | readonly (Paragraph & { end?: number })[], phrases: readonly string[] = CUE_PHRASES): Cue[] {
   const keys = [...new Set(phrases.map((p) => fold(p)))].sort((a, b) => b.length - a.length);
-  const out: Cue[] = [];
+  const out: (Cue & { order: number })[] = [];
   paragraphs.forEach((p, i) => {
     const text = p.text;
     const folded = fold(text);
@@ -194,15 +194,18 @@ export function findCues(paragraphs: readonly PagedParagraph[] | readonly (Parag
         if (taken.some((s) => at < s.end && at + k.length > s.start)) continue;
         taken.push({ start: at, end: at + k.length });
         const t = p.start + ((end - p.start) * at) / Math.max(1, text.length);
-        out.push({ phrase: text.slice(at, at + k.length), at: Math.floor(t), snippet: snippetAround(text, at, k.length) });
+        out.push({ phrase: text.slice(at, at + k.length), at: Math.floor(t), snippet: snippetAround(text, at, k.length), order: i * 1e6 + at });
       }
     }
   });
-  return out.sort((a, b) => a.at - b.at);
+  return out.sort((a, b) => a.order - b.order).map(({ order: _, ...c }) => c);
 }
 
 function snippetAround(text: string, at: number, len: number, radius = 60): string {
-  const from = Math.max(0, at - radius);
-  const to = Math.min(text.length, at + len + radius);
+  // Cut at word edges so the snippet never starts or ends mid-word.
+  let from = Math.max(0, at - radius);
+  if (from > 0) from = Math.min(at, text.indexOf(" ", from) + 1 || at);
+  let to = Math.min(text.length, at + len + radius);
+  if (to < text.length) to = Math.max(at + len, text.lastIndexOf(" ", to));
   return `${from > 0 ? "…" : ""}${text.slice(from, to).trim()}${to < text.length ? "…" : ""}`;
 }

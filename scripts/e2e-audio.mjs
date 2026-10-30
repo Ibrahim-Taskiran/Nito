@@ -2,11 +2,10 @@
 // the page chip plays from the right moment, the page timeline, note replay, silence skip, 2.5× and a spoken cue badge.
 // Needs `npm run dev` (NITO_URL).
 import { chromium } from "@playwright/test";
-import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const url = process.env.NITO_URL ?? "http://localhost:1420";
-const fixtures = readdirSync("tests/fixtures").filter((f) => f.endsWith(".pdf")).map((f) => resolve("tests/fixtures", f));
 
 // 48 kHz mono 16-bit clip: 2 s voice-like tone, 3 s silence, 4 s tone (Chromium loops the file).
 function clip() {
@@ -66,8 +65,8 @@ await page.addInitScript((json) => {
 await page.goto(url);
 const chooser = page.waitForEvent("filechooser");
 await page.getByRole("button", { name: "PDF ekle" }).click();
-await (await chooser).setFiles(fixtures);
-await page.getByRole("button", { name: /Hafta 2/ }).click();
+await (await chooser).setFiles([resolve("tests/fixtures/notes/Hafta 5_Uzun Belge.pdf")]);
+await page.getByRole("button", { name: /Uzun Belge/ }).click();
 await page.getByRole("button", { name: "Aç" }).click();
 await page.locator(".textLayer span").first().waitFor();
 const pageInput = page.getByRole("textbox", { name: "Sayfa numarası" });
