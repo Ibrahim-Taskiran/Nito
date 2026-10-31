@@ -132,7 +132,7 @@ await page.locator('[data-thumb="5"] .flags i').first().waitFor().catch(() => fa
 // A "Sınav" highlight on page 1 (programmatic selection, as in e2e-study).
 await jump(1);
 await page.locator('[data-page="1"] .textLayer span').first().waitFor();
-await page.evaluate(() => {
+const selectFirstLine = () => page.evaluate(() => {
   const span = [...document.querySelectorAll('[data-page="1"] .textLayer span')].find((s) => s.textContent.trim());
   const range = document.createRange();
   range.selectNodeContents(span);
@@ -140,8 +140,35 @@ await page.evaluate(() => {
   getSelection().addRange(range);
   span.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 });
-await page.getByRole("toolbar", { name: "Vurgu etiketi" }).getByRole("button", { name: "Sınav" }).click();
-console.log("flags: menu toggles, counts, thumbnails show flags, Sınav highlight added");
+const picker = page.getByRole("toolbar", { name: "Vurgu etiketi" });
+// Clearing the selection closes the label picker.
+await selectFirstLine();
+await picker.waitFor();
+await page.evaluate(() => getSelection().removeAllRanges());
+await picker.waitFor({ state: "detached", timeout: 2000 }).catch(() => fail("label picker stays after the selection is cleared"));
+// Rename a label from the picker; the new name shows at once, a blank name brings the default back.
+await selectFirstLine();
+await picker.getByRole("button", { name: "Etiket adlarını düzenle" }).click();
+await page.getByLabel("Örnek adı").fill("Kod");
+await page.getByRole("button", { name: "Kaydet" }).click();
+await selectFirstLine();
+await picker.getByRole("button", { name: "Kod" }).waitFor({ timeout: 2000 }).catch(() => fail("renamed label not shown in the picker"));
+await picker.getByRole("button", { name: "Etiket adlarını düzenle" }).click();
+await page.getByLabel("Örnek adı").fill("");
+await page.getByRole("button", { name: "Kaydet" }).click();
+// Rename a page flag from its menu, then back.
+await page.getByRole("button", { name: /^İşaretle$/ }).click();
+await page.getByRole("group", { name: "İşaretle" }).getByRole("button", { name: "Adları düzenle" }).click();
+await page.getByLabel("Anlaşılmadı adı").fill("Tekrar bak");
+await page.getByRole("button", { name: "Kaydet" }).click();
+await page.getByRole("button", { name: /^İşaretle$/ }).click();
+await page.getByRole("group", { name: "İşaretle" }).getByText("Tekrar bak").waitFor({ timeout: 2000 }).catch(() => fail("renamed flag not shown in the menu"));
+await page.getByRole("group", { name: "İşaretle" }).getByRole("button", { name: "Adları düzenle" }).click();
+await page.getByLabel("Anlaşılmadı adı").fill("");
+await page.getByRole("button", { name: "Kaydet" }).click();
+await selectFirstLine();
+await picker.getByRole("button", { name: "Sınav" }).click();
+console.log("flags: menu toggles, counts, thumbnails show flags, picker closes on deselect, renames work, Sınav highlight added");
 
 // ---- a lecture recording with a transcript (fake whisper)
 await page.getByRole("button", { name: "Ses kaydı" }).click();

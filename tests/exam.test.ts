@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { FlagRepo, examItems, examWeeks, sortFlags } from "../src/core/exam/flags";
+import { FlagRepo, examItems, examWeeks, flagInfo, sortFlags } from "../src/core/exam/flags";
+import { labelInfo } from "../src/core/labels";
+import { useCustomNames } from "../src/core/names";
 import { freshRepo } from "./helpers";
 
 async function setup() {
@@ -54,5 +56,19 @@ describe("page flags", () => {
     await flags.toggle(w3, 1, "candidate");
     await repo.db.run("DELETE FROM document WHERE id = ?", [w3]);
     expect(await flags.listWithDocs(null)).toEqual([]);
+  });
+});
+
+describe("custom names", () => {
+  it("renames labels and flags from the store; blank brings the default back", () => {
+    const store: Record<string, string | undefined> = {};
+    useCustomNames(store);
+    store["flag.unclear"] = "Tekrar bak";
+    store["label.exam"] = "  ";
+    expect(flagInfo("unclear").name).toBe("Tekrar bak");
+    expect(flagInfo("unclear").defaultName).toBe("Anlaşılmadı");
+    expect(labelInfo("exam").name).toBe("Sınav");
+    useCustomNames({});
+    expect(flagInfo("unclear").name).toBe("Anlaşılmadı");
   });
 });

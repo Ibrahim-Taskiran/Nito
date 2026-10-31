@@ -5,6 +5,7 @@ import "@fontsource-variable/hanken-grotesk";
 import "./ui/tokens.css";
 import { createPlatform } from "./platform";
 import { Library } from "./ui/library.svelte";
+import "./ui/names.svelte"; // user names for labels and flags, before the first render
 import { applyTheme, loadTheme } from "./ui/theme";
 import { watcherFor } from "./ui/watcher.svelte";
 

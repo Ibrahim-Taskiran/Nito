@@ -37,7 +37,7 @@
   const chips: { key: ExamKind | null; name: string; color?: string }[] = [
     { key: null, name: "Tümü" },
     ...FLAGS.map((f) => ({ key: f.key, name: f.name, color: f.color })),
-    { key: "exam", name: "Sınav vurgusu", color: labelInfo("exam").color },
+    { key: "exam", name: `${labelInfo("exam").name} vurgusu`, color: labelInfo("exam").color },
   ];
 
   // Page previews: one open PDF per document, at most two renders at once, freed with the view.

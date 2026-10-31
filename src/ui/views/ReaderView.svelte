@@ -38,7 +38,8 @@
   import SplitPicker from "./SplitPicker.svelte";
   import TapeLayer from "./TapeLayer.svelte";
   import NotebookPane from "./NotebookPane.svelte";
-  import { NotebookPen } from "@lucide/svelte";
+  import { NotebookPen, Pencil } from "@lucide/svelte";
+  import RenameDialog from "../components/RenameDialog.svelte";
 
   /** `compact`: one half of the split view; `onclose` replaces "back to library". */
   let { lib, doc, compact = false, onclose }: { lib: Library; doc: Document; compact?: boolean; onclose?: () => void } = $props();
@@ -169,6 +170,17 @@
     const last = range.getBoundingClientRect();
     pick = { page: Number(pageEl.dataset.page), rects, text, x: last.left + last.width / 2, y: last.bottom + 8 };
   }
+
+  let renamingLabels = $state(false);
+
+  // Tapping an empty spot clears the text selection; the label picker goes with it.
+  $effect(() => {
+    const onChange = () => {
+      if (pick && getSelection()?.isCollapsed !== false) pick = null;
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => document.removeEventListener("selectionchange", onChange);
+  });
 
   async function choose(label: LabelKey) {
     if (!pick) return;
@@ -514,11 +526,18 @@
 {/if}
 
 {#if pick}
-  <div class="picker" role="toolbar" aria-label="Vurgu etiketi" style:left="{pick.x}px" style:top="{pick.y}px">
+  <!-- pointerdown kept off the page, so a tap here does not clear the selection first -->
+  <div class="picker" role="toolbar" aria-label="Vurgu etiketi" style:left="{pick.x}px" style:top="{pick.y}px"
+    tabindex="-1" onpointerdown={(e) => e.preventDefault()}>
     {#each LABELS as l (l.key)}
       <button onclick={() => choose(l.key)} title={l.name}><span class="chip" style:background={l.color}></span>{l.name}</button>
     {/each}
+    <button onclick={() => (renamingLabels = true)} title="Etiket adlarını düzenle" aria-label="Etiket adlarını düzenle"><Pencil size={14} /></button>
   </div>
+{/if}
+
+{#if renamingLabels}
+  <RenameDialog title="Vurgu etiketleri" prefix="label" items={LABELS} onclose={() => (renamingLabels = false)} />
 {/if}
 
 <style>

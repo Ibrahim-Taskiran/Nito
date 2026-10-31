@@ -2,6 +2,13 @@
 
 Newest entry first. Each entry records: what was finished, the files touched, the commit, what is half done, the next step and any problems.
 
+## 2026-10-31 (15) — Custom names for highlight labels and page flags; picker closes on deselect
+- **Done:** the owner can rename the highlight labels (Önemli, Sınav, Tanım, Örnek, Soru) from a pencil button in the label picker, and the page flags (Hoca vurguladı, Sınav adayı, Anlaşılmadı, Önemli) from "Adları düzenle" in the İşaretle menu. Keys and colours stay fixed; a blank name brings the default back. Names are stored per device in localStorage (`nito.names`), like the theme. `core/names.ts` reads them through a reactive record the UI hands in, so every `labelInfo(..).name` / `flagInfo(..).name` (panels, exports, exam view) updates at once. The label picker now closes when the text selection is cleared (tap on an empty spot); a tap on the picker itself keeps the selection.
+- **Files:** src/core/names.ts (new), src/core/labels.ts, src/core/exam/flags.ts, src/ui/names.svelte.ts (new), src/ui/components/RenameDialog.svelte (new), src/main.ts, src/ui/views/ReaderView.svelte, src/ui/views/PageFlagMenu.svelte, src/ui/views/study/ExamPrep.svelte, tests/exam.test.ts, scripts/e2e-exam.mjs.
+- **Checks:** svelte-check 0, vitest 194 passed, e2e-exam (new rename + deselect steps), e2e-audio, e2e-study, e2e-reader ok.
+- **Next step:** whatever the owner asks next.
+- **Known limits:** names are per device (not in the DB backup); the Sınav hazırlığı intro text still names the default flags.
+
 ## 2026-10-30 (14) — Phase 3.8 done: redesign merged, README updated
 - **Merged:** redesign branch (owner's Stitch design "Nito Study Canvas"): tokens, bundled Manrope + Hanken Grotesk (OFL), new shell (sidebar, top bar, bottom nav), Bugün, Kütüphane, Program, Notlar, Yapay zekâ, Çalışma Merkezi, reader dock, notebook and timer panels.
 - **README:** Phase 3.8 features, new screenshot table (home, study, notebook, phone views), roadmap line. e2e-notebook now writes `docs/screenshots/notebook-light.png` and `notebook-phone-light.png`.

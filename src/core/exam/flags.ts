@@ -1,6 +1,7 @@
 // Page flags ("Hoca vurguladı", "Sınav adayı", "Anlaşılmadı", "Önemli") and the exam list built from them
 // plus "Sınav" highlights. Pure except FlagRepo, which only talks to SqlDb.
 import type { SqlDb, SqlValue } from "../db/sql";
+import { customName } from "../names";
 import { toAnnotation, toDocument } from "../repo";
 import type { Annotation, Document, Id } from "../types";
 import { compareByWeek } from "../week";
@@ -9,17 +10,24 @@ export type FlagKind = "stressed" | "candidate" | "unclear" | "important";
 
 export interface FlagInfo {
   key: FlagKind;
-  name: string;
+  /** The user's own name when renamed. */
+  readonly name: string;
+  defaultName: string;
   /** Muted colour, same family as the highlight labels. */
   color: string;
 }
 
+const flag = (key: FlagKind, defaultName: string, color: string): FlagInfo => ({
+  key, defaultName, color,
+  get name() { return customName(`flag.${key}`, defaultName); },
+});
+
 export const FLAGS: readonly FlagInfo[] = [
-  { key: "stressed", name: "Hoca vurguladı", color: "#c08a3e" },
-  { key: "candidate", name: "Sınav adayı", color: "#c9776b" },
-  { key: "unclear", name: "Anlaşılmadı", color: "#7d8fb0" },
+  flag("stressed", "Hoca vurguladı", "#c08a3e"),
+  flag("candidate", "Sınav adayı", "#c9776b"),
+  flag("unclear", "Anlaşılmadı", "#7d8fb0"),
   // Migration 012. "Önemli sayfalar" in the reader shows these pages as a small PDF of their own.
-  { key: "important", name: "Önemli", color: "#6f9a6a" },
+  flag("important", "Önemli", "#6f9a6a"),
 ];
 
 const BY_KEY = new Map(FLAGS.map((f) => [f.key, f]));
